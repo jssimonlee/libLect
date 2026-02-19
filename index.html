@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화성시 도서관 강좌 검색</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f4f8;
+            color: #1a202c;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2b6cb0, #4c51bf);
+            color: white;
+            padding: 2.5rem 1rem 3.5rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.85;
+        }
+
+        .search-container {
+            max-width: 700px;
+            margin: -2rem auto 0;
+            padding: 0 1rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+            padding: 1.5rem;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .search-box input[type="text"] {
+            flex: 1;
+            padding: 0.85rem 1.2rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input[type="text"]:focus {
+            border-color: #4c51bf;
+        }
+
+        .search-box button {
+            padding: 0.85rem 1.8rem;
+            background: linear-gradient(135deg, #4c51bf, #2b6cb0);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .search-box button:hover { opacity: 0.9; }
+        .search-box button:active { transform: scale(0.97); }
+        .search-box button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.4rem 0.9rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #4a5568;
+        }
+
+        .filter-btn:hover { border-color: #4c51bf; color: #4c51bf; }
+        .filter-btn.active {
+            background: #4c51bf;
+            color: white;
+            border-color: #4c51bf;
+        }
+
+        .main-content {
+            max-width: 1100px;
+            margin: 1.5rem auto;
+            padding: 0 1rem 3rem;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .result-count {
+            font-size: 0.95rem;
+            color: #718096;
+        }
+
+        .result-count strong {
+            color: #2b6cb0;
+            font-size: 1.1rem;
+        }
+
+        .sort-select {
+            padding: 0.4rem 0.8rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+            background: white;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #4c51bf;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading p {
+            color: #718096;
+            font-size: 0.95rem;
+        }
+
+        .progress-bar-container {
+            max-width: 300px;
+            margin: 0.75rem auto 0;
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4c51bf, #2b6cb0);
+            border-radius: 8px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: #a0aec0;
+        }
+
+        .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+        .empty-state h3 { font-size: 1.15rem; color: #718096; margin-bottom: 0.5rem; }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+            padding: 1.3rem;
+            transition: box-shadow 0.2s, transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-status {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 0.35rem 0.9rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 0 14px 0 10px;
+        }
+
+        .card-status.open { background: #c6f6d5; color: #22543d; }
+        .card-status.upcoming { background: #bee3f8; color: #2a4365; }
+        .card-status.closed { background: #fed7d7; color: #742a2a; }
+        .card-status.ended { background: #e2e8f0; color: #4a5568; }
+
+        .card-institution {
+            font-size: 0.78rem;
+            color: #4c51bf;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .card-title {
+            font-size: 1.02rem;
+            font-weight: 700;
+            line-height: 1.45;
+            margin-bottom: 0.7rem;
+            padding-right: 3rem;
+            color: #1a202c;
+        }
+
+        .card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-bottom: 0.8rem;
+            flex: 1;
+        }
+
+        .card-info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+
+        .card-info-item .label {
+            min-width: 48px;
+            font-weight: 600;
+            color: #718096;
+            flex-shrink: 0;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
+        }
+
+        .tag {
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .tag-target { background: #ebf4ff; color: #2b6cb0; }
+        .tag-free { background: #f0fff4; color: #276749; }
+        .tag-paid { background: #fffaf0; color: #c05621; }
+        .tag-class { background: #faf5ff; color: #6b46c1; }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.7rem;
+            border-top: 1px solid #f0f4f8;
+        }
+
+        .card-apply {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .card-apply strong { color: #2b6cb0; }
+
+        .card-link {
+            padding: 0.4rem 0.9rem;
+            background: #ebf4ff;
+            color: #2b6cb0;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .card-link:hover { background: #bee3f8; }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.4rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .page-btn {
+            padding: 0.5rem 0.85rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.88rem;
+            transition: all 0.2s;
+            color: #4a5568;
+        }
+
+        .page-btn:hover { border-color: #4c51bf; color: #4c51bf; }
+        .page-btn.active {
+            background: #4c51bf;
+            color: white;
+            border-color: #4c51bf;
+        }
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-btn.btn-next {
+            background: #ebf4ff;
+            color: #2b6cb0;
+            border-color: #bee3f8;
+            font-weight: 600;
+        }
+        .page-btn.btn-next:hover { background: #bee3f8; }
+
+        .page-btn.btn-all {
+            background: linear-gradient(135deg, #4c51bf, #2b6cb0);
+            color: white;
+            border-color: #4c51bf;
+            font-weight: 600;
+        }
+        .page-btn.btn-all:hover { opacity: 0.9; }
+
+        .page-separator {
+            padding: 0.5rem 0.3rem;
+            color: #a0aec0;
+            font-size: 0.85rem;
+        }
+
+        .loading-more {
+            text-align: center;
+            padding: 1.5rem;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .loading-more .spinner-sm {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #4c51bf;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        /* Institution list hint */
+        .inst-list {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            margin-top: 4px;
+        }
+
+        .inst-list.show { display: block; }
+
+        .inst-item {
+            padding: 0.65rem 1.2rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f7fafc;
+            transition: background 0.15s;
+        }
+
+        .inst-item:hover { background: #ebf4ff; }
+        .inst-item:last-child { border-bottom: none; }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-wrapper input { width: 100%; }
+
+        /* Error */
+        .error-msg {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #e53e3e;
+        }
+
+        .error-msg h3 { margin-bottom: 0.5rem; }
+
+        @media (max-width: 640px) {
+            header h1 { font-size: 1.4rem; }
+            .search-row { flex-direction: column; }
+            .card-grid { grid-template-columns: 1fr; }
+            .card-title { font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>화성시 도서관 강좌 검색</h1>
+        <p>화성시통합예약시스템 OpenAPI 기반 강좌/교육 프로그램 검색</p>
+    </header>
+
+    <div class="search-container">
+        <div class="search-box">
+            <div class="search-row">
+                <div class="input-wrapper">
+                    <input type="text" id="searchInput" placeholder="기관(도서관)명을 입력하세요 (예: 노을빛도서관)" autocomplete="off">
+                    <div class="inst-list" id="instList"></div>
+                </div>
+                <button id="searchBtn" onclick="doSearch()">검색</button>
+            </div>
+            <div class="filter-row">
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">전체</button>
+                <button class="filter-btn" data-filter="접수중" onclick="setFilter('접수중', this)">접수중</button>
+                <button class="filter-btn" data-filter="접수예정" onclick="setFilter('접수예정', this)">접수예정</button>
+                <button class="filter-btn" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감</button>
+                <button class="filter-btn" data-filter="강좌종료" onclick="setFilter('강좌종료', this)">강좌종료</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div id="content">
+            <div class="empty-state">
+                <div class="icon">&#128218;</div>
+                <h3>도서관명을 검색해 보세요</h3>
+                <p>화성시 내 도서관/기관의 강좌 및 교육 프로그램을 확인할 수 있습니다</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/apiLectureList.do';
+        const API_PER_PAGE = 1000;   // API에서 한번에 가져오는 양
+        const CARDS_PER_PAGE = 12;   // 화면에 보여주는 카드 수
+
+        // 상태 관리
+        let allData = [];             // 지금까지 수집한 매칭 데이터
+        let currentFilter = 'all';
+        let displayPage = 1;          // 현재 보고 있는 표시 페이지
+        let nextApiPage = 1;          // 다음에 요청할 API 페이지
+        let apiTotalPages = 1;        // API 전체 페이지 수
+        let searchDone = false;       // API 끝까지 다 읽었는지
+        let isLoading = false;
+        let currentKeyword = '';
+        let institutionNames = new Set();
+        let abortController = null;
+
+        const searchInput = document.getElementById('searchInput');
+        const instList = document.getElementById('instList');
+
+        // Enter key
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        // Autocomplete
+        searchInput.addEventListener('input', () => {
+            const val = searchInput.value.trim();
+            if (val.length === 0 || institutionNames.size === 0) {
+                instList.classList.remove('show');
+                return;
+            }
+            const matches = [...institutionNames].filter(n => n.includes(val));
+            if (matches.length > 0 && matches.length <= 20) {
+                instList.innerHTML = matches.map(n =>
+                    `<div class="inst-item" onclick="selectInst('${n.replace(/'/g, "\\'")}')">${n}</div>`
+                ).join('');
+                instList.classList.add('show');
+            } else {
+                instList.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.input-wrapper')) instList.classList.remove('show');
+        });
+
+        function selectInst(name) {
+            searchInput.value = name;
+            instList.classList.remove('show');
+            doSearch();
+        }
+
+        // ── API에서 매칭 항목을 needCount개 이상 모을 때까지 fetch ──
+        async function fetchUntil(needCount) {
+            if (searchDone || isLoading) return;
+            isLoading = true;
+
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+
+            try {
+                while (!searchDone && allData.length < needCount) {
+                    if (nextApiPage > apiTotalPages) {
+                        searchDone = true;
+                        break;
+                    }
+
+                    const url = `${API_BASE}?recordCountPerPage=${API_PER_PAGE}&currentPageNo=${nextApiPage}`;
+                    const res = await fetch(url, { signal: abortController.signal });
+                    const text = await res.text();
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(text, 'text/xml');
+
+                    if (nextApiPage === 1) {
+                        const totalCnt = parseInt(xml.querySelector('total_cnt')?.textContent || '0');
+                        apiTotalPages = Math.ceil(totalCnt / API_PER_PAGE);
+                    }
+
+                    const items = xml.querySelectorAll('item');
+                    items.forEach(item => {
+                        const instNm = item.querySelector('INSTITUTION_NM')?.textContent || '';
+                        institutionNames.add(instNm);
+                        if (instNm.includes(currentKeyword)) {
+                            allData.push(parseItem(item));
+                        }
+                    });
+
+                    nextApiPage++;
+
+                    if (nextApiPage > apiTotalPages) {
+                        searchDone = true;
+                    }
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') { isLoading = false; return; }
+                throw e;
+            }
+
+            isLoading = false;
+        }
+
+        // ── 전체 검색: 끝까지 모두 fetch ──
+        async function fetchAll() {
+            if (searchDone || isLoading) return;
+            isLoading = true;
+
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+
+            const contentEl = document.getElementById('content');
+            // 기존 카드 유지하면서 아래에 로딩 표시 추가
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingMore';
+            loadingDiv.className = 'loading';
+            loadingDiv.innerHTML = `
+                <div class="spinner"></div>
+                <p>전체 데이터를 불러오는 중...</p>
+                <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+                <p style="margin-top:0.5rem;font-size:0.82rem;color:#a0aec0" id="progressText"></p>`;
+            contentEl.innerHTML = '';
+            contentEl.appendChild(loadingDiv);
+
+            try {
+                while (!searchDone) {
+                    if (nextApiPage > apiTotalPages) {
+                        searchDone = true;
+                        break;
+                    }
+
+                    const url = `${API_BASE}?recordCountPerPage=${API_PER_PAGE}&currentPageNo=${nextApiPage}`;
+                    const res = await fetch(url, { signal: abortController.signal });
+                    const text = await res.text();
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(text, 'text/xml');
+
+                    if (nextApiPage === 1) {
+                        const totalCnt = parseInt(xml.querySelector('total_cnt')?.textContent || '0');
+                        apiTotalPages = Math.ceil(totalCnt / API_PER_PAGE);
+                    }
+
+                    const items = xml.querySelectorAll('item');
+                    items.forEach(item => {
+                        const instNm = item.querySelector('INSTITUTION_NM')?.textContent || '';
+                        institutionNames.add(instNm);
+                        if (instNm.includes(currentKeyword)) {
+                            allData.push(parseItem(item));
+                        }
+                    });
+
+                    const pct = Math.round((nextApiPage / apiTotalPages) * 100);
+                    const bar = document.getElementById('progressBar');
+                    const pText = document.getElementById('progressText');
+                    if (bar) bar.style.width = pct + '%';
+                    if (pText) pText.textContent = `${allData.length}건 발견 (${nextApiPage}/${apiTotalPages} 페이지)`;
+
+                    nextApiPage++;
+                    if (nextApiPage > apiTotalPages) searchDone = true;
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') { isLoading = false; return; }
+                const el = document.getElementById('loadingMore');
+                if (el) el.innerHTML = `<div class="error-msg"><h3>오류 발생</h3><p>${e.message}</p></div>`;
+                isLoading = false;
+                return;
+            }
+
+            isLoading = false;
+            displayPage = 1;
+            renderResults();
+        }
+
+        function parseItem(item) {
+            const get = (tag) => item.querySelector(tag)?.textContent || '';
+            return {
+                institution: get('INSTITUTION_NM'),
+                institutionIdx: get('INSTITUTION_IDX'),
+                lectureIdx: get('LECTURE_IDX'),
+                name: get('LECTURE_NM'),
+                targetCd: get('TARGET_CD'),
+                targetNm: get('TARGET_NM'),
+                targetDetail: get('TARGET_DETAIL'),
+                beginDate: get('LECTURE_BEGIN_YMD'),
+                endDate: get('LECTURE_END_YMD'),
+                beginTime: get('LECTURE_BEGIN_HM'),
+                endTime: get('LECTURE_END_HM'),
+                dayOfWeek: get('LECTURE_DAY_OF_WEEK'),
+                applyBegin: get('LECTURE_APPLY_BEGIN_DT'),
+                applyEnd: get('LECTURE_APPLY_END_DT'),
+                price: parseInt(get('LECTURE_PRICE') || '0'),
+                place: get('LECTURE_PLACE'),
+                classCd: get('CLASS_CD'),
+                classNm: get('CLASS_NM'),
+                freeNm: get('FREE_NM'),
+                status: get('STATUS_NM'),
+                applyUserNum: get('APPLY_USER_NUM'),
+                applyLimitNum: get('APPLY_LIMIT_NUM'),
+                waitUserNum: get('WAIT_USER_NUM'),
+                waitLimitNum: get('WAIT_LIMIT_NUM'),
+                detailUrl: get('DETAIL_URL'),
+                receiptMethod: get('RECEIPT_METHOD_NM'),
+                reference: get('REFERENCE'),
+            };
+        }
+
+        // ── 검색 시작 ──
+        async function doSearch() {
+            const keyword = searchInput.value.trim();
+            if (!keyword) {
+                alert('기관(도서관)명을 입력해 주세요.');
+                return;
+            }
+            instList.classList.remove('show');
+
+            // 상태 초기화
+            currentKeyword = keyword;
+            allData = [];
+            displayPage = 1;
+            nextApiPage = 1;
+            apiTotalPages = 1;
+            searchDone = false;
+            isLoading = false;
+            currentFilter = 'all';
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+
+            const contentEl = document.getElementById('content');
+            contentEl.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>검색 중...</p>
+                </div>`;
+
+            document.getElementById('searchBtn').disabled = true;
+
+            try {
+                // 첫 12개만 모을 때까지 fetch
+                await fetchUntil(CARDS_PER_PAGE);
+            } catch (e) {
+                contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
+                document.getElementById('searchBtn').disabled = false;
+                return;
+            }
+
+            document.getElementById('searchBtn').disabled = false;
+
+            if (allData.length === 0 && searchDone) {
+                contentEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">&#128533;</div>
+                        <h3>"${escapeHtml(keyword)}" 검색 결과가 없습니다</h3>
+                        <p>다른 기관명으로 검색해 보세요</p>
+                    </div>`;
+                return;
+            }
+
+            renderResults();
+        }
+
+        // ── "다음" 버튼: 다음 12개 불러오기 ──
+        async function loadNextPage() {
+            const needCount = (displayPage) * CARDS_PER_PAGE + CARDS_PER_PAGE;
+
+            if (!searchDone && allData.length < needCount) {
+                // 카드 영역 아래에 로딩 표시
+                const pag = document.querySelector('.pagination');
+                if (pag) {
+                    pag.innerHTML = `<div class="loading-more"><span class="spinner-sm"></span> 추가 데이터 불러오는 중...</div>`;
+                }
+
+                try {
+                    await fetchUntil(needCount);
+                } catch (e) {
+                    renderResults();
+                    return;
+                }
+            }
+
+            const filtered = getFilteredData();
+            const maxPage = Math.ceil(filtered.length / CARDS_PER_PAGE);
+            if (displayPage < maxPage) {
+                displayPage++;
+            }
+
+            renderResults();
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+        }
+
+        // ── "전체" 버튼 ──
+        async function loadAll() {
+            document.getElementById('searchBtn').disabled = true;
+            await fetchAll();
+            document.getElementById('searchBtn').disabled = false;
+        }
+
+        // ── 필터 ──
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            displayPage = 1;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderResults();
+        }
+
+        function getFilteredData() {
+            let data = [...allData];
+            if (currentFilter !== 'all') {
+                data = data.filter(d => d.status === currentFilter);
+            }
+            data.sort((a, b) => (b.beginDate || '').localeCompare(a.beginDate || ''));
+            return data;
+        }
+
+        // ── 렌더링 ──
+        function renderResults() {
+            const contentEl = document.getElementById('content');
+            const filtered = getFilteredData();
+            const totalFiltered = filtered.length;
+            const totalPages = Math.ceil(totalFiltered / CARDS_PER_PAGE);
+            const start = (displayPage - 1) * CARDS_PER_PAGE;
+            const pageData = filtered.slice(start, start + CARDS_PER_PAGE);
+
+            // 더 불러올 수 있는지 판단
+            const canLoadMore = !searchDone || displayPage < totalPages;
+            const hasNextPageData = displayPage < totalPages;
+
+            // 상태 카운트 (지금까지 수집된 데이터 기준)
+            const counts = {};
+            allData.forEach(d => { counts[d.status] = (counts[d.status] || 0) + 1; });
+
+            let html = `
+                <div class="status-bar">
+                    <div class="result-count">
+                        현재 <strong>${allData.length}</strong>건 발견${searchDone ? ' (검색 완료)' : ' (검색 진행 가능)'}
+                        ${currentFilter !== 'all' ? ` &middot; "${currentFilter}" <strong>${totalFiltered}</strong>건` : ''}
+                        ${counts['접수중'] ? ` &middot; 접수중 ${counts['접수중']}건` : ''}
+                        ${counts['접수예정'] ? ` &middot; 접수예정 ${counts['접수예정']}건` : ''}
+                    </div>
+                </div>
+                <div class="card-grid">`;
+
+            pageData.forEach(d => {
+                html += renderCard(d);
+            });
+
+            html += '</div>';
+
+            // ── 하단: 페이지 번호 + 다음 + 전체 버튼 ──
+            html += '<div class="pagination">';
+
+            // 이전 버튼
+            if (displayPage > 1) {
+                html += `<button class="page-btn" onclick="goPage(${displayPage - 1})">이전</button>`;
+            }
+
+            // 페이지 번호들
+            if (totalPages > 1) {
+                const startP = Math.max(1, displayPage - 4);
+                const endP = Math.min(totalPages, startP + 9);
+                for (let i = startP; i <= endP; i++) {
+                    html += `<button class="page-btn ${i === displayPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+                }
+            }
+
+            // 다음 버튼: 아직 더 불러올 데이터가 있으면 표시
+            if (hasNextPageData || !searchDone) {
+                html += `<button class="page-btn btn-next" onclick="loadNextPage()">다음 ></button>`;
+            }
+
+            // 전체 버튼: 아직 API를 끝까지 읽지 않았으면 표시
+            if (!searchDone) {
+                html += `<button class="page-btn btn-all" onclick="loadAll()">전체</button>`;
+            }
+
+            html += '</div>';
+
+            contentEl.innerHTML = html;
+        }
+
+        function renderCard(d) {
+            return `
+                <div class="card">
+                    <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
+                    <div class="card-institution">${d.institution}</div>
+                    <div class="card-title">${escapeHtml(d.name)}</div>
+                    <div class="card-info">
+                        <div class="card-info-item">
+                            <span class="label">기간</span>
+                            <span>${d.beginDate} ~ ${d.endDate}</span>
+                        </div>
+                        <div class="card-info-item">
+                            <span class="label">시간</span>
+                            <span>${d.beginTime} ~ ${d.endTime} (${getDayNames(d.dayOfWeek)})</span>
+                        </div>
+                        <div class="card-info-item">
+                            <span class="label">장소</span>
+                            <span>${escapeHtml(d.place)}</span>
+                        </div>
+                        ${d.applyBegin ? `<div class="card-info-item">
+                            <span class="label">접수</span>
+                            <span>${d.applyBegin} ~ ${d.applyEnd}</span>
+                        </div>` : ''}
+                        ${d.reference ? `<div class="card-info-item">
+                            <span class="label">문의</span>
+                            <span>${d.reference}</span>
+                        </div>` : ''}
+                    </div>
+                    <div class="card-tags">
+                        ${d.targetNm ? `<span class="tag tag-target">${d.targetNm}${d.targetDetail ? ' / ' + escapeHtml(d.targetDetail) : ''}</span>` : ''}
+                        <span class="tag ${d.price === 0 ? 'tag-free' : 'tag-paid'}">${d.freeNm || (d.price === 0 ? '무료' : d.price.toLocaleString() + '원')}</span>
+                        ${d.classNm ? `<span class="tag tag-class">${d.classNm}</span>` : ''}
+                    </div>
+                    <div class="card-footer">
+                        <div class="card-apply">
+                            신청 <strong>${d.applyUserNum}</strong>/${d.applyLimitNum}명
+                            ${parseInt(d.waitLimitNum) > 0 ? ` &middot; 대기 ${d.waitUserNum}/${d.waitLimitNum}명` : ''}
+                        </div>
+                        ${d.detailUrl ? `<a class="card-link" href="${d.detailUrl}" target="_blank">상세보기</a>` : ''}
+                    </div>
+                </div>`;
+        }
+
+        function goPage(page) {
+            displayPage = page;
+            renderResults();
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+        }
+
+        function getDayNames(dayStr) {
+            const map = { '1': '월', '2': '화', '3': '수', '4': '목', '5': '금', '6': '토', '7': '일' };
+            if (!dayStr) return '';
+            return dayStr.split(',').map(d => map[d.trim()] || d.trim()).join(', ');
+        }
+
+        function getStatusClass(status) {
+            if (status === '접수중') return 'open';
+            if (status === '접수예정') return 'upcoming';
+            if (status === '접수마감') return 'closed';
+            return 'ended';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
