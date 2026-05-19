@@ -111,6 +111,17 @@
             border-color: #4c51bf;
         }
 
+        .filter-btn.today {
+            border-color: #f6ad55;
+            color: #975a16;
+        }
+
+        .filter-btn.today.active {
+            background: #dd6b20;
+            border-color: #dd6b20;
+            color: white;
+        }
+
         .main-content {
             max-width: 1100px;
             margin: 1.5rem auto;
@@ -234,6 +245,18 @@
         .card-status.upcoming { background: #bee3f8; color: #2a4365; }
         .card-status.closed { background: #fed7d7; color: #742a2a; }
         .card-status.ended { background: #e2e8f0; color: #4a5568; }
+
+        .today-badge {
+            align-self: flex-start;
+            padding: 0.24rem 0.62rem;
+            border-radius: 999px;
+            background: #fffaf0;
+            color: #975a16;
+            border: 1px solid #fbd38d;
+            font-size: 0.74rem;
+            font-weight: 700;
+            margin-bottom: 0.45rem;
+        }
 
         .card-institution {
             font-size: 0.78rem;
@@ -465,6 +488,7 @@
             </div>
             <div class="filter-row">
                 <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">전체</button>
+                <button class="filter-btn today" data-filter="today" onclick="setFilter('today', this)">오늘수업</button>
                 <button class="filter-btn" data-filter="접수중" onclick="setFilter('접수중', this)">접수중</button>
                 <button class="filter-btn" data-filter="접수예정" onclick="setFilter('접수예정', this)">접수예정</button>
                 <button class="filter-btn" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감</button>
@@ -789,20 +813,35 @@
         }
 
         // ── 필터 ──
-        function setFilter(filter, btn) {
+        async function setFilter(filter, btn) {
             currentFilter = filter;
             displayPage = 1;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+
+            if (filter === 'today' && currentKeyword && !searchDone) {
+                document.getElementById('searchBtn').disabled = true;
+                await fetchAll();
+                document.getElementById('searchBtn').disabled = false;
+                return;
+            }
+
             renderResults();
         }
 
         function getFilteredData() {
             let data = [...allData];
-            if (currentFilter !== 'all') {
+            if (currentFilter === 'today') {
+                data = data.filter(isTodayLecture);
+            } else if (currentFilter !== 'all') {
                 data = data.filter(d => d.status === currentFilter);
             }
-            data.sort((a, b) => (b.beginDate || '').localeCompare(a.beginDate || ''));
+            data.sort((a, b) => {
+                if (currentFilter === 'today') {
+                    return (a.beginTime || '').localeCompare(b.beginTime || '');
+                }
+                return (b.beginDate || '').localeCompare(a.beginDate || '');
+            });
             return data;
         }
 
@@ -822,12 +861,14 @@
             // 상태 카운트 (지금까지 수집된 데이터 기준)
             const counts = {};
             allData.forEach(d => { counts[d.status] = (counts[d.status] || 0) + 1; });
+            const todayCount = allData.filter(isTodayLecture).length;
 
             let html = `
                 <div class="status-bar">
                     <div class="result-count">
                         현재 <strong>${allData.length}</strong>건 발견${searchDone ? ' (검색 완료)' : ' (검색 진행 가능)'}
-                        ${currentFilter !== 'all' ? ` &middot; "${currentFilter}" <strong>${totalFiltered}</strong>건` : ''}
+                        ${currentFilter !== 'all' ? ` &middot; "${getFilterLabel(currentFilter)}" <strong>${totalFiltered}</strong>건` : ''}
+                        ${todayCount ? ` &middot; 오늘수업 ${todayCount}건` : ''}
                         ${counts['접수중'] ? ` &middot; 접수중 ${counts['접수중']}건` : ''}
                         ${counts['접수예정'] ? ` &middot; 접수예정 ${counts['접수예정']}건` : ''}
                     </div>
@@ -875,6 +916,7 @@
         function renderCard(d) {
             return `
                 <div class="card">
+                    ${isTodayLecture(d) ? '<div class="today-badge">오늘수업</div>' : ''}
                     <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
                     <div class="card-institution">${d.institution}</div>
                     <div class="card-title">${escapeHtml(d.name)}</div>
@@ -925,6 +967,59 @@
             const map = { '1': '월', '2': '화', '3': '수', '4': '목', '5': '금', '6': '토', '7': '일' };
             if (!dayStr) return '';
             return dayStr.split(',').map(d => map[d.trim()] || d.trim()).join(', ');
+        }
+
+        function getFilterLabel(filter) {
+            return filter === 'today' ? '오늘수업' : filter;
+        }
+
+        function isTodayLecture(d) {
+            const today = getTodayDateOnly();
+            const begin = parseDateOnly(d.beginDate);
+            const end = parseDateOnly(d.endDate);
+            if (!today || !begin || !end) return false;
+            if (today < begin || today > end) return false;
+
+            const dayCodes = parseDayCodes(d.dayOfWeek);
+            if (dayCodes.length === 0) {
+                return begin.getTime() === end.getTime() && today.getTime() === begin.getTime();
+            }
+
+            return dayCodes.includes(getApiDayCode(today));
+        }
+
+        function parseDateOnly(value) {
+            if (!value) return null;
+            const digits = String(value).replace(/\D/g, '');
+            if (digits.length < 8) return null;
+            const year = parseInt(digits.slice(0, 4), 10);
+            const month = parseInt(digits.slice(4, 6), 10) - 1;
+            const day = parseInt(digits.slice(6, 8), 10);
+            const date = new Date(year, month, day);
+            if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return null;
+            return date;
+        }
+
+        function getTodayDateOnly() {
+            const now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        }
+
+        function getApiDayCode(date) {
+            const jsDay = date.getDay(); // 0: 일, 1: 월 ... 6: 토
+            return jsDay === 0 ? '7' : String(jsDay);
+        }
+
+        function parseDayCodes(dayStr) {
+            if (!dayStr) return [];
+            const koreanMap = { '월': '1', '화': '2', '수': '3', '목': '4', '금': '5', '토': '6', '일': '7' };
+            return String(dayStr)
+                .split(/[,/|·\s]+/)
+                .map(v => v.trim())
+                .filter(Boolean)
+                .map(v => v.replace(/요일$/, ''))
+                .map(v => koreanMap[v] || v)
+                .filter(v => /^[1-7]$/.test(v));
         }
 
         function getStatusClass(status) {
