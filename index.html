@@ -219,15 +219,17 @@
             border-radius: 14px;
             box-shadow: 0 1px 8px rgba(0,0,0,0.06);
             padding: 1.3rem;
-            transition: box-shadow 0.2s, transform 0.2s;
+            transition: transform 0.16s ease, border-color 0.16s ease;
             display: flex;
             flex-direction: column;
             position: relative;
             overflow: hidden;
+            border: 1px solid transparent;
+            contain: content;
         }
 
         .card:hover {
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-color: #bee3f8;
             transform: translateY(-2px);
         }
 
@@ -610,6 +612,8 @@
                     if (nextApiPage > apiTotalPages) {
                         searchDone = true;
                     }
+
+                    await yieldToBrowser();
                 }
             } catch (e) {
                 if (e.name === 'AbortError') { isLoading = false; return; }
@@ -675,6 +679,8 @@
 
                     nextApiPage++;
                     if (nextApiPage > apiTotalPages) searchDone = true;
+
+                    await yieldToBrowser();
                 }
             } catch (e) {
                 if (e.name === 'AbortError') { isLoading = false; return; }
@@ -691,7 +697,7 @@
 
         function parseItem(item) {
             const get = (tag) => item.querySelector(tag)?.textContent || '';
-            return {
+            const lecture = {
                 institution: get('INSTITUTION_NM'),
                 institutionIdx: get('INSTITUTION_IDX'),
                 lectureIdx: get('LECTURE_IDX'),
@@ -720,6 +726,8 @@
                 receiptMethod: get('RECEIPT_METHOD_NM'),
                 reference: get('REFERENCE'),
             };
+            lecture.isToday = isTodayLecture(lecture);
+            return lecture;
         }
 
         // ── 검색 시작 ──
@@ -832,7 +840,7 @@
         function getFilteredData() {
             let data = [...allData];
             if (currentFilter === 'today') {
-                data = data.filter(isTodayLecture);
+                data = data.filter(d => d.isToday);
             } else if (currentFilter !== 'all') {
                 data = data.filter(d => d.status === currentFilter);
             }
@@ -860,8 +868,11 @@
 
             // 상태 카운트 (지금까지 수집된 데이터 기준)
             const counts = {};
-            allData.forEach(d => { counts[d.status] = (counts[d.status] || 0) + 1; });
-            const todayCount = allData.filter(isTodayLecture).length;
+            let todayCount = 0;
+            allData.forEach(d => {
+                counts[d.status] = (counts[d.status] || 0) + 1;
+                if (d.isToday) todayCount++;
+            });
 
             let html = `
                 <div class="status-bar">
@@ -916,7 +927,7 @@
         function renderCard(d) {
             return `
                 <div class="card">
-                    ${isTodayLecture(d) ? '<div class="today-badge">오늘수업</div>' : ''}
+                    ${d.isToday ? '<div class="today-badge">오늘수업</div>' : ''}
                     <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
                     <div class="card-institution">${d.institution}</div>
                     <div class="card-title">${escapeHtml(d.name)}</div>
@@ -1008,6 +1019,10 @@
         function getApiDayCode(date) {
             const jsDay = date.getDay(); // 0: 일, 1: 월 ... 6: 토
             return jsDay === 0 ? '7' : String(jsDay);
+        }
+
+        function yieldToBrowser() {
+            return new Promise(resolve => setTimeout(resolve, 0));
         }
 
         function parseDayCodes(dayStr) {
