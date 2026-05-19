@@ -488,7 +488,7 @@
         // Cloudflare Worker URL을 배포한 뒤 아래 값을 교체하세요.
         // 예) 'https://liblect-proxy.YOUR-SUBDOMAIN.workers.dev'
         // 비워두면 로컬 서버(/api/)로 폴백합니다.
-        const WORKER_BASE = '';
+        const WORKER_BASE = 'https://liblect-proxy.jssimonlee.workers.dev/';
 
         const API_BASE = WORKER_BASE
             ? WORKER_BASE.replace(/\/$/, '') + '/api/apiLectureList.do'
