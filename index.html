@@ -484,7 +484,17 @@
     </div>
 
     <script>
-        const API_BASE = '/api/apiLectureList.do';
+        // ── 프록시 설정 ──────────────────────────────────────────────
+        // Cloudflare Worker URL을 배포한 뒤 아래 값을 교체하세요.
+        // 예) 'https://liblect-proxy.YOUR-SUBDOMAIN.workers.dev'
+        // 비워두면 로컬 서버(/api/)로 폴백합니다.
+        const WORKER_BASE = '';
+
+        const API_BASE = WORKER_BASE
+            ? WORKER_BASE.replace(/\/$/, '') + '/api/apiLectureList.do'
+            : '/api/apiLectureList.do';
+        // ────────────────────────────────────────────────────────────
+
         const API_PER_PAGE = 1000;   // API에서 한번에 가져오는 양
         const CARDS_PER_PAGE = 12;   // 화면에 보여주는 카드 수
 
