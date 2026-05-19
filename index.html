@@ -521,16 +521,18 @@
             : '/api/apiLectureList.do';
         // ────────────────────────────────────────────────────────────
 
-        const API_PER_PAGE = 1000;   // API에서 한번에 가져오는 양
+        const INITIAL_API_PER_PAGE = 1000; // 처음 한번에 가져오는 양
+        const NEXT_API_PER_PAGE = 500;     // 이후 추가로 가져오는 양
+        const RECENT_MONTHS = 6;           // 접수일 기준 보관 범위
         const CARDS_PER_PAGE = 12;   // 화면에 보여주는 카드 수
 
         // 상태 관리
-        let allData = [];             // 지금까지 수집한 매칭 데이터
+        let libraryData = [];         // 최근 6개월 안의 도서관 데이터
+        let allData = [];             // 현재 검색어에 매칭된 데이터
         let currentFilter = 'all';
         let displayPage = 1;          // 현재 보고 있는 표시 페이지
-        let nextApiPage = 1;          // 다음에 요청할 API 페이지
-        let apiTotalPages = 1;        // API 전체 페이지 수
-        let searchDone = false;       // API 끝까지 다 읽었는지
+        let searchDone = true;        // 현재 데이터셋 안에서 검색이 끝났는지
+        let dataLoadDone = false;     // 최근 도서관 데이터셋을 만들었는지
         let isLoading = false;
         let currentKeyword = '';
         let institutionNames = new Set();
@@ -572,127 +574,82 @@
             doSearch();
         }
 
-        // ── API에서 매칭 항목을 needCount개 이상 모을 때까지 fetch ──
-        async function fetchUntil(needCount) {
-            if (searchDone || isLoading) return;
-            isLoading = true;
-
-            if (abortController) abortController.abort();
-            abortController = new AbortController();
-
-            try {
-                while (!searchDone && allData.length < needCount) {
-                    if (nextApiPage > apiTotalPages) {
-                        searchDone = true;
-                        break;
-                    }
-
-                    const url = `${API_BASE}?recordCountPerPage=${API_PER_PAGE}&currentPageNo=${nextApiPage}`;
-                    const res = await fetch(url, { signal: abortController.signal });
-                    const text = await res.text();
-                    const parser = new DOMParser();
-                    const xml = parser.parseFromString(text, 'text/xml');
-
-                    if (nextApiPage === 1) {
-                        const totalCnt = parseInt(xml.querySelector('total_cnt')?.textContent || '0');
-                        apiTotalPages = Math.ceil(totalCnt / API_PER_PAGE);
-                    }
-
-                    const items = xml.querySelectorAll('item');
-                    items.forEach(item => {
-                        const instNm = item.querySelector('INSTITUTION_NM')?.textContent || '';
-                        institutionNames.add(instNm);
-                        if (instNm.includes(currentKeyword)) {
-                            allData.push(parseItem(item));
-                        }
-                    });
-
-                    nextApiPage++;
-
-                    if (nextApiPage > apiTotalPages) {
-                        searchDone = true;
-                    }
-
-                    await yieldToBrowser();
-                }
-            } catch (e) {
-                if (e.name === 'AbortError') { isLoading = false; return; }
-                throw e;
-            }
-
-            isLoading = false;
-        }
-
-        // ── 전체 검색: 끝까지 모두 fetch ──
-        async function fetchAll() {
-            if (searchDone || isLoading) return;
+        // ── 최근 6개월 도서관 데이터셋 만들기 ──
+        async function ensureLibraryDataLoaded() {
+            if (dataLoadDone || isLoading) return;
             isLoading = true;
 
             if (abortController) abortController.abort();
             abortController = new AbortController();
 
             const contentEl = document.getElementById('content');
-            // 기존 카드 유지하면서 아래에 로딩 표시 추가
-            const loadingDiv = document.createElement('div');
-            loadingDiv.id = 'loadingMore';
-            loadingDiv.className = 'loading';
-            loadingDiv.innerHTML = `
+            contentEl.innerHTML = `
+                <div class="loading">
                 <div class="spinner"></div>
-                <p>전체 데이터를 불러오는 중...</p>
+                    <p>최근 도서관 강좌 데이터를 불러오는 중...</p>
                 <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-                <p style="margin-top:0.5rem;font-size:0.82rem;color:#a0aec0" id="progressText"></p>`;
-            contentEl.innerHTML = '';
-            contentEl.appendChild(loadingDiv);
+                    <p style="margin-top:0.5rem;font-size:0.82rem;color:#a0aec0" id="progressText"></p>
+                </div>`;
 
             try {
-                while (!searchDone) {
-                    if (nextApiPage > apiTotalPages) {
-                        searchDone = true;
-                        break;
-                    }
+                const cutoffDate = addMonths(getTodayDateOnly(), -RECENT_MONTHS);
+                let fetchedCount = 0;
+                let totalCount = Infinity;
+                let shouldContinue = true;
 
-                    const url = `${API_BASE}?recordCountPerPage=${API_PER_PAGE}&currentPageNo=${nextApiPage}`;
-                    const res = await fetch(url, { signal: abortController.signal });
-                    const text = await res.text();
-                    const parser = new DOMParser();
-                    const xml = parser.parseFromString(text, 'text/xml');
+                while (shouldContinue && fetchedCount < totalCount) {
+                    const perPage = fetchedCount === 0 ? INITIAL_API_PER_PAGE : NEXT_API_PER_PAGE;
+                    const pageNo = Math.floor(fetchedCount / perPage) + 1;
+                    const { items, totalCnt } = await fetchApiPage(perPage, pageNo);
+                    if (Number.isFinite(totalCnt)) totalCount = totalCnt;
+                    if (items.length === 0) break;
 
-                    if (nextApiPage === 1) {
-                        const totalCnt = parseInt(xml.querySelector('total_cnt')?.textContent || '0');
-                        apiTotalPages = Math.ceil(totalCnt / API_PER_PAGE);
-                    }
+                    const parsedItems = items.map(parseItem);
+                    parsedItems
+                        .filter(isLibraryLecture)
+                        .forEach(d => {
+                            libraryData.push(d);
+                            if (d.institution) institutionNames.add(d.institution);
+                        });
 
-                    const items = xml.querySelectorAll('item');
-                    items.forEach(item => {
-                        const instNm = item.querySelector('INSTITUTION_NM')?.textContent || '';
-                        institutionNames.add(instNm);
-                        if (instNm.includes(currentKeyword)) {
-                            allData.push(parseItem(item));
-                        }
-                    });
+                    fetchedCount += items.length;
 
-                    const pct = Math.round((nextApiPage / apiTotalPages) * 100);
+                    const oldestReceiptDate = getOldestReceiptDate(parsedItems);
+                    shouldContinue = !!oldestReceiptDate && oldestReceiptDate > cutoffDate;
+
                     const bar = document.getElementById('progressBar');
                     const pText = document.getElementById('progressText');
+                    const pct = Number.isFinite(totalCount) ? Math.min(100, Math.round((fetchedCount / totalCount) * 100)) : 0;
                     if (bar) bar.style.width = pct + '%';
-                    if (pText) pText.textContent = `${allData.length}건 발견 (${nextApiPage}/${apiTotalPages} 페이지)`;
-
-                    nextApiPage++;
-                    if (nextApiPage > apiTotalPages) searchDone = true;
+                    if (pText) {
+                        const oldestDateText = oldestReceiptDate ? formatDateOnly(oldestReceiptDate) : '접수일 없음';
+                        pText.textContent = `${fetchedCount}건 확인, 도서관 ${libraryData.length}건 보관 · 가장 오래된 접수일 ${oldestDateText}`;
+                    }
 
                     await yieldToBrowser();
                 }
             } catch (e) {
                 if (e.name === 'AbortError') { isLoading = false; return; }
-                const el = document.getElementById('loadingMore');
-                if (el) el.innerHTML = `<div class="error-msg"><h3>오류 발생</h3><p>${e.message}</p></div>`;
+                contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
                 isLoading = false;
-                return;
+                throw e;
             }
 
+            dataLoadDone = true;
             isLoading = false;
-            displayPage = 1;
-            renderResults();
+        }
+
+        async function fetchApiPage(perPage, pageNo) {
+            const url = `${API_BASE}?recordCountPerPage=${perPage}&currentPageNo=${pageNo}`;
+            const res = await fetch(url, { signal: abortController.signal });
+            const text = await res.text();
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(text, 'text/xml');
+            const totalCnt = parseInt(xml.querySelector('total_cnt')?.textContent || '0', 10);
+            return {
+                items: [...xml.querySelectorAll('item')],
+                totalCnt: Number.isFinite(totalCnt) ? totalCnt : Infinity,
+            };
         }
 
         function parseItem(item) {
@@ -737,33 +694,25 @@
                 alert('기관(도서관)명을 입력해 주세요.');
                 return;
             }
+            if (isLoading) return;
             instList.classList.remove('show');
 
             // 상태 초기화
             currentKeyword = keyword;
             allData = [];
             displayPage = 1;
-            nextApiPage = 1;
-            apiTotalPages = 1;
-            searchDone = false;
-            isLoading = false;
+            searchDone = true;
             currentFilter = 'all';
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
 
-            const contentEl = document.getElementById('content');
-            contentEl.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>검색 중...</p>
-                </div>`;
-
             document.getElementById('searchBtn').disabled = true;
 
             try {
-                // 첫 12개만 모을 때까지 fetch
-                await fetchUntil(CARDS_PER_PAGE);
+                await ensureLibraryDataLoaded();
+                allData = libraryData.filter(d => d.institution.includes(currentKeyword));
             } catch (e) {
+                const contentEl = document.getElementById('content');
                 contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
                 document.getElementById('searchBtn').disabled = false;
                 return;
@@ -771,7 +720,8 @@
 
             document.getElementById('searchBtn').disabled = false;
 
-            if (allData.length === 0 && searchDone) {
+            if (allData.length === 0) {
+                const contentEl = document.getElementById('content');
                 contentEl.innerHTML = `
                     <div class="empty-state">
                         <div class="icon">&#128533;</div>
@@ -786,23 +736,6 @@
 
         // ── "다음" 버튼: 다음 12개 불러오기 ──
         async function loadNextPage() {
-            const needCount = (displayPage) * CARDS_PER_PAGE + CARDS_PER_PAGE;
-
-            if (!searchDone && allData.length < needCount) {
-                // 카드 영역 아래에 로딩 표시
-                const pag = document.querySelector('.pagination');
-                if (pag) {
-                    pag.innerHTML = `<div class="loading-more"><span class="spinner-sm"></span> 추가 데이터 불러오는 중...</div>`;
-                }
-
-                try {
-                    await fetchUntil(needCount);
-                } catch (e) {
-                    renderResults();
-                    return;
-                }
-            }
-
             const filtered = getFilteredData();
             const maxPage = Math.ceil(filtered.length / CARDS_PER_PAGE);
             if (displayPage < maxPage) {
@@ -815,9 +748,8 @@
 
         // ── "전체" 버튼 ──
         async function loadAll() {
-            document.getElementById('searchBtn').disabled = true;
-            await fetchAll();
-            document.getElementById('searchBtn').disabled = false;
+            displayPage = 1;
+            renderResults();
         }
 
         // ── 필터 ──
@@ -826,13 +758,6 @@
             displayPage = 1;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            if (filter === 'today' && currentKeyword && !searchDone) {
-                document.getElementById('searchBtn').disabled = true;
-                await fetchAll();
-                document.getElementById('searchBtn').disabled = false;
-                return;
-            }
 
             renderResults();
         }
@@ -862,8 +787,6 @@
             const start = (displayPage - 1) * CARDS_PER_PAGE;
             const pageData = filtered.slice(start, start + CARDS_PER_PAGE);
 
-            // 더 불러올 수 있는지 판단
-            const canLoadMore = !searchDone || displayPage < totalPages;
             const hasNextPageData = displayPage < totalPages;
 
             // 상태 카운트 (지금까지 수집된 데이터 기준)
@@ -984,6 +907,10 @@
             return filter === 'today' ? '오늘수업' : filter;
         }
 
+        function isLibraryLecture(d) {
+            return Object.values(d).some(value => typeof value === 'string' && value.includes('도서관'));
+        }
+
         function isTodayLecture(d) {
             const today = getTodayDateOnly();
             const begin = parseDateOnly(d.beginDate);
@@ -1014,6 +941,35 @@
         function getTodayDateOnly() {
             const now = new Date();
             return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        }
+
+        function addMonths(date, months) {
+            const result = new Date(date);
+            const originalDay = result.getDate();
+            result.setMonth(result.getMonth() + months);
+            if (result.getDate() !== originalDay) {
+                result.setDate(0);
+            }
+            return new Date(result.getFullYear(), result.getMonth(), result.getDate());
+        }
+
+        function getReceiptDate(d) {
+            if (!d) return null;
+            return parseDateOnly(d.applyBegin) || parseDateOnly(d.applyEnd) || parseDateOnly(d.beginDate);
+        }
+
+        function getOldestReceiptDate(items) {
+            return items
+                .map(getReceiptDate)
+                .filter(Boolean)
+                .sort((a, b) => a - b)[0] || null;
+        }
+
+        function formatDateOnly(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function getApiDayCode(date) {
