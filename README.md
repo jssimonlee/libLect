@@ -81,19 +81,35 @@ npm start
 
 이 프로젝트의 API 프록시 및 최적화 캐시 엔진인 `worker.js`를 Cloudflare Workers 서비스로 배포하는 과정입니다.
 
-### 1. Wrangler CLI 도구 설치 및 세션 로그인
-Cloudflare의 공식 CLI 도구인 Wrangler가 설치되어 있어야 합니다. 터미널에서 아래의 명령을 실행하여 Cloudflare 계정으로 로그인합니다.
-```bash
-# Wrangler 로그인 실행 (브라우저 인증창이 자동으로 열립니다)
-npx wrangler login
-```
+배포하는 방법은 크게 두 가지가 있으며, **"대시보드 웹사이트에 직접 붙여넣는 방법"**이 현재 사용 중인 가장 보편적이고 편리한 방식입니다.
 
-### 2. Worker 스크립트 배포
-수정된 `worker.js` 파일을 Cloudflare Workers 플랫폼으로 직접 배포합니다.
-```bash
-npx wrangler deploy worker.js
-```
-*(사용 중인 Wrangler의 설치 버전이나 환경 구성에 따라 `npx wrangler publish` 명령을 대신 사용해야 할 수도 있습니다.)*
+### 방법 1. Cloudflare 웹 대시보드에서 직접 코드를 붙여넣어 배포 (현재 사용 방식)
 
-### 3. 배포 확인
-배포가 정상적으로 완료되면 터미널에 생성된 Cloudflare Worker의 `*.workers.dev` 도메인 URL 주소가 출력됩니다. 해당 주소를 통해 프록시 API가 제대로 응답하는지 테스트합니다.
+별도의 CLI 개발 도구 설치나 로그인 세션 만료 등의 에러 우려 없이, Cloudflare 콘솔 웹사이트에서 가장 직관적이고 빠르게 코드를 업데이트할 수 있는 현재 권장 배포 방법입니다.
+
+1. **코드 복사**: 
+   - 로컬 작업 디렉토리의 [worker.js](file:///C:/Users/user/Documents/python/libLect/worker.js) 파일 전체 내용을 선택하여 복사합니다 (`Ctrl + A` ➔ `Ctrl + C`).
+2. **Cloudflare 관리자 페이지 접속**:
+   - [Cloudflare 대시보드 (dash.cloudflare.com)](https://dash.cloudflare.com/)에 로그인합니다.
+3. **Worker 프로젝트 진입**:
+   - 왼쪽 사이드바 메뉴에서 **Workers & Pages** ➔ **Overview**를 선택한 후, 배포할 도서관 API 프록시 Worker 서비스를 찾아 클릭합니다.
+4. **웹 에디터(Quick Edit) 열기**:
+   - 우측 상단 영역에 있는 **Edit Code** (또는 **Quick Edit**) 파란색 버튼을 클릭하여 웹 전용 소스코드 에디터 창을 실행합니다.
+5. **소스코드 붙여넣기 및 최종 배포**:
+   - 기존 웹 에디터 화면에 채워져 있던 기존 코드를 모두 선택하여 지운 뒤, 1단계에서 복사해 온 최신 `worker.js` 코드 전체를 붙여넣습니다 (`Ctrl + A` ➔ `Delete` ➔ `Ctrl + V`).
+   - 우측 상단의 **Save and deploy** (저장 및 배포) 버튼을 클릭한 뒤, 안내 팝업창에서 한 번 더 배포 버튼을 눌러 승인합니다.
+   - 단 1초 만에 전 세계 엣지 네트워크 서버에 변경 데이터(전질대출 배제 필터 등)가 완벽하게 실시간 반영됩니다.
+
+---
+
+### 방법 2. Wrangler CLI 도구를 사용하여 터미널에서 배포 (개발자 CLI 방식)
+
+1. **Wrangler CLI 도구 세션 로그인**:
+   ```bash
+   npx wrangler login
+   ```
+2. **배포 명령어 실행**:
+   ```bash
+   npx wrangler deploy worker.js
+   ```
+   *(환경 설정 및 설치 버전에 따라 `npx wrangler publish` 명령이 요구될 수 있습니다.)*
