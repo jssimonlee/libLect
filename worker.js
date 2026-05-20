@@ -46,10 +46,34 @@ export default {
     },
 };
 
+function jsonResponse(data, headers = {}) {
+    return new Response(JSON.stringify(data), {
+        headers: {
+            ...CORS_HEADERS,
+            'Content-Type': 'application/json; charset=utf-8',
+            ...headers,
+        },
+    });
+}
+
+function withCorsHeaders(response, xCache) {
+    const newHeaders = new Headers(response.headers);
+    Object.entries(CORS_HEADERS).forEach(([k, v]) => newHeaders.set(k, v));
+    if (xCache) newHeaders.set('X-Cache', xCache);
+    return new Response(response.body, { status: response.status, headers: newHeaders });
+}
+
 async function handleLibraryLectures(request, ctx) {
     const cache = caches.default;
+    const url = new URL(request.url);
+    const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit'), 10) : null;
+
     const cacheUrl = new URL(request.url);
-    cacheUrl.search = '';
+    if (limit) {
+        cacheUrl.search = `?limit=${limit}`;
+    } else {
+        cacheUrl.search = '';
+    }
     const cacheKey = new Request(cacheUrl.toString(), request);
 
     const cached = await cache.match(cacheKey);
@@ -58,7 +82,7 @@ async function handleLibraryLectures(request, ctx) {
     }
 
     try {
-        const result = await buildLibraryLectureDataset();
+        const result = await buildLibraryLectureDataset(limit);
         const response = jsonResponse(result, {
             'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
             'X-Cache': 'MISS',
@@ -78,7 +102,7 @@ async function handleLibraryLectures(request, ctx) {
     }
 }
 
-async function buildLibraryLectureDataset() {
+async function buildLibraryLectureDataset(limit) {
     const cutoffDate = addMonths(getKoreaTodayDateOnly(), -RECENT_MONTHS);
     const startedAt = new Date().toISOString();
 
@@ -90,7 +114,12 @@ async function buildLibraryLectureDataset() {
     let oldestFetchedReceiptDate = null;
 
     while (shouldContinue && fetchedCount < totalCount) {
-        const perPage = fetchedCount === 0 ? INITIAL_API_PER_PAGE : NEXT_API_PER_PAGE;
+        let perPage = fetchedCount === 0 ? INITIAL_API_PER_PAGE : NEXT_API_PER_PAGE;
+        if (limit) {
+            perPage = Math.min(limit - fetchedCount, perPage);
+            if (perPage <= 0) break;
+        }
+
         const pageNo = Math.floor(fetchedCount / perPage) + 1;
         const { items, totalCnt } = await fetchSourcePage(perPage, pageNo);
 
@@ -107,6 +136,11 @@ async function buildLibraryLectureDataset() {
             });
 
         fetchedCount += items.length;
+
+        if (limit && fetchedCount >= limit) {
+            break;
+        }
+
         oldestFetchedReceiptDate = getOldestReceiptDate(parsedItems);
         shouldContinue = !!oldestFetchedReceiptDate && oldestFetchedReceiptDate > cutoffDate;
     }
@@ -119,6 +153,7 @@ async function buildLibraryLectureDataset() {
             cacheTtlSeconds: CACHE_TTL_SECONDS,
             recentMonths: RECENT_MONTHS,
             fetchedCount,
+            limit: limit || null,
             lectureCount: lectures.length,
             institutionCount: institutions.size,
             cutoffDate: formatDateOnly(cutoffDate),
@@ -332,23 +367,4 @@ function parseDayCodes(dayStr) {
         .filter(v => /^[1-7]$/.test(v));
 }
 
-function jsonResponse(data, extraHeaders = {}) {
-    return new Response(JSON.stringify(data), {
-        headers: {
-            ...CORS_HEADERS,
-            'Content-Type': 'application/json; charset=utf-8',
-            ...extraHeaders,
-        },
-    });
-}
 
-function withCorsHeaders(response, cacheStatus) {
-    const headers = new Headers(response.headers);
-    Object.entries(CORS_HEADERS).forEach(([key, value]) => headers.set(key, value));
-    headers.set('X-Cache', cacheStatus);
-    return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-    });
-}

@@ -586,15 +586,76 @@
 
         .error-msg h3 { margin-bottom: 0.5rem; }
 
+        /* 백그라운드 동기화 알림 배지 */
+        .sync-badge {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f8fafc;
+            padding: 12px 20px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.3), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            transform: translateY(120px) scale(0.9);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .sync-badge.show {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .sync-badge .spinner-mini {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .sync-badge.success {
+            background: rgba(6, 78, 59, 0.9);
+            border-color: rgba(52, 211, 153, 0.3);
+            color: #a7f3d0;
+        }
+
+        .sync-badge.error {
+            background: rgba(127, 29, 29, 0.9);
+            border-color: rgba(248, 113, 113, 0.3);
+            color: #fca5a5;
+        }
+
         @media (max-width: 640px) {
             header h1 { font-size: 1.4rem; }
             .search-row { grid-template-columns: 1fr; }
             .card-grid { grid-template-columns: 1fr; }
             .card-title { font-size: 0.95rem; }
+            .sync-badge {
+                bottom: 16px;
+                right: 16px;
+                left: 16px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
+    <div id="syncBadge" class="sync-badge">
+        <div class="spinner-mini"></div>
+        <span id="syncBadgeText">데이터 동기화 중...</span>
+    </div>
     <header>
         <h1>화성시 도서관 강좌 검색</h1>
         <p>화성시통합예약시스템 OpenAPI 기반 강좌/교육 프로그램 검색 (최근 6개월 강좌 대상)</p>
@@ -887,48 +948,236 @@
 
         initializeApp();
 
+        // ── 로컬 스토리지 캐시 및 동기화 최적화 ──
+        const CACHE_KEYS = {
+            lectures: 'liblect_cached_lectures',
+            meta: 'liblect_cached_meta',
+            institutions: 'liblect_cached_institutions',
+            lastSync: 'liblect_last_sync_time'
+        };
+
+        const SYNC_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30분 그레이스 피리어드 (0ms 로딩 보장)
+        const SYNC_TIER_1_MS = 4 * 60 * 60 * 1000;    // 4시간 이내: 최신 100개 동기화
+        const SYNC_TIER_2_MS = 7 * 24 * 60 * 60 * 1000; // 7일 이내: 최신 500개 동기화
+
+        function getLectureKey(d) {
+            return d.lectureIdx || `${d.institution}_${d.name}_${d.beginDate}`;
+        }
+
+        function mergeLectures(existing, newItems) {
+            const mergedMap = new Map();
+            // 1. 기존 캐시 데이터 맵에 채우기
+            existing.forEach(item => {
+                const key = getLectureKey(item);
+                if (key) mergedMap.set(key, item);
+            });
+            // 2. 신규 데이터 덮어쓰기 (실시간 인원 수, 상태 갱신 반영)
+            newItems.forEach(item => {
+                const key = getLectureKey(item);
+                if (key) mergedMap.set(key, item);
+            });
+            // 3. 배열로 반환 및 beginDate 내림차순(최신순) 정렬
+            return Array.from(mergedMap.values()).sort((a, b) => {
+                return (b.beginDate || '').localeCompare(a.beginDate || '');
+            });
+        }
+
+        function saveCacheToLocalStorage(lectures, meta, institutions, timestamp) {
+            try {
+                localStorage.setItem(CACHE_KEYS.lectures, JSON.stringify(lectures));
+                localStorage.setItem(CACHE_KEYS.meta, JSON.stringify(meta));
+                localStorage.setItem(CACHE_KEYS.institutions, JSON.stringify(Array.from(institutions)));
+                localStorage.setItem(CACHE_KEYS.lastSync, String(timestamp));
+            } catch (e) {
+                console.error('로컬 스토리지 저장 실패:', e);
+            }
+        }
+
+        function loadCacheFromLocalStorage() {
+            try {
+                const cachedLectures = localStorage.getItem(CACHE_KEYS.lectures);
+                const cachedMeta = localStorage.getItem(CACHE_KEYS.meta);
+                const cachedInst = localStorage.getItem(CACHE_KEYS.institutions);
+                const lastSync = localStorage.getItem(CACHE_KEYS.lastSync);
+
+                if (cachedLectures && cachedMeta) {
+                    const lectures = JSON.parse(cachedLectures);
+                    const meta = JSON.parse(cachedMeta);
+                    const institutions = new Set(JSON.parse(cachedInst || '[]'));
+                    const lastSyncTime = lastSync ? parseInt(lastSync, 10) : 0;
+
+                    return { lectures, meta, institutions, lastSyncTime };
+                }
+            } catch (e) {
+                console.error('로컬 스토리지 로드 실패:', e);
+            }
+            return null;
+        }
+
+        function showSyncBadge(message, status = 'loading') {
+            const badge = document.getElementById('syncBadge');
+            const text = document.getElementById('syncBadgeText');
+            if (!badge || !text) return;
+
+            text.textContent = message;
+            badge.className = `sync-badge show ${status}`;
+            
+            const spinner = badge.querySelector('.spinner-mini');
+            if (spinner) {
+                spinner.style.display = (status === 'loading') ? 'block' : 'none';
+            }
+
+            if (status === 'success' || status === 'error') {
+                if (badge._timeout) clearTimeout(badge._timeout);
+                badge._timeout = setTimeout(() => {
+                    badge.classList.remove('show');
+                }, status === 'success' ? 2500 : 3500);
+            }
+        }
+
+        function hideSyncBadge() {
+            const badge = document.getElementById('syncBadge');
+            if (badge) {
+                badge.classList.remove('show');
+                if (badge._timeout) clearTimeout(badge._timeout);
+            }
+        }
+
         // ── Worker 캐시에서 최근 도서관 데이터셋 가져오기 ──
         async function ensureLibraryDataLoaded() {
-            if (dataLoadDone || isLoading) return;
+            if (dataLoadDone) return;
+            if (isLoading) return;
+
+            // 1단계: 동기적으로 localStorage 캐시 우선 로드 (즉각적인 화면 복구)
+            const cached = loadCacheFromLocalStorage();
+            let hasCache = false;
+
+            if (cached && Array.isArray(cached.lectures) && cached.lectures.length > 0) {
+                libraryData = cached.lectures;
+                datasetMeta = cached.meta;
+                institutionNames = cached.institutions;
+                
+                // 오늘/내일 여부 실시간 업데이트
+                libraryData.forEach(d => {
+                    d.isToday = isTodayLecture(d);
+                    d.isTomorrow = isTomorrowLecture(d);
+                });
+                
+                populateInstitutionSelect();
+                hasCache = true;
+            }
+
+            const now = Date.now();
+            const lastSyncTime = cached ? cached.lastSyncTime : 0;
+            const timeDiff = now - lastSyncTime;
+
+            // 2단계: 캐시 유효기간(30분) 확인 및 동기화 필요 여부 결정
+            if (hasCache && timeDiff < SYNC_GRACE_PERIOD_MS) {
+                dataLoadDone = true;
+                return;
+            }
+
+            // 동기화 모드 결정
+            let syncMode = 'full'; 
+            let fetchUrl = LIBRARY_DATA_API;
+            let syncMessage = '🔄 전체 데이터 동기화 중...';
+
+            if (hasCache) {
+                if (timeDiff < SYNC_TIER_1_MS) {
+                    syncMode = 'tier1';
+                    fetchUrl = `${LIBRARY_DATA_API}?limit=100`;
+                    syncMessage = '🔄 최신 데이터 업데이트 중... (100개)';
+                } else if (timeDiff < SYNC_TIER_2_MS) {
+                    syncMode = 'tier2';
+                    fetchUrl = `${LIBRARY_DATA_API}?limit=500`;
+                    syncMessage = '🔄 최신 데이터 업데이트 중... (500개)';
+                }
+            }
+
             isLoading = true;
 
             if (abortController) abortController.abort();
             abortController = new AbortController();
 
             const contentEl = document.getElementById('content');
-            contentEl.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>최근 도서관 강좌 캐시를 불러오는 중...</p>
-                </div>`;
+            
+            // 캐시가 없는 최초 진입일 때는 화면 차단 로딩바 사용
+            if (!hasCache) {
+                contentEl.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>최근 도서관 강좌 목록을 가져오는 중...</p>
+                    </div>`;
+            } else {
+                // 기존 캐시가 있을 때는 백그라운드로 실행하고 고급 플로팅 배지 노출
+                showSyncBadge(syncMessage, 'loading');
+            }
 
             try {
-                const res = await fetch(LIBRARY_DATA_API, { signal: abortController.signal });
+                const res = await fetch(fetchUrl, { signal: abortController.signal });
                 if (!res.ok) {
-                    throw new Error(`Worker 응답 오류: ${res.status}`);
+                    throw new Error(`동기화 API 응답 오류: ${res.status}`);
                 }
                 const payload = await res.json();
-                libraryData = Array.isArray(payload.lectures) ? payload.lectures : [];
-                
-                // 클라이언트 사이드에서 일관되게 오늘/내일 여부 계산 및 할당
+                const fetchedLectures = Array.isArray(payload.lectures) ? payload.lectures : [];
+
+                if (syncMode === 'full') {
+                    libraryData = fetchedLectures;
+                } else {
+                    libraryData = mergeLectures(libraryData, fetchedLectures);
+                }
+
+                // 오늘/내일 강좌 상태 갱신
                 libraryData.forEach(d => {
                     d.isToday = isTodayLecture(d);
                     d.isTomorrow = isTomorrowLecture(d);
                 });
+
+                datasetMeta = payload.meta || datasetMeta;
                 
-                datasetMeta = payload.meta || null;
-                institutionNames = new Set(Array.isArray(payload.institutions)
+                const newInsts = Array.isArray(payload.institutions)
                     ? payload.institutions
-                    : libraryData.map(d => d.institution).filter(Boolean));
+                    : fetchedLectures.map(d => d.institution).filter(Boolean);
+                
+                if (syncMode === 'full') {
+                    institutionNames = new Set(newInsts);
+                } else {
+                    newInsts.forEach(inst => institutionNames.add(inst));
+                }
+
                 populateInstitutionSelect();
+
+                // 3단계: 캐시 보존 및 타임스탬프 갱신
+                saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, now);
+
+                if (hasCache) {
+                    showSyncBadge('✅ 강좌 데이터 동기화 완료!', 'success');
+                    // 현재 검색 및 필터 조건 갱신 및 리렌더링
+                    allData = getSearchBaseData();
+                    updateFilterButtons(getFilterCounts(allData));
+                    renderResults();
+                }
+                
+                dataLoadDone = true;
             } catch (e) {
-                if (e.name === 'AbortError') { isLoading = false; return; }
-                contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
-                isLoading = false;
-                throw e;
+                if (e.name === 'AbortError') { 
+                    isLoading = false; 
+                    return; 
+                }
+                
+                console.error('동기화 실패:', e);
+
+                if (hasCache) {
+                    // 캐시가 존재할 때 통신 에러가 나면, 캐시 데이터로 백오프 작동 (오프라인 모드 배지 팝업)
+                    showSyncBadge('⚠️ 업데이트 실패 (기존 캐시 사용)', 'error');
+                    dataLoadDone = true; 
+                } else {
+                    contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
+                    isLoading = false;
+                    throw e;
+                }
             }
 
-            dataLoadDone = true;
             isLoading = false;
         }
 
