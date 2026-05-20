@@ -516,14 +516,11 @@
         // 비워두면 로컬 서버(/api/)로 폴백합니다.
         const WORKER_BASE = 'https://liblect-proxy.jssimonlee.workers.dev/';
 
-        const API_BASE = WORKER_BASE
-            ? WORKER_BASE.replace(/\/$/, '') + '/api/apiLectureList.do'
-            : '/api/apiLectureList.do';
+        const LIBRARY_DATA_API = WORKER_BASE
+            ? WORKER_BASE.replace(/\/$/, '') + '/api/libraryLectures'
+            : '/api/libraryLectures';
         // ────────────────────────────────────────────────────────────
 
-        const INITIAL_API_PER_PAGE = 1000; // 처음 한번에 가져오는 양
-        const NEXT_API_PER_PAGE = 500;     // 이후 추가로 가져오는 양
-        const RECENT_MONTHS = 6;           // 접수일 기준 보관 범위
         const CARDS_PER_PAGE = 12;   // 화면에 보여주는 카드 수
 
         // 상태 관리
@@ -536,6 +533,7 @@
         let isLoading = false;
         let currentKeyword = '';
         let institutionNames = new Set();
+        let datasetMeta = null;
         let abortController = null;
 
         const searchInput = document.getElementById('searchInput');
@@ -574,7 +572,7 @@
             doSearch();
         }
 
-        // ── 최근 6개월 도서관 데이터셋 만들기 ──
+        // ── Worker 캐시에서 최근 도서관 데이터셋 가져오기 ──
         async function ensureLibraryDataLoaded() {
             if (dataLoadDone || isLoading) return;
             isLoading = true;
@@ -585,49 +583,21 @@
             const contentEl = document.getElementById('content');
             contentEl.innerHTML = `
                 <div class="loading">
-                <div class="spinner"></div>
-                    <p>최근 도서관 강좌 데이터를 불러오는 중...</p>
-                <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-                    <p style="margin-top:0.5rem;font-size:0.82rem;color:#a0aec0" id="progressText"></p>
+                    <div class="spinner"></div>
+                    <p>최근 도서관 강좌 캐시를 불러오는 중...</p>
                 </div>`;
 
             try {
-                const cutoffDate = addMonths(getTodayDateOnly(), -RECENT_MONTHS);
-                let fetchedCount = 0;
-                let totalCount = Infinity;
-                let shouldContinue = true;
-
-                while (shouldContinue && fetchedCount < totalCount) {
-                    const perPage = fetchedCount === 0 ? INITIAL_API_PER_PAGE : NEXT_API_PER_PAGE;
-                    const pageNo = Math.floor(fetchedCount / perPage) + 1;
-                    const { items, totalCnt } = await fetchApiPage(perPage, pageNo);
-                    if (Number.isFinite(totalCnt)) totalCount = totalCnt;
-                    if (items.length === 0) break;
-
-                    const parsedItems = items.map(parseItem);
-                    parsedItems
-                        .filter(isLibraryLecture)
-                        .forEach(d => {
-                            libraryData.push(d);
-                            if (d.institution) institutionNames.add(d.institution);
-                        });
-
-                    fetchedCount += items.length;
-
-                    const oldestReceiptDate = getOldestReceiptDate(parsedItems);
-                    shouldContinue = !!oldestReceiptDate && oldestReceiptDate > cutoffDate;
-
-                    const bar = document.getElementById('progressBar');
-                    const pText = document.getElementById('progressText');
-                    const pct = Number.isFinite(totalCount) ? Math.min(100, Math.round((fetchedCount / totalCount) * 100)) : 0;
-                    if (bar) bar.style.width = pct + '%';
-                    if (pText) {
-                        const oldestDateText = oldestReceiptDate ? formatDateOnly(oldestReceiptDate) : '접수일 없음';
-                        pText.textContent = `${fetchedCount}건 확인, 도서관 ${libraryData.length}건 보관 · 가장 오래된 접수일 ${oldestDateText}`;
-                    }
-
-                    await yieldToBrowser();
+                const res = await fetch(LIBRARY_DATA_API, { signal: abortController.signal });
+                if (!res.ok) {
+                    throw new Error(`Worker 응답 오류: ${res.status}`);
                 }
+                const payload = await res.json();
+                libraryData = Array.isArray(payload.lectures) ? payload.lectures : [];
+                datasetMeta = payload.meta || null;
+                institutionNames = new Set(Array.isArray(payload.institutions)
+                    ? payload.institutions
+                    : libraryData.map(d => d.institution).filter(Boolean));
             } catch (e) {
                 if (e.name === 'AbortError') { isLoading = false; return; }
                 contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
@@ -637,54 +607,6 @@
 
             dataLoadDone = true;
             isLoading = false;
-        }
-
-        async function fetchApiPage(perPage, pageNo) {
-            const url = `${API_BASE}?recordCountPerPage=${perPage}&currentPageNo=${pageNo}`;
-            const res = await fetch(url, { signal: abortController.signal });
-            const text = await res.text();
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(text, 'text/xml');
-            const totalCnt = parseInt(xml.querySelector('total_cnt')?.textContent || '0', 10);
-            return {
-                items: [...xml.querySelectorAll('item')],
-                totalCnt: Number.isFinite(totalCnt) ? totalCnt : Infinity,
-            };
-        }
-
-        function parseItem(item) {
-            const get = (tag) => item.querySelector(tag)?.textContent || '';
-            const lecture = {
-                institution: get('INSTITUTION_NM'),
-                institutionIdx: get('INSTITUTION_IDX'),
-                lectureIdx: get('LECTURE_IDX'),
-                name: get('LECTURE_NM'),
-                targetCd: get('TARGET_CD'),
-                targetNm: get('TARGET_NM'),
-                targetDetail: get('TARGET_DETAIL'),
-                beginDate: get('LECTURE_BEGIN_YMD'),
-                endDate: get('LECTURE_END_YMD'),
-                beginTime: get('LECTURE_BEGIN_HM'),
-                endTime: get('LECTURE_END_HM'),
-                dayOfWeek: get('LECTURE_DAY_OF_WEEK'),
-                applyBegin: get('LECTURE_APPLY_BEGIN_DT'),
-                applyEnd: get('LECTURE_APPLY_END_DT'),
-                price: parseInt(get('LECTURE_PRICE') || '0'),
-                place: get('LECTURE_PLACE'),
-                classCd: get('CLASS_CD'),
-                classNm: get('CLASS_NM'),
-                freeNm: get('FREE_NM'),
-                status: get('STATUS_NM'),
-                applyUserNum: get('APPLY_USER_NUM'),
-                applyLimitNum: get('APPLY_LIMIT_NUM'),
-                waitUserNum: get('WAIT_USER_NUM'),
-                waitLimitNum: get('WAIT_LIMIT_NUM'),
-                detailUrl: get('DETAIL_URL'),
-                receiptMethod: get('RECEIPT_METHOD_NM'),
-                reference: get('REFERENCE'),
-            };
-            lecture.isToday = isTodayLecture(lecture);
-            return lecture;
         }
 
         // ── 검색 시작 ──
@@ -905,92 +827,6 @@
 
         function getFilterLabel(filter) {
             return filter === 'today' ? '오늘수업' : filter;
-        }
-
-        function isLibraryLecture(d) {
-            return Object.values(d).some(value => typeof value === 'string' && value.includes('도서관'));
-        }
-
-        function isTodayLecture(d) {
-            const today = getTodayDateOnly();
-            const begin = parseDateOnly(d.beginDate);
-            const end = parseDateOnly(d.endDate);
-            if (!today || !begin || !end) return false;
-            if (today < begin || today > end) return false;
-
-            const dayCodes = parseDayCodes(d.dayOfWeek);
-            if (dayCodes.length === 0) {
-                return begin.getTime() === end.getTime() && today.getTime() === begin.getTime();
-            }
-
-            return dayCodes.includes(getApiDayCode(today));
-        }
-
-        function parseDateOnly(value) {
-            if (!value) return null;
-            const digits = String(value).replace(/\D/g, '');
-            if (digits.length < 8) return null;
-            const year = parseInt(digits.slice(0, 4), 10);
-            const month = parseInt(digits.slice(4, 6), 10) - 1;
-            const day = parseInt(digits.slice(6, 8), 10);
-            const date = new Date(year, month, day);
-            if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return null;
-            return date;
-        }
-
-        function getTodayDateOnly() {
-            const now = new Date();
-            return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        }
-
-        function addMonths(date, months) {
-            const result = new Date(date);
-            const originalDay = result.getDate();
-            result.setMonth(result.getMonth() + months);
-            if (result.getDate() !== originalDay) {
-                result.setDate(0);
-            }
-            return new Date(result.getFullYear(), result.getMonth(), result.getDate());
-        }
-
-        function getReceiptDate(d) {
-            if (!d) return null;
-            return parseDateOnly(d.applyBegin) || parseDateOnly(d.applyEnd) || parseDateOnly(d.beginDate);
-        }
-
-        function getOldestReceiptDate(items) {
-            return items
-                .map(getReceiptDate)
-                .filter(Boolean)
-                .sort((a, b) => a - b)[0] || null;
-        }
-
-        function formatDateOnly(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function getApiDayCode(date) {
-            const jsDay = date.getDay(); // 0: 일, 1: 월 ... 6: 토
-            return jsDay === 0 ? '7' : String(jsDay);
-        }
-
-        function yieldToBrowser() {
-            return new Promise(resolve => setTimeout(resolve, 0));
-        }
-
-        function parseDayCodes(dayStr) {
-            if (!dayStr) return [];
-            const koreanMap = { '월': '1', '화': '2', '수': '3', '목': '4', '금': '5', '토': '6', '일': '7' };
-            return String(dayStr)
-                .split(/[,/|·\s]+/)
-                .map(v => v.trim())
-                .filter(Boolean)
-                .map(v => v.replace(/요일$/, ''))
-                .map(v => koreanMap[v] || v)
-                .filter(v => /^[1-7]$/.test(v));
         }
 
         function getStatusClass(status) {
