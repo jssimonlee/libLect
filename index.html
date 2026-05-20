@@ -156,6 +156,28 @@
             }
         }
 
+        .clear-date-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.08);
+            color: currentColor;
+            font-size: 0.55rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.12s ease, color 0.12s ease;
+            vertical-align: middle;
+        }
+
+        .clear-date-btn:hover {
+            background: rgba(220, 38, 38, 0.15);
+            color: #e53e3e !important;
+        }
+
         .filter-btn.all { background: #eef2ff; color: #4c51bf; }
         .filter-btn.today { background: #eaffd2; color: #276749; border-color: #b8f26a; }
         .filter-btn.tomorrow { background: #fffbeb; color: #b45309; border-color: #fde68a; }
@@ -589,7 +611,7 @@
                 </div>
                 <div class="search-field">
                     <label for="searchInput">검색어</label>
-                    <input type="text" id="searchInput" placeholder="강좌명, 무료, 그림, 대상, 장소 등" autocomplete="off">
+                    <input type="text" id="searchInput" placeholder="강좌명, 대상, 장소, 문의 등" autocomplete="off">
                 </div>
                 <button id="searchBtn" onclick="doSearch()">검색</button>
             </div>
@@ -841,6 +863,20 @@
             const dateBtn = document.querySelector('.filter-btn.date-select');
             if (dateBtn) dateBtn.classList.add('active');
 
+            renderResults();
+        }
+
+        function clearDateFilter(e) {
+            if (e) e.stopPropagation();
+            selectedDateString = '';
+            selectedDateObj = null;
+            document.getElementById('filterDatePicker').value = '';
+
+            if (currentFilter === 'date') {
+                currentFilter = 'all';
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+            }
             renderResults();
         }
 
@@ -1223,9 +1259,9 @@
                     if (selectedDateObj) {
                         const m = String(selectedDateObj.getUTCMonth() + 1).padStart(2, '0');
                         const d = String(selectedDateObj.getUTCDate()).padStart(2, '0');
-                        btn.textContent = `📅 달력선택: ${m}.${d}(${counts.date || 0})`;
+                        btn.innerHTML = `📅 달력선택: ${m}.${d}(${counts.date || 0}) <span class="clear-date-btn" onclick="clearDateFilter(event)" title="선택 해제">✖</span>`;
                     } else {
-                        btn.textContent = `📅 달력선택`;
+                        btn.innerHTML = `📅 달력선택`;
                     }
                 } else {
                     btn.textContent = `${labels[filter] || filter}(${counts[filter] || 0})`;
