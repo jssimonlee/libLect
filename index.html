@@ -9,13 +9,13 @@
 
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f0f4f8;
+            background: #f6f8fb;
             color: #1a202c;
             min-height: 100vh;
         }
 
         header {
-            background: linear-gradient(135deg, #2b6cb0, #4c51bf);
+            background: linear-gradient(135deg, #2f7e8b, #6f70c7);
             color: white;
             padding: 2.5rem 1rem 3.5rem;
             text-align: center;
@@ -33,7 +33,7 @@
         }
 
         .search-container {
-            max-width: 700px;
+            max-width: 860px;
             margin: -2rem auto 0;
             padding: 0 1rem;
             position: relative;
@@ -41,37 +41,57 @@
         }
 
         .search-box {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+            background: rgba(255,255,255,0.96);
+            border-radius: 18px;
+            box-shadow: 0 12px 34px rgba(43, 70, 96, 0.14);
             padding: 1.5rem;
+            border: 1px solid rgba(226,232,240,0.9);
         }
 
         .search-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(220px, 0.85fr) minmax(260px, 1.15fr) auto;
             gap: 0.75rem;
+            align-items: center;
         }
 
-        .search-box input[type="text"] {
-            flex: 1;
+        .search-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .search-field label {
+            color: #718096;
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+
+        .search-box input[type="text"],
+        .search-box select {
+            width: 100%;
             padding: 0.85rem 1.2rem;
             border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: #fff;
+            color: #1a202c;
         }
 
-        .search-box input[type="text"]:focus {
-            border-color: #4c51bf;
+        .search-box input[type="text"]:focus,
+        .search-box select:focus {
+            border-color: #63b3ed;
+            box-shadow: 0 0 0 3px rgba(99,179,237,0.18);
         }
 
         .search-box button {
             padding: 0.85rem 1.8rem;
-            background: linear-gradient(135deg, #4c51bf, #2b6cb0);
+            background: linear-gradient(135deg, #38a3a5, #7b78d4);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -88,39 +108,39 @@
 
         .filter-row {
             display: flex;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
+            gap: 0.45rem;
+            margin-top: 1rem;
             flex-wrap: wrap;
         }
 
         .filter-btn {
-            padding: 0.4rem 0.9rem;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 20px;
-            background: white;
-            font-size: 0.82rem;
+            padding: 0.34rem 0.72rem;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            background: #edf7fb;
+            font-size: 0.78rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
-            color: #4a5568;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+            color: #35505c;
         }
 
-        .filter-btn:hover { border-color: #4c51bf; color: #4c51bf; }
+        .filter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(90, 110, 130, 0.12);
+        }
         .filter-btn.active {
-            background: #4c51bf;
-            color: white;
-            border-color: #4c51bf;
+            color: #1a202c;
+            border-color: rgba(45,55,72,0.16);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.75), 0 7px 18px rgba(90,110,130,0.13);
         }
 
-        .filter-btn.today {
-            border-color: #f6ad55;
-            color: #975a16;
-        }
-
-        .filter-btn.today.active {
-            background: #dd6b20;
-            border-color: #dd6b20;
-            color: white;
-        }
+        .filter-btn.all { background: #eef2ff; color: #4c51bf; }
+        .filter-btn.today { background: #eaffd2; color: #276749; border-color: #b8f26a; }
+        .filter-btn.open { background: #dffaf0; color: #276749; }
+        .filter-btn.upcoming { background: #e1f0ff; color: #2b6cb0; }
+        .filter-btn.closed { background: #ffe8e8; color: #9b2c2c; }
+        .filter-btn.ended { background: #edf2f7; color: #4a5568; }
 
         .main-content {
             max-width: 1100px;
@@ -233,6 +253,17 @@
             transform: translateY(-2px);
         }
 
+        .card.status-open { border-left: 4px solid #9ae6b4; }
+        .card.status-upcoming { border-left: 4px solid #90cdf4; }
+        .card.status-closed { border-left: 4px solid #feb2b2; }
+        .card.status-ended { border-left: 4px solid #cbd5e0; }
+
+        .card.today-card {
+            border-color: #c6f970;
+            border-left-color: #b8f26a;
+            box-shadow: 0 0 0 1px rgba(190,242,100,0.55), 0 0 28px rgba(190,242,100,0.48);
+        }
+
         .card-status {
             position: absolute;
             top: 0;
@@ -252,9 +283,10 @@
             align-self: flex-start;
             padding: 0.24rem 0.62rem;
             border-radius: 999px;
-            background: #fffaf0;
-            color: #975a16;
-            border: 1px solid #fbd38d;
+            background: #dfff8f;
+            color: #22543d;
+            border: 1px solid #b8f26a;
+            box-shadow: 0 0 16px rgba(190,242,100,0.8);
             font-size: 0.74rem;
             font-weight: 700;
             margin-bottom: 0.45rem;
@@ -419,43 +451,6 @@
             margin-right: 0.5rem;
         }
 
-        /* Institution list hint */
-        .inst-list {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 10px;
-            max-height: 220px;
-            overflow-y: auto;
-            z-index: 100;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            margin-top: 4px;
-        }
-
-        .inst-list.show { display: block; }
-
-        .inst-item {
-            padding: 0.65rem 1.2rem;
-            cursor: pointer;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #f7fafc;
-            transition: background 0.15s;
-        }
-
-        .inst-item:hover { background: #ebf4ff; }
-        .inst-item:last-child { border-bottom: none; }
-
-        .input-wrapper {
-            flex: 1;
-            position: relative;
-        }
-
-        .input-wrapper input { width: 100%; }
-
         /* Error */
         .error-msg {
             text-align: center;
@@ -467,7 +462,7 @@
 
         @media (max-width: 640px) {
             header h1 { font-size: 1.4rem; }
-            .search-row { flex-direction: column; }
+            .search-row { grid-template-columns: 1fr; }
             .card-grid { grid-template-columns: 1fr; }
             .card-title { font-size: 0.95rem; }
         }
@@ -482,19 +477,25 @@
     <div class="search-container">
         <div class="search-box">
             <div class="search-row">
-                <div class="input-wrapper">
-                    <input type="text" id="searchInput" placeholder="기관(도서관)명을 입력하세요 (예: 노을빛)" autocomplete="off">
-                    <div class="inst-list" id="instList"></div>
+                <div class="search-field">
+                    <label for="institutionSelect">기관</label>
+                    <select id="institutionSelect">
+                        <option value="">전체 도서관</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label for="searchInput">검색어</label>
+                    <input type="text" id="searchInput" placeholder="강좌명, 무료, 그림, 대상, 장소 등" autocomplete="off">
                 </div>
                 <button id="searchBtn" onclick="doSearch()">검색</button>
             </div>
             <div class="filter-row">
-                <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">전체</button>
-                <button class="filter-btn today" data-filter="today" onclick="setFilter('today', this)">오늘수업</button>
-                <button class="filter-btn" data-filter="접수중" onclick="setFilter('접수중', this)">접수중</button>
-                <button class="filter-btn" data-filter="접수예정" onclick="setFilter('접수예정', this)">접수예정</button>
-                <button class="filter-btn" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감</button>
-                <button class="filter-btn" data-filter="강좌종료" onclick="setFilter('강좌종료', this)">강좌종료</button>
+                <button class="filter-btn all active" data-filter="all" onclick="setFilter('all', this)">전체(0)</button>
+                <button class="filter-btn today" data-filter="today" onclick="setFilter('today', this)">오늘수업(0)</button>
+                <button class="filter-btn open" data-filter="접수중" onclick="setFilter('접수중', this)">접수중(0)</button>
+                <button class="filter-btn upcoming" data-filter="접수예정" onclick="setFilter('접수예정', this)">접수예정(0)</button>
+                <button class="filter-btn closed" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감(0)</button>
+                <button class="filter-btn ended" data-filter="강좌종료" onclick="setFilter('강좌종료', this)">강좌종료(0)</button>
             </div>
         </div>
     </div>
@@ -503,8 +504,8 @@
         <div id="content">
             <div class="empty-state">
                 <div class="icon">&#128218;</div>
-                <h3>도서관명을 검색해 보세요</h3>
-                <p>화성시 내 도서관/기관의 강좌 및 교육 프로그램을 확인할 수 있습니다</p>
+                <h3>도서관을 선택하거나 검색어를 입력해 보세요</h3>
+                <p>강좌명, 대상, 장소, 무료 여부까지 한 번에 검색할 수 있습니다</p>
             </div>
         </div>
     </div>
@@ -537,40 +538,15 @@
         let abortController = null;
 
         const searchInput = document.getElementById('searchInput');
-        const instList = document.getElementById('instList');
+        const institutionSelect = document.getElementById('institutionSelect');
 
         // Enter key
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') doSearch();
         });
 
-        // Autocomplete
-        searchInput.addEventListener('input', () => {
-            const val = searchInput.value.trim();
-            if (val.length === 0 || institutionNames.size === 0) {
-                instList.classList.remove('show');
-                return;
-            }
-            const matches = [...institutionNames].filter(n => n.includes(val));
-            if (matches.length > 0 && matches.length <= 20) {
-                instList.innerHTML = matches.map(n =>
-                    `<div class="inst-item" onclick="selectInst('${n.replace(/'/g, "\\'")}')">${n}</div>`
-                ).join('');
-                instList.classList.add('show');
-            } else {
-                instList.classList.remove('show');
-            }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.input-wrapper')) instList.classList.remove('show');
-        });
-
-        function selectInst(name) {
-            searchInput.value = name;
-            instList.classList.remove('show');
-            doSearch();
-        }
+        institutionSelect.addEventListener('change', () => doSearch());
+        initializeApp();
 
         // ── Worker 캐시에서 최근 도서관 데이터셋 가져오기 ──
         async function ensureLibraryDataLoaded() {
@@ -598,6 +574,7 @@
                 institutionNames = new Set(Array.isArray(payload.institutions)
                     ? payload.institutions
                     : libraryData.map(d => d.institution).filter(Boolean));
+                populateInstitutionSelect();
             } catch (e) {
                 if (e.name === 'AbortError') { isLoading = false; return; }
                 contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
@@ -612,12 +589,7 @@
         // ── 검색 시작 ──
         async function doSearch() {
             const keyword = searchInput.value.trim();
-            if (!keyword) {
-                alert('기관(도서관)명을 입력해 주세요.');
-                return;
-            }
             if (isLoading) return;
-            instList.classList.remove('show');
 
             // 상태 초기화
             currentKeyword = keyword;
@@ -632,7 +604,7 @@
 
             try {
                 await ensureLibraryDataLoaded();
-                allData = libraryData.filter(d => d.institution.includes(currentKeyword));
+                allData = getSearchBaseData();
             } catch (e) {
                 const contentEl = document.getElementById('content');
                 contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
@@ -642,13 +614,15 @@
 
             document.getElementById('searchBtn').disabled = false;
 
+            updateFilterButtons(getFilterCounts(allData));
+
             if (allData.length === 0) {
                 const contentEl = document.getElementById('content');
                 contentEl.innerHTML = `
                     <div class="empty-state">
                         <div class="icon">&#128533;</div>
-                        <h3>"${escapeHtml(keyword)}" 검색 결과가 없습니다</h3>
-                        <p>다른 기관명으로 검색해 보세요</p>
+                        <h3>검색 결과가 없습니다</h3>
+                        <p>도서관 선택이나 검색어를 바꿔 보세요</p>
                     </div>`;
                 return;
             }
@@ -711,22 +685,15 @@
 
             const hasNextPageData = displayPage < totalPages;
 
-            // 상태 카운트 (지금까지 수집된 데이터 기준)
-            const counts = {};
-            let todayCount = 0;
-            allData.forEach(d => {
-                counts[d.status] = (counts[d.status] || 0) + 1;
-                if (d.isToday) todayCount++;
-            });
+            const counts = getFilterCounts(allData);
+            updateFilterButtons(counts);
 
             let html = `
                 <div class="status-bar">
                     <div class="result-count">
-                        현재 <strong>${allData.length}</strong>건 발견${searchDone ? ' (검색 완료)' : ' (검색 진행 가능)'}
+                        현재 <strong>${allData.length}</strong>건 발견
                         ${currentFilter !== 'all' ? ` &middot; "${getFilterLabel(currentFilter)}" <strong>${totalFiltered}</strong>건` : ''}
-                        ${todayCount ? ` &middot; 오늘수업 ${todayCount}건` : ''}
-                        ${counts['접수중'] ? ` &middot; 접수중 ${counts['접수중']}건` : ''}
-                        ${counts['접수예정'] ? ` &middot; 접수예정 ${counts['접수예정']}건` : ''}
+                        ${getSearchSummary()}
                     </div>
                 </div>
                 <div class="card-grid">`;
@@ -771,7 +738,7 @@
 
         function renderCard(d) {
             return `
-                <div class="card">
+                <div class="card status-${getStatusClass(d.status)} ${d.isToday ? 'today-card' : ''}">
                     ${d.isToday ? '<div class="today-badge">오늘수업</div>' : ''}
                     <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
                     <div class="card-institution">${d.institution}</div>
@@ -827,6 +794,95 @@
 
         function getFilterLabel(filter) {
             return filter === 'today' ? '오늘수업' : filter;
+        }
+
+        function populateInstitutionSelect() {
+            const selected = institutionSelect.value;
+            const selectableNames = [...institutionNames].filter(name => name.includes('도서관'));
+            const options = ['<option value="">전체 도서관</option>']
+                .concat(selectableNames.map(name =>
+                    `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+                ));
+            institutionSelect.innerHTML = options.join('');
+            if (selectableNames.includes(selected)) {
+                institutionSelect.value = selected;
+            }
+        }
+
+        function getSearchBaseData() {
+            const selectedInstitution = institutionSelect.value;
+            const keyword = currentKeyword.toLowerCase();
+            return libraryData.filter(d => {
+                if (selectedInstitution && d.institution !== selectedInstitution) return false;
+                if (!keyword) return true;
+                return getSearchBlob(d).includes(keyword);
+            });
+        }
+
+        function getSearchBlob(d) {
+            return Object.values(d)
+                .filter(value => value !== null && value !== undefined)
+                .map(value => String(value))
+                .join(' ')
+                .toLowerCase();
+        }
+
+        function getFilterCounts(data) {
+            const counts = {
+                all: data.length,
+                today: 0,
+                '접수중': 0,
+                '접수예정': 0,
+                '접수마감': 0,
+                '강좌종료': 0,
+            };
+            data.forEach(d => {
+                if (d.isToday) counts.today++;
+                if (Object.prototype.hasOwnProperty.call(counts, d.status)) {
+                    counts[d.status]++;
+                }
+            });
+            return counts;
+        }
+
+        function updateFilterButtons(counts) {
+            const labels = {
+                all: '전체',
+                today: '오늘수업',
+                '접수중': '접수중',
+                '접수예정': '접수예정',
+                '접수마감': '접수마감',
+                '강좌종료': '강좌종료',
+            };
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                const filter = btn.dataset.filter;
+                btn.textContent = `${labels[filter] || filter}(${counts[filter] || 0})`;
+            });
+        }
+
+        function getSearchSummary() {
+            const parts = [];
+            if (institutionSelect.value) parts.push(`기관: ${escapeHtml(institutionSelect.value)}`);
+            if (currentKeyword) parts.push(`검색어: ${escapeHtml(currentKeyword)}`);
+            return parts.length ? ` &middot; ${parts.join(' · ')}` : '';
+        }
+
+        async function initializeApp() {
+            document.getElementById('searchBtn').disabled = true;
+            try {
+                await ensureLibraryDataLoaded();
+                allData = [...libraryData];
+                updateFilterButtons(getFilterCounts(libraryData));
+                document.getElementById('content').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">&#128218;</div>
+                        <h3>도서관을 선택하거나 검색어를 입력해 보세요</h3>
+                        <p>강좌명, 대상, 장소, 무료 여부까지 한 번에 검색할 수 있습니다</p>
+                    </div>`;
+            } catch (e) {
+                // ensureLibraryDataLoaded에서 오류 화면을 표시합니다.
+            }
+            document.getElementById('searchBtn').disabled = false;
         }
 
         function getStatusClass(status) {
