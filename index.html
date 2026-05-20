@@ -138,6 +138,7 @@
 
         .filter-btn.all { background: #eef2ff; color: #4c51bf; }
         .filter-btn.today { background: #eaffd2; color: #276749; border-color: #b8f26a; }
+        .filter-btn.tomorrow { background: #fffbeb; color: #b45309; border-color: #fde68a; }
         .filter-btn.open { background: #dffaf0; color: #276749; }
         .filter-btn.upcoming { background: #e1f0ff; color: #2b6cb0; }
         .filter-btn.closed { background: #ffe8e8; color: #9b2c2c; }
@@ -259,10 +260,28 @@
         .card.status-closed { border-left: 4px solid #feb2b2; }
         .card.status-ended { border-left: 4px solid #cbd5e0; }
 
+        @keyframes todayGlowPulse {
+            0% {
+                box-shadow: 0 0 0 1px rgba(190,242,100,0.55), 0 0 14px rgba(190,242,100,0.35);
+            }
+            50% {
+                box-shadow: 0 0 0 3px rgba(190,242,100,0.7), 0 0 28px rgba(190,242,100,0.55);
+            }
+            100% {
+                box-shadow: 0 0 0 1px rgba(190,242,100,0.55), 0 0 14px rgba(190,242,100,0.35);
+            }
+        }
+
         .card.today-card {
             border-color: #c6f970;
             border-left-color: #b8f26a;
-            box-shadow: 0 0 0 1px rgba(190,242,100,0.55), 0 0 28px rgba(190,242,100,0.48);
+            animation: todayGlowPulse 2.5s infinite ease-in-out;
+        }
+
+        .card.tomorrow-card {
+            border-color: #fcd34d;
+            border-left-color: #fbbf24;
+            box-shadow: 0 0 0 1px rgba(251,191,36,0.3), 0 4px 16px rgba(251,191,36,0.15);
         }
 
         .card-status {
@@ -288,6 +307,19 @@
             color: #22543d;
             border: 1px solid #b8f26a;
             box-shadow: 0 0 16px rgba(190,242,100,0.8);
+            font-size: 0.74rem;
+            font-weight: 700;
+            margin-bottom: 0.45rem;
+        }
+
+        .tomorrow-badge {
+            align-self: flex-start;
+            padding: 0.24rem 0.62rem;
+            border-radius: 999px;
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            box-shadow: 0 0 12px rgba(251,191,36,0.25);
             font-size: 0.74rem;
             font-weight: 700;
             margin-bottom: 0.45rem;
@@ -493,6 +525,7 @@
             <div class="filter-row">
                 <button class="filter-btn all active" data-filter="all" onclick="setFilter('all', this)">전체(0)</button>
                 <button class="filter-btn today" data-filter="today" onclick="setFilter('today', this)">오늘수업(0)</button>
+                <button class="filter-btn tomorrow" data-filter="tomorrow" onclick="setFilter('tomorrow', this)">내일수업(0)</button>
                 <button class="filter-btn open" data-filter="접수중" onclick="setFilter('접수중', this)">접수중(0)</button>
                 <button class="filter-btn upcoming" data-filter="접수예정" onclick="setFilter('접수예정', this)">접수예정(0)</button>
                 <button class="filter-btn closed" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감(0)</button>
@@ -611,6 +644,83 @@
             }
         });
 
+        // ── 날짜 및 오늘/내일 강좌 판단 헬퍼 함수 ──
+        function getKoreaTodayDateOnly() {
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Seoul',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            }).formatToParts(new Date());
+
+            const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+            return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+        }
+
+        function getKoreaTomorrowDateOnly() {
+            const today = getKoreaTodayDateOnly();
+            return new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        }
+
+        function parseDateOnly(value) {
+            if (!value) return null;
+            const digits = String(value).replace(/\D/g, '');
+            if (digits.length < 8) return null;
+            const year = parseInt(digits.slice(0, 4), 10);
+            const month = parseInt(digits.slice(4, 6), 10) - 1;
+            const day = parseInt(digits.slice(6, 8), 10);
+            const date = new Date(Date.UTC(year, month, day));
+            if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month || date.getUTCDate() !== day) return null;
+            return date;
+        }
+
+        function getApiDayCode(date) {
+            const jsDay = date.getUTCDay();
+            return jsDay === 0 ? '7' : String(jsDay);
+        }
+
+        function parseDayCodes(dayStr) {
+            if (!dayStr) return [];
+            const koreanMap = { '월': '1', '화': '2', '수': '3', '목': '4', '금': '5', '토': '6', '일': '7' };
+            return String(dayStr)
+                .split(/[,/|·\s]+/)
+                .map(v => v.trim())
+                .filter(Boolean)
+                .map(v => v.replace(/요일$/, ''))
+                .map(v => koreanMap[v] || v)
+                .filter(v => /^[1-7]$/.test(v));
+        }
+
+        function isTodayLecture(d) {
+            const today = getKoreaTodayDateOnly();
+            const begin = parseDateOnly(d.beginDate);
+            const end = parseDateOnly(d.endDate);
+            if (!today || !begin || !end) return false;
+            if (today < begin || today > end) return false;
+
+            const dayCodes = parseDayCodes(d.dayOfWeek);
+            if (dayCodes.length === 0) {
+                return begin.getTime() === end.getTime() && today.getTime() === begin.getTime();
+            }
+
+            return dayCodes.includes(getApiDayCode(today));
+        }
+
+        function isTomorrowLecture(d) {
+            const tomorrow = getKoreaTomorrowDateOnly();
+            const begin = parseDateOnly(d.beginDate);
+            const end = parseDateOnly(d.endDate);
+            if (!tomorrow || !begin || !end) return false;
+            if (tomorrow < begin || tomorrow > end) return false;
+
+            const dayCodes = parseDayCodes(d.dayOfWeek);
+            if (dayCodes.length === 0) {
+                return begin.getTime() === end.getTime() && tomorrow.getTime() === begin.getTime();
+            }
+
+            return dayCodes.includes(getApiDayCode(tomorrow));
+        }
+
         initializeApp();
 
         // ── Worker 캐시에서 최근 도서관 데이터셋 가져오기 ──
@@ -635,6 +745,13 @@
                 }
                 const payload = await res.json();
                 libraryData = Array.isArray(payload.lectures) ? payload.lectures : [];
+                
+                // 클라이언트 사이드에서 일관되게 오늘/내일 여부 계산 및 할당
+                libraryData.forEach(d => {
+                    d.isToday = isTodayLecture(d);
+                    d.isTomorrow = isTomorrowLecture(d);
+                });
+                
                 datasetMeta = payload.meta || null;
                 institutionNames = new Set(Array.isArray(payload.institutions)
                     ? payload.institutions
@@ -725,17 +842,20 @@
 
         function getStatusPriority(d) {
             if (d.isToday) return 0;
-            if (d.status === '접수중') return 1;
-            if (d.status === '접수예정') return 2;
-            if (d.status === '접수마감') return 3;
-            if (d.status === '강좌종료') return 4;
-            return 5;
+            if (d.isTomorrow) return 1;
+            if (d.status === '접수중') return 2;
+            if (d.status === '접수예정') return 3;
+            if (d.status === '접수마감') return 4;
+            if (d.status === '강좌종료') return 5;
+            return 6;
         }
 
         function getFilteredData() {
             let data = [...allData];
             if (currentFilter === 'today') {
                 data = data.filter(d => d.isToday);
+            } else if (currentFilter === 'tomorrow') {
+                data = data.filter(d => d.isTomorrow);
             } else if (currentFilter !== 'all') {
                 data = data.filter(d => d.status === currentFilter);
             }
@@ -745,7 +865,7 @@
                 if (prioA !== prioB) {
                     return prioA - prioB;
                 }
-                if (a.isToday) {
+                if (a.isToday || a.isTomorrow) {
                     return (a.beginTime || '').localeCompare(b.beginTime || '');
                 }
                 return (b.beginDate || '').localeCompare(a.beginDate || '');
@@ -816,9 +936,16 @@
         }
 
         function renderCard(d) {
+            const isToday = d.isToday;
+            const isTomorrow = d.isTomorrow;
+            const cardClasses = ['card', `status-${getStatusClass(d.status)}`];
+            if (isToday) cardClasses.push('today-card');
+            else if (isTomorrow) cardClasses.push('tomorrow-card');
+
             return `
-                <div class="card status-${getStatusClass(d.status)} ${d.isToday ? 'today-card' : ''}">
-                    ${d.isToday ? '<div class="today-badge">오늘수업</div>' : ''}
+                <div class="${cardClasses.join(' ')}">
+                    ${isToday ? '<div class="today-badge">오늘수업</div>' : ''}
+                    ${isTomorrow ? '<div class="tomorrow-badge">내일수업</div>' : ''}
                     <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
                     <div class="card-institution">${d.institution}</div>
                     <div class="card-title">${escapeHtml(d.name)}</div>
@@ -872,7 +999,9 @@
         }
 
         function getFilterLabel(filter) {
-            return filter === 'today' ? '오늘수업' : filter;
+            if (filter === 'today') return '오늘수업';
+            if (filter === 'tomorrow') return '내일수업';
+            return filter;
         }
 
         function populateInstitutionSelect() {
@@ -911,6 +1040,7 @@
             const counts = {
                 all: data.length,
                 today: 0,
+                tomorrow: 0,
                 '접수중': 0,
                 '접수예정': 0,
                 '접수마감': 0,
@@ -918,6 +1048,7 @@
             };
             data.forEach(d => {
                 if (d.isToday) counts.today++;
+                if (d.isTomorrow) counts.tomorrow++;
                 if (Object.prototype.hasOwnProperty.call(counts, d.status)) {
                     counts[d.status]++;
                 }
@@ -929,6 +1060,7 @@
             const labels = {
                 all: '전체',
                 today: '오늘수업',
+                tomorrow: '내일수업',
                 '접수중': '접수중',
                 '접수예정': '접수예정',
                 '접수마감': '접수마감',
