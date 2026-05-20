@@ -98,6 +98,11 @@
             cursor: pointer;
             transition: opacity 0.2s, transform 0.11s;
             white-space: nowrap;
+            align-self: end;
+            height: 47px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #searchBtn:hover { opacity: 0.9; }
@@ -139,6 +144,7 @@
         .filter-btn.all { background: #eef2ff; color: #4c51bf; }
         .filter-btn.today { background: #eaffd2; color: #276749; border-color: #b8f26a; }
         .filter-btn.tomorrow { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+        .filter-btn.date-select { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
         .filter-btn.open { background: #dffaf0; color: #276749; }
         .filter-btn.upcoming { background: #e1f0ff; color: #2b6cb0; }
         .filter-btn.closed { background: #ffe8e8; color: #9b2c2c; }
@@ -526,6 +532,8 @@
                 <button class="filter-btn all active" data-filter="all" onclick="setFilter('all', this)">전체(0)</button>
                 <button class="filter-btn today" data-filter="today" onclick="setFilter('today', this)">오늘수업(0)</button>
                 <button class="filter-btn tomorrow" data-filter="tomorrow" onclick="setFilter('tomorrow', this)">내일수업(0)</button>
+                <button class="filter-btn date-select" data-filter="date" onclick="openDatePicker(this)">날짜선택 📅</button>
+                <input type="date" id="filterDatePicker" style="display: none;" onchange="handleDateSelected(this.value)">
                 <button class="filter-btn open" data-filter="접수중" onclick="setFilter('접수중', this)">접수중(0)</button>
                 <button class="filter-btn upcoming" data-filter="접수예정" onclick="setFilter('접수예정', this)">접수예정(0)</button>
                 <button class="filter-btn closed" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감(0)</button>
@@ -721,6 +729,56 @@
             return dayCodes.includes(getApiDayCode(tomorrow));
         }
 
+        // ── 특정 선택 날짜 강좌/접수 여부 판단 및 핸들러 ──
+        let selectedDateString = ''; // YYYY-MM-DD 포맷
+        let selectedDateObj = null;  // Date 객체
+
+        function isLectureOnDate(d, dateObj) {
+            const begin = parseDateOnly(d.beginDate);
+            const end = parseDateOnly(d.endDate);
+            if (!dateObj || !begin || !end) return false;
+            if (dateObj < begin || dateObj > end) return false;
+
+            const dayCodes = parseDayCodes(d.dayOfWeek);
+            if (dayCodes.length === 0) {
+                return begin.getTime() === end.getTime() && dateObj.getTime() === begin.getTime();
+            }
+
+            return dayCodes.includes(getApiDayCode(dateObj));
+        }
+
+        function isApplyingOnDate(d, dateObj) {
+            const begin = parseDateOnly(d.applyBegin);
+            const end = parseDateOnly(d.applyEnd);
+            if (!dateObj || !begin || !end) return false;
+            return dateObj >= begin && dateObj <= end;
+        }
+
+        function openDatePicker(btn) {
+            const picker = document.getElementById('filterDatePicker');
+            if (typeof picker.showPicker === 'function') {
+                picker.showPicker();
+            } else {
+                picker.click();
+            }
+        }
+
+        function handleDateSelected(val) {
+            if (!val) return;
+            selectedDateString = val;
+            const [year, month, day] = val.split('-').map(Number);
+            selectedDateObj = new Date(Date.UTC(year, month - 1, day));
+
+            currentFilter = 'date';
+            displayPage = 1;
+
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            const dateBtn = document.querySelector('.filter-btn.date-select');
+            if (dateBtn) dateBtn.classList.add('active');
+
+            renderResults();
+        }
+
         initializeApp();
 
         // ── Worker 캐시에서 최근 도서관 데이터셋 가져오기 ──
@@ -856,6 +914,12 @@
                 data = data.filter(d => d.isToday);
             } else if (currentFilter === 'tomorrow') {
                 data = data.filter(d => d.isTomorrow);
+            } else if (currentFilter === 'date') {
+                if (selectedDateObj) {
+                    data = data.filter(d => isLectureOnDate(d, selectedDateObj) || isApplyingOnDate(d, selectedDateObj));
+                } else {
+                    data = [];
+                }
             } else if (currentFilter !== 'all') {
                 data = data.filter(d => d.status === currentFilter);
             }
@@ -1001,6 +1065,14 @@
         function getFilterLabel(filter) {
             if (filter === 'today') return '오늘수업';
             if (filter === 'tomorrow') return '내일수업';
+            if (filter === 'date') {
+                if (selectedDateObj) {
+                    const m = String(selectedDateObj.getUTCMonth() + 1).padStart(2, '0');
+                    const d = String(selectedDateObj.getUTCDate()).padStart(2, '0');
+                    return `${m}월 ${d}일 수업/접수`;
+                }
+                return '선택된 날짜';
+            }
             return filter;
         }
 
@@ -1045,10 +1117,14 @@
                 '접수예정': 0,
                 '접수마감': 0,
                 '강좌종료': 0,
+                date: 0,
             };
             data.forEach(d => {
                 if (d.isToday) counts.today++;
                 if (d.isTomorrow) counts.tomorrow++;
+                if (selectedDateObj && (isLectureOnDate(d, selectedDateObj) || isApplyingOnDate(d, selectedDateObj))) {
+                    counts.date++;
+                }
                 if (Object.prototype.hasOwnProperty.call(counts, d.status)) {
                     counts[d.status]++;
                 }
@@ -1068,7 +1144,17 @@
             };
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 const filter = btn.dataset.filter;
-                btn.textContent = `${labels[filter] || filter}(${counts[filter] || 0})`;
+                if (filter === 'date') {
+                    if (selectedDateObj) {
+                        const m = String(selectedDateObj.getUTCMonth() + 1).padStart(2, '0');
+                        const d = String(selectedDateObj.getUTCDate()).padStart(2, '0');
+                        btn.textContent = `${m}.${d} 수업/접수(${counts.date || 0})`;
+                    } else {
+                        btn.textContent = `날짜선택 📅`;
+                    }
+                } else {
+                    btn.textContent = `${labels[filter] || filter}(${counts[filter] || 0})`;
+                }
             });
         }
 
