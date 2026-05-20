@@ -553,8 +553,64 @@
             } else {
                 localStorage.removeItem('selectedInstitution');
             }
+            // Reset search input and keyword
+            searchInput.value = '';
+            currentKeyword = '';
+            
             doSearch();
         });
+
+        const keyToChosung = {
+            'r': 'ㄱ', 's': 'ㄴ', 'e': 'ㄷ', 'f': 'ㄹ', 'a': 'ㅁ', 'q': 'ㅂ', 't': 'ㅅ', 
+            'd': 'ㅇ', 'w': 'ㅈ', 'c': 'ㅊ', 'z': 'ㅋ', 'x': 'ㅌ', 'v': 'ㅍ', 'g': 'ㅎ',
+            'ㄱ': 'ㄱ', 'ㄴ': 'ㄴ', 'ㄷ': 'ㄷ', 'ㄹ': 'ㄹ', 'ㅁ': 'ㅁ', 'ㅂ': 'ㅂ', 'ㅅ': 'ㅅ',
+            'ㅇ': 'ㅇ', 'ㅈ': 'ㅈ', 'ㅊ': 'ㅊ', 'ㅋ': 'ㅋ', 'ㅌ': 'ㅌ', 'ㅍ': 'ㅍ', 'ㅎ': 'ㅎ'
+        };
+
+        function getChosung(str) {
+            if (!str) return '';
+            const char = str.charAt(0);
+            const code = char.charCodeAt(0);
+            if (code >= 0xAC00 && code <= 0xD7A3) {
+                const chosungList = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+                return chosungList[Math.floor((code - 0xAC00) / 588)];
+            }
+            const singleConsonants = {
+                0x3131: 'ㄱ', 0x3132: 'ㄲ', 0x3134: 'ㄴ', 0x3137: 'ㄷ', 0x3138: 'ㄸ', 
+                0x3139: 'ㄹ', 0x3141: 'ㅁ', 0x3142: 'ㅂ', 0x3143: 'ㅃ', 0x3145: 'ㅅ', 
+                0x3146: 'ㅆ', 0x3147: 'ㅇ', 0x3148: 'ㅈ', 0x3149: 'ㅉ', 0x314a: 'ㅊ', 
+                0x314b: 'ㅋ', 0x314c: 'ㅌ', 0x314d: 'ㅍ', 0x314e: 'ㅎ'
+            };
+            if (singleConsonants[code]) return singleConsonants[code];
+            return char.toLowerCase();
+        }
+
+        institutionSelect.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            
+            let pressedKey = e.key;
+            if (!pressedKey) return;
+            
+            const mapped = keyToChosung[pressedKey.toLowerCase()];
+            const searchChar = mapped || pressedKey.toLowerCase();
+            
+            const options = Array.from(institutionSelect.options);
+            for (let i = 0; i < options.length; i++) {
+                const optText = options[i].text;
+                if (!optText || optText === '전체 도서관') continue;
+                
+                const optChosung = getChosung(optText);
+                const firstChar = optText.charAt(0).toLowerCase();
+                
+                if (optChosung === searchChar || firstChar === searchChar || optText.toLowerCase().startsWith(searchChar)) {
+                    institutionSelect.selectedIndex = i;
+                    institutionSelect.dispatchEvent(new Event('change'));
+                    e.preventDefault();
+                    break;
+                }
+            }
+        });
+
         initializeApp();
 
         // ── Worker 캐시에서 최근 도서관 데이터셋 가져오기 ──
@@ -667,6 +723,15 @@
             renderResults();
         }
 
+        function getStatusPriority(d) {
+            if (d.isToday) return 0;
+            if (d.status === '접수중') return 1;
+            if (d.status === '접수예정') return 2;
+            if (d.status === '접수마감') return 3;
+            if (d.status === '강좌종료') return 4;
+            return 5;
+        }
+
         function getFilteredData() {
             let data = [...allData];
             if (currentFilter === 'today') {
@@ -675,7 +740,12 @@
                 data = data.filter(d => d.status === currentFilter);
             }
             data.sort((a, b) => {
-                if (currentFilter === 'today') {
+                const prioA = getStatusPriority(a);
+                const prioB = getStatusPriority(b);
+                if (prioA !== prioB) {
+                    return prioA - prioB;
+                }
+                if (a.isToday) {
                     return (a.beginTime || '').localeCompare(b.beginTime || '');
                 }
                 return (b.beginDate || '').localeCompare(a.beginDate || '');
