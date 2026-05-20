@@ -866,11 +866,16 @@
             renderResults();
         }
 
-        function clearDateFilter(e) {
-            if (e) e.stopPropagation();
+        function clearDateStateSilent() {
             selectedDateString = '';
             selectedDateObj = null;
-            document.getElementById('filterDatePicker').value = '';
+            const picker = document.getElementById('filterDatePicker');
+            if (picker) picker.value = '';
+        }
+
+        function clearDateFilter(e) {
+            if (e) e.stopPropagation();
+            clearDateStateSilent();
 
             if (currentFilter === 'date') {
                 currentFilter = 'all';
@@ -933,6 +938,7 @@
             if (isLoading) return;
 
             // 상태 초기화
+            clearDateStateSilent();
             currentKeyword = keyword;
             allData = [];
             displayPage = 1;
@@ -991,6 +997,9 @@
 
         // ── 필터 ──
         async function setFilter(filter, btn) {
+            if (filter !== 'date') {
+                clearDateStateSilent();
+            }
             currentFilter = filter;
             displayPage = 1;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
