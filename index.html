@@ -1576,8 +1576,8 @@
                 if (institutionSelect.value) {
                     doSearch();
                 } else {
-                    allData = [...libraryData];
-                    updateFilterButtons(getFilterCounts(libraryData));
+                    allData = getSearchBaseData();
+                    updateFilterButtons(getFilterCounts(allData));
                     document.getElementById('content').innerHTML = `
                         <div class="empty-state">
                             <div class="icon">&#128218;</div>
