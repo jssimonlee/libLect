@@ -1053,7 +1053,8 @@
             let hasCache = false;
 
             if (cached && Array.isArray(cached.lectures) && cached.lectures.length > 0) {
-                libraryData = cached.lectures;
+                // 기존 캐시에 있는 전질 대출 / 전질대출 강좌 사전 배제
+                libraryData = cached.lectures.filter(d => !isWholeSetLoan(d));
                 datasetMeta = cached.meta;
                 institutionNames = cached.institutions;
                 
@@ -1119,7 +1120,8 @@
                     throw new Error(`동기화 API 응답 오류: ${res.status}`);
                 }
                 const payload = await res.json();
-                const fetchedLectures = Array.isArray(payload.lectures) ? payload.lectures : [];
+                const rawFetched = Array.isArray(payload.lectures) ? payload.lectures : [];
+                const fetchedLectures = rawFetched.filter(d => !isWholeSetLoan(d));
 
                 if (syncMode === 'full') {
                     libraryData = fetchedLectures;
@@ -1448,22 +1450,55 @@
         function populateInstitutionSelect() {
             const saved = localStorage.getItem('selectedInstitution');
             const selected = institutionSelect.value || saved;
-            const selectableNames = [...institutionNames].filter(name => name.includes('도서관'));
-            const options = ['<option value="">전체 도서관</option>']
-                .concat(selectableNames.map(name =>
-                    `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
-                ));
+            
+            // "화성시문화관광재단 도서관사업팀"을 제외한 일반 도서관 목록 (가나다 순 정렬)
+            const selectableNames = [...institutionNames]
+                .filter(name => name.includes('도서관') && name !== '화성시문화관광재단 도서관사업팀')
+                .sort((a, b) => a.localeCompare(b, 'ko'));
+            
+            const options = ['<option value="">전체 도서관</option>'];
+            
+            selectableNames.forEach(name => {
+                options.push(`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`);
+            });
+            
+            // "화성시문화관광재단 도서관사업팀"이 institutionNames에 있을 때만 구분선 및 항목 추가
+            const hasLibraryTeam = institutionNames.has('화성시문화관광재단 도서관사업팀');
+            if (hasLibraryTeam) {
+                options.push('<option disabled>────────────────────</option>');
+                options.push(`<option value="화성시문화관광재단 도서관사업팀">화성시문화관광재단 도서관사업팀</option>`);
+            }
+            
             institutionSelect.innerHTML = options.join('');
-            if (selectableNames.includes(selected)) {
+            
+            const allSelectable = [...selectableNames];
+            if (hasLibraryTeam) {
+                allSelectable.push('화성시문화관광재단 도서관사업팀');
+            }
+            
+            if (allSelectable.includes(selected)) {
                 institutionSelect.value = selected;
             }
+        }
+
+        function isWholeSetLoan(d) {
+            if (!d) return false;
+            const blob = getSearchBlob(d);
+            return blob.includes('전질 대출') || blob.includes('전질대출');
         }
 
         function getSearchBaseData() {
             const selectedInstitution = institutionSelect.value;
             const keyword = currentKeyword.toLowerCase();
             return libraryData.filter(d => {
+                // 전체도서관 검색일 때는 "화성시문화관광재단 도서관사업팀" 강좌 제외
+                if (!selectedInstitution && d.institution === '화성시문화관광재단 도서관사업팀') return false;
+                
                 if (selectedInstitution && d.institution !== selectedInstitution) return false;
+                
+                // 전질 대출 / 전질대출 2차 방어
+                if (isWholeSetLoan(d)) return false;
+
                 if (!keyword) return true;
                 return getSearchBlob(d).includes(keyword);
             });

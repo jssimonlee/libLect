@@ -126,10 +126,11 @@ async function buildLibraryLectureDataset(limit) {
         if (Number.isFinite(totalCnt)) totalCount = totalCnt;
         if (items.length === 0) break;
 
-        const parsedItems = items.map(parseItemXml);
+                const parsedItems = items.map(parseItemXml);
         parsedItems
             .filter(lecture => isRecentLecture(lecture, cutoffDate))
             .filter(isLibraryLecture)
+            .filter(lecture => !isWholeSetLoan(lecture))
             .forEach(lecture => {
                 lectures.push(lecture);
                 if (lecture.institution) institutions.add(lecture.institution);
@@ -275,6 +276,13 @@ function decodeXml(value) {
 
 function isLibraryLecture(d) {
     return Object.values(d).some(value => typeof value === 'string' && value.includes('도서관'));
+}
+
+function isWholeSetLoan(d) {
+    if (!d) return false;
+    return Object.values(d).some(value => 
+        typeof value === 'string' && (value.includes('전질 대출') || value.includes('전질대출'))
+    );
 }
 
 function isRecentLecture(d, cutoffDate) {
