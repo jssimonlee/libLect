@@ -57,7 +57,7 @@
             font-weight: 700;
             color: #0891b2;
             border: 1px solid #cffafe;
-            margin-left: 8px;
+            margin-left: 0;
             vertical-align: middle;
             position: relative;
             z-index: 2;
@@ -102,20 +102,16 @@
             letter-spacing: -0.03em;
             color: #0f172a;
             line-height: 1.2;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
             position: relative;
             z-index: 2;
         }
 
-        header p.header-desc {
-            font-size: 0.82rem;
-            font-weight: 500;
-            color: #64748b;
-            margin-top: 0.6rem;
-            letter-spacing: -0.01em;
+        .header-badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 0.8rem;
             position: relative;
             z-index: 2;
         }
@@ -896,7 +892,8 @@
         <span id="syncBadgeText">데이터 동기화 중...</span>
     </div>
     <header>
-        <h1>화성시 도서관 강좌 검색
+        <h1>화성시 도서관 강좌 검색</h1>
+        <div class="header-badges">
             <span class="header-badge-light">
                 <span class="badge-dot"></span>
                 실시간 연동
@@ -905,8 +902,7 @@
                 <span class="badge-dot"></span>
                 최근 6개월 데이터
             </span>
-        </h1>
-        <p class="header-desc">화성시통합예약시스템 OpenAPI 연동</p>
+        </div>
     </header>
 
     <div class="search-container">
