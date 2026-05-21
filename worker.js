@@ -144,6 +144,28 @@ async function handleLibraryLectures(request, ctx) {
 }
 
 async function triggerScheduledSync() {
+    // 1. 현재 한국 표준시(KST) 기준 시간 정보 획득
+    const nowKst = getKoreaNow();
+    const day = nowKst.getDay(); // 0: 일요일, 6: 토요일
+    const hour = nowKst.getHours();
+    const minute = nowKst.getMinutes();
+
+    const isWeekend = (day === 0 || day === 6);
+    const isOffHours = (hour >= 18 || hour < 8);
+
+    // 업무 외 시간(평일 밤 18시~아침 08시 및 주말 전체) 판정
+    if (isWeekend || isOffHours) {
+        // 업무 외 시간에는 30분 대신 '6시간마다 한 번(0시, 6시, 12시, 18시)'의 정각 대역(minute < 30)에만 실행하고 스킵
+        const is6HourInterval = (hour % 6 === 0 && minute < 30);
+        if (!is6HourInterval) {
+            console.log(`[Scheduled Sync] Off-hours skip: 요일 ${day}, 시간 ${hour}:${minute}`);
+            return;
+        }
+        console.log(`[Scheduled Sync] Off-hours sync running (6-hour interval): ${hour}시`);
+    } else {
+        console.log(`[Scheduled Sync] Work-hours sync running (30-min interval): 요일 ${day}, 시간 ${hour}:${minute}`);
+    }
+
     const cache = caches.default;
     const targetUrls = [
         'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures',
@@ -392,6 +414,20 @@ function getKoreaTodayDateOnly() {
 
     const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
     return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+}
+
+function getKoreaNow() {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric',
+        hour12: false
+    });
+    
+    const parts = formatter.formatToParts(now);
+    const v = Object.fromEntries(parts.map(p => [p.type, p.value]));
+    return new Date(Number(v.year), Number(v.month) - 1, Number(v.day), Number(v.hour), Number(v.minute), Number(v.second));
 }
 
 function addMonths(date, months) {
