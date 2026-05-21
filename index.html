@@ -501,7 +501,7 @@
             background: white;
         }
 
-        /* Loading */
+        /* Loading & Skeleton Screen */
         .loading {
             text-align: center;
             padding: 4rem 1rem;
@@ -511,7 +511,7 @@
             width: 48px;
             height: 48px;
             border: 4px solid #e2e8f0;
-            border-top-color: #4c51bf;
+            border-top-color: #d97706;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin: 0 auto 1rem;
@@ -522,7 +522,63 @@
         .loading p {
             color: #718096;
             font-size: 0.95rem;
+            font-weight: 500;
         }
+
+        .skeleton-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        .skeleton-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid #edf2f7;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .skeleton-card::after {
+            content: "";
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(
+                90deg,
+                rgba(240, 240, 240, 0) 0%,
+                rgba(240, 240, 240, 0.5) 20%,
+                rgba(240, 240, 240, 0.5) 60%,
+                rgba(240, 240, 240, 0) 100%
+            );
+            transform: translateX(-100%);
+            animation: skeleton-shimmer 1.5s infinite;
+        }
+
+        @keyframes skeleton-shimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        .skeleton-line {
+            background: #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+        }
+
+        .skeleton-line.badge { width: 25%; height: 22px; margin-bottom: 1.2rem; }
+        .skeleton-line.inst { width: 45%; height: 14px; }
+        .skeleton-line.title { width: 85%; height: 20px; margin: 0.8rem 0; }
+        .skeleton-line.desc { width: 100%; height: 12px; margin-bottom: 0.5rem; }
+        .skeleton-line.desc-short { width: 70%; height: 12px; }
+        .skeleton-line.tag { display: inline-block; width: 22%; height: 26px; border-radius: 12px; margin-right: 0.5rem; }
+        .skeleton-line.footer { width: 50%; height: 14px; margin-top: 1rem; }
 
         .progress-bar-container {
             max-width: 300px;
@@ -1423,12 +1479,35 @@
 
             const contentEl = document.getElementById('content');
             
-            // 캐시가 없는 최초 진입일 때는 화면 차단 로딩바 사용
+            // 캐시가 없는 최초 진입일 때는 화면 차단 로딩바와 멋진 스켈레톤 카드 사용
             if (!hasCache) {
+                const savedInst = localStorage.getItem('selectedInstitution') || '';
+                const loadingText = savedInst 
+                    ? `🏛️ <strong>${escapeHtml(savedInst)}</strong> 강좌 목록을 신속하게 불러오는 중입니다...`
+                    : '🏛️ 최근 화성시 도서관 강좌 목록을 가져오는 중입니다...';
+
+                let skeletonCardsHtml = '';
+                for (let i = 0; i < 6; i++) {
+                    skeletonCardsHtml += `
+                        <div class="skeleton-card">
+                            <div>
+                                <div class="skeleton-line badge"></div>
+                                <div class="skeleton-line inst"></div>
+                                <div class="skeleton-line title"></div>
+                                <div class="skeleton-line desc"></div>
+                                <div class="skeleton-line desc-short"></div>
+                            </div>
+                            <div class="skeleton-line footer"></div>
+                        </div>`;
+                }
+
                 contentEl.innerHTML = `
                     <div class="loading">
                         <div class="spinner"></div>
-                        <p>최근 도서관 강좌 목록을 가져오는 중...</p>
+                        <p style="margin-bottom: 2rem;">${loadingText}</p>
+                        <div class="skeleton-grid">
+                            ${skeletonCardsHtml}
+                        </div>
                     </div>`;
             } else {
                 // 기존 캐시가 있을 때는 백그라운드로 실행하고 고급 플로팅 배지 노출
@@ -1898,6 +1977,15 @@
         async function initializeApp() {
             document.getElementById('searchBtn').disabled = true;
             try {
+                // API 데이터가 완전히 채워지기 전, 저장된 도서관명이 있다면 Select 박스에 선 반영하여 로딩 UX 향상
+                const savedInst = localStorage.getItem('selectedInstitution');
+                if (savedInst) {
+                    institutionSelect.innerHTML = `
+                        <option value="">전체 도서관</option>
+                        <option value="${escapeHtml(savedInst)}" selected>${escapeHtml(savedInst)}</option>
+                    `;
+                }
+
                 await ensureLibraryDataLoaded();
                 if (institutionSelect.value) {
                     doSearch();

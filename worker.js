@@ -15,6 +15,7 @@ const INITIAL_API_PER_PAGE = 1000;
 const NEXT_API_PER_PAGE = 500;
 const RECENT_MONTHS = 6;
 const CACHE_TTL_SECONDS = 30 * 60;
+const SWR_WINDOW_SECONDS = 24 * 60 * 60; // 24시간 SWR 허용
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -44,6 +45,10 @@ export default {
 
         return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
     },
+
+    async scheduled(event, env, ctx) {
+        ctx.waitUntil(triggerScheduledSync());
+    }
 };
 
 function jsonResponse(data, headers = {}) {
@@ -78,7 +83,43 @@ async function handleLibraryLectures(request, ctx) {
 
     const cached = await cache.match(cacheKey);
     if (cached) {
-        return withCorsHeaders(cached, 'HIT');
+        const now = Date.now();
+        const dateHeader = cached.headers.get('Date');
+        let shouldRevalidate = false;
+        let isStale = false;
+
+        if (dateHeader) {
+            const cacheTime = new Date(dateHeader).getTime();
+            const ageMs = now - cacheTime;
+
+            if (ageMs > CACHE_TTL_SECONDS * 1000) {
+                shouldRevalidate = true;
+                if (ageMs < (CACHE_TTL_SECONDS + SWR_WINDOW_SECONDS) * 1000) {
+                    isStale = true;
+                }
+            }
+        } else {
+            shouldRevalidate = true;
+        }
+
+        if (shouldRevalidate && isStale) {
+            // SWR: Serve stale content immediately, revalidate in background
+            ctx.waitUntil((async () => {
+                try {
+                    const result = await buildLibraryLectureDataset(limit);
+                    const response = jsonResponse(result, {
+                        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+                        'X-Cache': 'MISS',
+                    });
+                    await cache.put(cacheKey, response.clone());
+                } catch (err) {
+                    console.error('Background SWR sync failed:', err);
+                }
+            })());
+            return withCorsHeaders(cached, 'STALE');
+        } else if (!shouldRevalidate) {
+            return withCorsHeaders(cached, 'HIT');
+        }
     }
 
     try {
@@ -99,6 +140,30 @@ async function handleLibraryLectures(request, ctx) {
                 'Cache-Control': 'no-store',
             },
         });
+    }
+}
+
+async function triggerScheduledSync() {
+    const cache = caches.default;
+    const targetUrls = [
+        'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures',
+        'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures?limit=100',
+        'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures?limit=500'
+    ];
+
+    for (const urlStr of targetUrls) {
+        try {
+            const cacheKey = new Request(urlStr);
+            const limit = urlStr.includes('limit=100') ? 100 : (urlStr.includes('limit=500') ? 500 : null);
+            const result = await buildLibraryLectureDataset(limit);
+            const response = jsonResponse(result, {
+                'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+                'X-Cache': 'MISS',
+            });
+            await cache.put(cacheKey, response);
+        } catch (err) {
+            console.error(`Cron warm-up failed for: ${urlStr}`, err);
+        }
     }
 }
 
