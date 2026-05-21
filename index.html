@@ -1043,7 +1043,7 @@
                             </select>
                             <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                         </div>
-                        <button id="favoriteConfigBtn" type="button" title="즐겨찾기 설정" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.transform='scale(1)';">
+                        <button id="favoriteConfigBtn" type="button" title="즐겨찾기 설정" style="background: rgba(234, 179, 8, 0.05); border: 1px solid rgba(234, 179, 8, 0.2); border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #eab308; cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;" onmouseover="this.style.background='rgba(234, 179, 8, 0.15)'; this.style.borderColor='rgba(234, 179, 8, 0.4)'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='rgba(234, 179, 8, 0.05)'; this.style.borderColor='rgba(234, 179, 8, 0.2)'; this.style.transform='scale(1)';">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                         </button>
                     </div>
@@ -1958,8 +1958,10 @@
             
             // 즐겨찾기 탭 추가
             if (myLibraryFavorite && myLibraryFavorite.length > 0) {
-                const favTitle = `즐겨찾기 (${myLibraryFavorite.join(' · ')})`;
-                options.push(`<option value="favorite" title="${escapeHtml(favTitle)}">⭐ ${escapeHtml(favTitle)}</option>`);
+                const shortNames = myLibraryFavorite.map(name => name.replace('도서관', ''));
+                const favText = `즐겨찾기 (${shortNames.join(' · ')})`;
+                const favTitle = `즐겨찾기 (${shortNames.join(' · ')})`;
+                options.push(`<option value="favorite" title="${escapeHtml(favTitle)}">⭐ ${escapeHtml(favText)}</option>`);
                 options.push('<option disabled>────────────────────</option>');
             }
             
@@ -2093,8 +2095,9 @@
                     let displayTitle = '';
                     if (savedInst === 'favorite') {
                         if (myLibraryFavorite && myLibraryFavorite.length > 0) {
-                            displayName = `⭐ 즐겨찾기 (${myLibraryFavorite.join(' · ')})`;
-                            displayTitle = `즐겨찾기 (${myLibraryFavorite.join(' · ')})`;
+                            const shortNames = myLibraryFavorite.map(name => name.replace('도서관', ''));
+                            displayName = `⭐ 즐겨찾기 (${shortNames.join(' · ')})`;
+                            displayTitle = `즐겨찾기 (${shortNames.join(' · ')})`;
                         } else {
                             displayName = '⭐ 즐겨찾기';
                             displayTitle = '즐겨찾기';
@@ -2172,7 +2175,7 @@
                 return `
                     <label class="modal-checkbox-item">
                         <input type="checkbox" value="${escapeHtml(name)}" class="favorite-library-check" ${isChecked}>
-                        <span>${escapeHtml(name)}</span>
+                        <span>${escapeHtml(name.replace('도서관', ''))}</span>
                     </label>
                 `;
             }).join('');
@@ -2291,7 +2294,7 @@
             color: #fff;
         }
         .modal-checkbox-item input[type="checkbox"] {
-            accent-color: var(--primary);
+            accent-color: #eab308;
             cursor: pointer;
             width: 15px; height: 15px;
         }
@@ -2317,7 +2320,7 @@
                     </div>
                     <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                         <button type="button" onclick="closeFavoriteModal()" style="padding: 0.6rem 1.2rem; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); font-weight: 600; cursor: pointer; transition: all 0.2s;">취소</button>
-                        <button type="button" class="btn-primary" onclick="saveFavoriteLibraries()" style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">즐겨찾기 저장</button>
+                        <button type="button" class="btn-primary" onclick="saveFavoriteLibraries()" style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #ebd07b 0%, #ca8a04 100%); border: none; color: #1e1b18; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);" onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)';">즐겨찾기 저장</button>
                     </div>
                 </div>
             </div>
