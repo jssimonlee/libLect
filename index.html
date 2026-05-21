@@ -1035,12 +1035,17 @@
             <div class="search-row">
                 <div class="search-field">
                     <label for="institutionSelect">도서관 기관</label>
-                    <div class="input-wrapper select-wrapper">
-                        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><path d="M12 2 3 7h18Z"/></svg>
-                        <select id="institutionSelect">
-                            <option value="">전체 도서관</option>
-                        </select>
-                        <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    <div style="display: flex; gap: 0.5rem; width: 100%;">
+                        <div class="input-wrapper select-wrapper" style="flex: 1;">
+                            <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><path d="M12 2 3 7h18Z"/></svg>
+                            <select id="institutionSelect" style="width: 100%;">
+                                <option value="">전체 도서관</option>
+                            </select>
+                            <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </div>
+                        <button id="groupConfigBtn" type="button" title="도서관 그룹 설정" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--primary)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='var(--text-secondary)'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
                     </div>
                 </div>
                 <div class="search-field">
@@ -1102,6 +1107,37 @@
         let dataLoadDone = false;     // 최근 도서관 데이터셋을 만들었는지
         let isLoading = false;
         let isBackgroundSyncing = false; // 2단계 백그라운드 전체 동기화 실행 여부
+        
+        const DEFAULT_GROUPS = {
+            '동부권 삼총사 (동탄복합 · 동탄중앙 · 동탄목동)': [
+                '동탄복합문화센터도서관',
+                '동탄중앙이음터도서관',
+                '동탄목동이음터도서관'
+            ],
+            '서부권 삼총사 (남양 · 봉담 · 송산)': [
+                '남양도서관',
+                '봉담도서관',
+                '송산도서관'
+            ],
+            '남부권 삼총사 (태안 · 병점 · 진안)': [
+                '태안도서관',
+                '병점도서관',
+                '진안도서관'
+            ]
+        };
+
+        let myLibraryGroups = DEFAULT_GROUPS;
+        try {
+            const savedGroups = localStorage.getItem('myLibraryGroups');
+            if (savedGroups) {
+                myLibraryGroups = JSON.parse(savedGroups);
+            } else {
+                localStorage.setItem('myLibraryGroups', JSON.stringify(DEFAULT_GROUPS));
+            }
+        } catch (e) {
+            console.error('Failed to load myLibraryGroups:', e);
+        }
+
         let currentKeyword = '';
         let institutionNames = new Set();
         let datasetMeta = null;
@@ -1940,6 +1976,16 @@
             
             const options = ['<option value="">전체 도서관</option>'];
             
+            // 도서관 그룹 탭 추가
+            const groupNames = Object.keys(myLibraryGroups);
+            if (groupNames.length > 0) {
+                options.push('<option disabled>⭐ ── 도서관 그룹 ──</option>');
+                groupNames.forEach(gName => {
+                    options.push(`<option value="group:${escapeHtml(gName)}">⭐ ${escapeHtml(gName)}</option>`);
+                });
+                options.push('<option disabled>────────────────────</option>');
+            }
+            
             selectableNames.forEach(name => {
                 options.push(`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`);
             });
@@ -1957,6 +2003,9 @@
             if (hasLibraryTeam) {
                 allSelectable.push('화성시문화관광재단 도서관사업팀');
             }
+            groupNames.forEach(gName => {
+                allSelectable.push(`group:${gName}`);
+            });
             
             if (allSelectable.includes(selected)) {
                 institutionSelect.value = selected;
@@ -1972,11 +2021,22 @@
         function getSearchBaseData() {
             const selectedInstitution = institutionSelect.value;
             const keyword = currentKeyword.toLowerCase();
+            
+            const isGroup = selectedInstitution && selectedInstitution.startsWith('group:');
+            let targetLibs = [];
+            if (isGroup) {
+                const groupName = selectedInstitution.replace('group:', '');
+                targetLibs = myLibraryGroups[groupName] || [];
+            }
+
             return libraryData.filter(d => {
-                // 전체도서관 검색일 때는 "화성시문화관광재단 도서관사업팀" 강좌 제외
-                if (!selectedInstitution && d.institution === '화성시문화관광재단 도서관사업팀') return false;
-                
-                if (selectedInstitution && d.institution !== selectedInstitution) return false;
+                if (isGroup) {
+                    if (!targetLibs.includes(d.institution)) return false;
+                } else {
+                    // 전체도서관 검색일 때는 "화성시문화관광재단 도서관사업팀" 강좌 제외
+                    if (!selectedInstitution && d.institution === '화성시문화관광재단 도서관사업팀') return false;
+                    if (selectedInstitution && d.institution !== selectedInstitution) return false;
+                }
                 
                 // 전질 대출 / 전질대출 2차 방어
                 if (isWholeSetLoan(d)) return false;
@@ -2057,9 +2117,11 @@
                 // API 데이터가 완전히 채워지기 전, 저장된 도서관명이 있다면 Select 박스에 선 반영하여 로딩 UX 향상
                 const savedInst = localStorage.getItem('selectedInstitution');
                 if (savedInst) {
+                    const isGroup = savedInst.startsWith('group:');
+                    const displayName = isGroup ? `⭐ ${savedInst.replace('group:', '')}` : savedInst;
                     institutionSelect.innerHTML = `
                         <option value="">전체 도서관</option>
-                        <option value="${escapeHtml(savedInst)}" selected>${escapeHtml(savedInst)}</option>
+                        <option value="${escapeHtml(savedInst)}" selected>${escapeHtml(displayName)}</option>
                     `;
                 }
 
@@ -2097,6 +2159,290 @@
         }
 
         initializeApp();
+
+        // ── 도서관 그룹 설정 모달 이벤트 핸들러 ──
+        const groupModal = document.getElementById('groupModal');
+        const groupConfigBtn = document.getElementById('groupConfigBtn');
+
+        if (groupConfigBtn) {
+            groupConfigBtn.addEventListener('click', openGroupModal);
+        }
+
+        function openGroupModal() {
+            document.getElementById('newGroupName').value = '';
+            renderModalCheckboxGrid();
+            renderModalGroupList();
+            groupModal.style.display = 'flex';
+        }
+
+        function closeGroupModal() {
+            groupModal.style.display = 'none';
+        }
+
+        // 도서관 체크박스 리스트 생성
+        function renderModalCheckboxGrid() {
+            const grid = document.getElementById('modalLibraryCheckboxGrid');
+            if (!grid) return;
+
+            // selectableNames 추출
+            const selectableNames = [...institutionNames]
+                .filter(name => name.includes('도서관') && name !== '화성시문화관광재단 도서관사업팀')
+                .sort((a, b) => a.localeCompare(b, 'ko'));
+
+            grid.innerHTML = selectableNames.map((name, i) => `
+                <label class="modal-checkbox-item">
+                    <input type="checkbox" value="${escapeHtml(name)}" class="group-library-check">
+                    <span>${escapeHtml(name)}</span>
+                </label>
+            `).join('');
+        }
+
+        // 현재 저장된 그룹 목록 생성
+        function renderModalGroupList() {
+            const listContainer = document.getElementById('modalGroupList');
+            if (!listContainer) return;
+
+            const groupNames = Object.keys(myLibraryGroups);
+            if (groupNames.length === 0) {
+                listContainer.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; padding: 1rem 0;">등록된 도서관 그룹이 없습니다.</div>`;
+                return;
+            }
+
+            listContainer.innerHTML = groupNames.map(gName => {
+                const libs = myLibraryGroups[gName] || [];
+                const isDefault = gName.includes('삼총사'); // 기본 탑재 그룹 구분
+                return `
+                    <div class="group-list-item">
+                        <div class="group-info">
+                            <h5>⭐ ${escapeHtml(gName)}</h5>
+                            <p>${escapeHtml(libs.join(', '))}</p>
+                        </div>
+                        ${isDefault 
+                            ? `<span style="font-size:0.75rem; color:var(--text-secondary); font-style:italic; padding-right:0.5rem;">기본 그룹</span>`
+                            : `<button class="group-delete-btn" onclick="deleteLibraryGroup('${escapeHtml(gName)}')">삭제</button>`
+                        }
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 새로운 도서관 그룹 생성 및 저장
+        function createNewLibraryGroup() {
+            const nameInput = document.getElementById('newGroupName');
+            const groupName = nameInput.value.trim();
+
+            if (!groupName) {
+                alert('그룹 명칭을 입력해 주세요.');
+                nameInput.focus();
+                return;
+            }
+
+            if (myLibraryGroups[groupName]) {
+                alert('이미 동일한 이름의 그룹이 존재합니다.');
+                nameInput.focus();
+                return;
+            }
+
+            // 체크된 도서관 추출
+            const checkedBoxes = document.querySelectorAll('.group-library-check:checked');
+            if (checkedBoxes.length < 2) {
+                alert('최소 2개 이상의 도서관을 선택해 주세요.');
+                return;
+            }
+
+            const selectedLibs = Array.from(checkedBoxes).map(cb => cb.value);
+
+            // 데이터 구조에 추가 및 로컬스토리지 저장
+            myLibraryGroups[groupName] = selectedLibs;
+            localStorage.setItem('myLibraryGroups', JSON.stringify(myLibraryGroups));
+
+            // Select 박스 리렌더링 및 모달 동기화
+            populateInstitutionSelect();
+            renderModalGroupList();
+            nameInput.value = '';
+            
+            // 모든 체크박스 해제
+            document.querySelectorAll('.group-library-check').forEach(cb => cb.checked = false);
+
+            alert(`'⭐ ${groupName}' 그룹이 성공적으로 저장되었습니다!`);
+        }
+
+        // 도서관 그룹 삭제
+        function deleteLibraryGroup(groupName) {
+            if (!confirm(`'⭐ ${groupName}' 그룹을 삭제하시겠습니까?`)) return;
+
+            // 만약 현재 셀렉트 박스에서 선택되어 있는 그룹이면 전체 도서관으로 선택 변경
+            if (institutionSelect.value === `group:${groupName}`) {
+                institutionSelect.value = '';
+                localStorage.removeItem('selectedInstitution');
+            }
+
+            delete myLibraryGroups[groupName];
+            localStorage.setItem('myLibraryGroups', JSON.stringify(myLibraryGroups));
+
+            // 렌더링 갱신
+            populateInstitutionSelect();
+            renderModalGroupList();
+        }
     </script>
+
+    <style>
+        /* 도서관 그룹 설정 모달 전용 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeInModal 0.25s forwards ease-out;
+        }
+        @keyframes fadeInModal {
+            to { opacity: 1; }
+        }
+        .modal-card {
+            background: rgba(26, 22, 20, 0.95);
+            border: 1px solid rgba(139, 94, 60, 0.3);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 650px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            padding: 2rem;
+            color: #f3e9e1;
+            transform: scale(0.95);
+            animation: zoomInModal 0.25s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes zoomInModal {
+            to { transform: scale(1); }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 1rem;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #e5ba95;
+        }
+        .modal-close-btn {
+            background: none; border: none;
+            color: var(--text-secondary);
+            font-size: 1.75rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .modal-close-btn:hover {
+            color: var(--primary);
+        }
+        .modal-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #d1c2b7;
+            cursor: pointer;
+            padding: 0.4rem;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .modal-checkbox-item:hover {
+            background: rgba(255,255,255,0.04);
+            color: #fff;
+        }
+        .modal-checkbox-item input[type="checkbox"] {
+            accent-color: var(--primary);
+            cursor: pointer;
+            width: 15px; height: 15px;
+        }
+        .group-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        .group-list-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(139, 94, 60, 0.2);
+        }
+        .group-info h5 {
+            margin: 0 0 0.25rem 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e5ba95;
+        }
+        .group-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .group-delete-btn {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            color: #f43f5e;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .group-delete-btn:hover {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fff;
+        }
+    </style>
+
+    <!-- 도서관 그룹 설정 모달 -->
+    <div id="groupModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🏛️ 도서관 통합 관리 그룹 설정</h3>
+                <button class="modal-close-btn" onclick="closeGroupModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 새 그룹 생성 폼 -->
+                <div class="group-create-form" style="margin-bottom: 2rem; background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                    <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary);">➕ 새 관리 그룹 추가</h4>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">그룹 명칭 (예: 서부권 삼총사)</label>
+                            <input type="text" id="newGroupName" placeholder="그룹명을 입력해 주세요" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-main); font-size: 0.9rem;" autocomplete="off">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">대상 도서관 다중 선택 (2~4곳 권장)</label>
+                            <div id="modalLibraryCheckboxGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; max-height: 200px; overflow-y: auto; padding: 0.5rem; background: rgba(0,0,0,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <!-- JavaScript가 체크박스들을 채웁니다 -->
+                            </div>
+                        </div>
+                        <button type="button" class="btn-primary" onclick="createNewLibraryGroup()" style="align-self: flex-end; padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">그룹 저장하기</button>
+                    </div>
+                </div>
+
+                <!-- 기존 그룹 목록 관리 -->
+                <div class="group-list-section">
+                    <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-main);">📋 현재 등록된 도서관 그룹 목록</h4>
+                    <div id="modalGroupList" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 200px; overflow-y: auto;">
+                        <!-- JavaScript가 그룹 목록을 채웁니다 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                <button type="button" onclick="closeGroupModal()" style="padding: 0.6rem 1.5rem; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); font-weight: 600; cursor: pointer;">닫기</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
