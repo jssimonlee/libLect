@@ -18,92 +18,114 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        header {
-            background: linear-gradient(135deg, #e0e7ff 0%, #e0f2fe 50%, #f3e8ff 100%);
+        .hero-combined-container {
+            max-width: 960px;
+            margin: 3rem auto 2rem;
+            background: linear-gradient(135deg, #503421 0%, #382011 100%);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.25) 0px, transparent 60%),
-                radial-gradient(at 100% 0%, rgba(45, 212, 191, 0.2) 0px, transparent 60%),
-                radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 60%),
-                radial-gradient(at 80% 20%, rgba(14, 165, 233, 0.18) 0px, transparent 60%);
-            color: #0f172a;
-            padding: 3.25rem 1.5rem 5rem;
+                radial-gradient(at 0% 0%, rgba(217, 119, 6, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(120, 53, 4, 0.2) 0px, transparent 50%);
+            border-radius: 24px;
+            padding: 2.75rem 2.25rem 2.25rem;
+            box-shadow: 0 25px 50px -12px rgba(56, 32, 17, 0.35),
+                        0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(80, 52, 33, 0.3);
+        }
+
+        .hero-combined-container::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -10%;
+            width: 50%;
+            height: 70%;
+            background: radial-gradient(circle, rgba(253, 186, 116, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        header {
+            background: none;
+            color: #faf7f2;
+            padding: 0 0 2.25rem;
             text-align: center;
             position: relative;
-            border-bottom: 3px solid #c7d2fe;
-            box-shadow: inset 0 -4px 12px rgba(99, 102, 241, 0.03);
-            overflow: hidden;
+            border-bottom: none;
+            box-shadow: none;
+            overflow: visible;
         }
 
         header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.55) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 1;
+            display: none;
         }
 
         .header-badge-light {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: #ecfeff;
-            padding: 0.25rem 0.65rem;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.28rem 0.7rem;
             border-radius: 99px;
             font-size: 0.72rem;
             font-weight: 700;
-            color: #0891b2;
-            border: 1px solid #cffafe;
+            color: #ebdcd0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             margin-left: 0;
             vertical-align: middle;
             position: relative;
             z-index: 2;
+            transition: all 0.2s ease;
+        }
+
+        .header-badge-light:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
         }
 
         .header-badge-light.secondary {
-            background: #f5f3ff;
-            color: #6d28d9;
-            border-color: #ddd6fe;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ebdcd0;
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .badge-dot {
             width: 6px;
             height: 6px;
-            background-color: #06b6d4;
+            background-color: #84cc16; /* Pulse Lime Green */
             border-radius: 50%;
             display: inline-block;
             animation: badgePulse 2s infinite;
         }
 
         .header-badge-light.secondary .badge-dot {
-            background-color: #8b5cf6;
+            background-color: #fb923c; /* Peach Orange */
             animation: badgePulseSecondary 2s infinite;
         }
 
         @keyframes badgePulse {
-            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(6, 182, 212, 0); }
-            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(132, 204, 22, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(132, 204, 22, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(132, 204, 22, 0); }
         }
 
         @keyframes badgePulseSecondary {
-            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0); }
-            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(251, 146, 60, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
         }
 
         header h1 {
             font-family: 'Plus Jakarta Sans', 'Pretendard', sans-serif;
-            font-size: 1.65rem;
+            font-size: 1.85rem;
             font-weight: 800;
             letter-spacing: -0.03em;
-            color: #0f172a;
+            color: #fdfbf7;
             line-height: 1.2;
             position: relative;
             z-index: 2;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
         }
 
         .header-badges {
@@ -117,31 +139,27 @@
         }
 
         header p.header-desc strong {
-            color: #4f46e5;
+            color: #f59e0b;
             font-weight: 700;
         }
 
-        .search-container {
-            max-width: 960px;
-            margin: -2rem auto 0;
-            padding: 0 1.5rem;
+        .search-box-wrapper {
             position: relative;
             z-index: 10;
         }
 
         .search-box {
-            background: #ffffff;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08),
-                        0 0 0 1px rgba(15, 23, 42, 0.04);
-            padding: 1.75rem;
-            border: 1px solid rgba(226, 232, 240, 0.8);
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 18px;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .search-box:hover {
-            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12),
-                        0 0 0 1px rgba(15, 23, 42, 0.06);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
         }
 
         .search-row {
@@ -159,7 +177,7 @@
         }
 
         .search-field label {
-            color: #64748b;
+            color: #d6ccc2;
             font-size: 0.78rem;
             font-weight: 700;
             letter-spacing: 0.05em;
@@ -179,7 +197,7 @@
             left: 1rem;
             width: 1.1rem;
             height: 1.1rem;
-            color: #94a3b8;
+            color: #a3988e;
             pointer-events: none;
             transition: color 0.2s ease;
             z-index: 5;
@@ -190,7 +208,7 @@
             right: 1rem;
             width: 1rem;
             height: 1rem;
-            color: #94a3b8;
+            color: #a3988e;
             pointer-events: none;
             transition: color 0.2s ease;
             z-index: 5;
@@ -200,14 +218,14 @@
         .search-box select {
             width: 100%;
             padding: 0.85rem 1.2rem 0.85rem 2.6rem;
-            border: 2px solid #e2e8f0;
+            border: 1.5px solid #dcd5cc;
             border-radius: 14px;
             font-size: 0.95rem;
             font-weight: 500;
             outline: none;
             transition: all 0.2s ease-in-out;
-            background: #f8fafc;
-            color: #0f172a;
+            background: #faf9f6;
+            color: #271a11;
             appearance: none;
         }
 
@@ -217,24 +235,24 @@
         }
 
         .search-box input[type="text"]::placeholder {
-            color: #94a3b8;
+            color: #a3988e;
         }
 
         .search-box input[type="text"]:focus,
         .search-box select:focus {
-            border-color: #6366f1;
+            border-color: #d97706;
             background: #ffffff;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+            box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.18);
         }
 
         .input-wrapper:focus-within .input-icon,
         .input-wrapper:focus-within .select-chevron {
-            color: #6366f1;
+            color: #d97706;
         }
 
         #searchBtn {
             padding: 0 2rem;
-            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            background: linear-gradient(135deg, #d97706, #b45309);
             color: white;
             border: none;
             border-radius: 14px;
@@ -249,26 +267,26 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3);
         }
 
         #searchBtn:hover {
-            background: linear-gradient(135deg, #4338ca, #4f46e5);
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+            background: linear-gradient(135deg, #ea580c, #d97706);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.45);
             transform: translateY(-1px);
         }
 
         #searchBtn:active {
             transform: translateY(1px);
-            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
         }
 
         #searchBtn:disabled {
-            background: #cbd5e1;
+            background: #78716c;
             box-shadow: none;
             cursor: not-allowed;
             transform: none;
-            opacity: 0.7;
+            opacity: 0.5;
         }
 
         .btn-icon {
@@ -282,7 +300,7 @@
             gap: 0.3rem;
             margin-top: 1.25rem;
             padding-top: 1.25rem;
-            border-top: 1px solid #f1f5f9;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
             flex-wrap: nowrap;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -297,14 +315,14 @@
 
         .filter-btn {
             padding: 0.25rem 0.55rem;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 99px;
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
             font-size: 0.73rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #64748b;
+            color: #d6ccc2;
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -314,6 +332,9 @@
 
         .filter-btn:hover {
             transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.12);
+            color: #faf7f2;
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .filter-btn:not(.date-select)::before {
@@ -331,15 +352,15 @@
             transform: scale(1.2);
         }
 
-        /* Active states */
-        .filter-btn.all.active { background: #4f46e5; color: white; border-color: #4f46e5; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); }
-        .filter-btn.today.active { background: #10b981; color: white; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); }
-        .filter-btn.tomorrow.active { background: #f59e0b; color: white; border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25); }
-        .filter-btn.date-select.active { background: #06b6d4; color: white; border-color: #06b6d4; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25); }
-        .filter-btn.open.active { background: #10b981; color: white; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); }
-        .filter-btn.upcoming.active { background: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); }
-        .filter-btn.closed.active { background: #ef4444; color: white; border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); }
-        .filter-btn.ended.active { background: #64748b; color: white; border-color: #64748b; box-shadow: 0 4px 12px rgba(100, 116, 139, 0.25); }
+        /* Active states - Warm and vibrant tones matching brown theme */
+        .filter-btn.all.active { background: #d97706; color: white; border-color: #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35); }
+        .filter-btn.today.active { background: #84cc16; color: white; border-color: #84cc16; box-shadow: 0 4px 12px rgba(132, 204, 22, 0.35); }
+        .filter-btn.tomorrow.active { background: #f59e0b; color: white; border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35); }
+        .filter-btn.date-select.active { background: #06b6d4; color: white; border-color: #06b6d4; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35); }
+        .filter-btn.open.active { background: #10b981; color: white; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); }
+        .filter-btn.upcoming.active { background: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35); }
+        .filter-btn.closed.active { background: #ef4444; color: white; border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); }
+        .filter-btn.ended.active { background: #78716c; color: white; border-color: #78716c; box-shadow: 0 4px 12px rgba(120, 113, 108, 0.35); }
 
         .filter-btn.active {
             transform: translateY(-1px);
@@ -843,19 +864,20 @@
         }
 
         @media (max-width: 640px) {
+            .hero-combined-container {
+                margin: 1.5rem 1rem 0;
+                padding: 1.75rem 1.25rem 1.25rem;
+                border-radius: 20px;
+            }
             header {
-                padding: 2.25rem 1rem 3.25rem;
+                padding: 0 0 1.5rem;
             }
             header h1 {
-                font-size: 1.35rem;
-            }
-            .search-container {
-                margin-top: -2rem;
-                padding: 0 1rem;
+                font-size: 1.45rem;
             }
             .search-box {
-                padding: 1.25rem;
-                border-radius: 20px;
+                padding: 1rem;
+                border-radius: 14px;
             }
             .search-row {
                 grid-template-columns: 1fr;
@@ -891,21 +913,21 @@
         <div class="spinner-mini"></div>
         <span id="syncBadgeText">데이터 동기화 중...</span>
     </div>
-    <header>
-        <h1>화성시 도서관 강좌 검색</h1>
-        <div class="header-badges">
-            <span class="header-badge-light">
-                <span class="badge-dot"></span>
-                실시간 연동
-            </span>
-            <span class="header-badge-light secondary">
-                <span class="badge-dot"></span>
-                최근 6개월 데이터
-            </span>
-        </div>
-    </header>
+    <div class="hero-combined-container">
+        <header>
+            <h1>화성시 도서관 강좌 검색</h1>
+            <div class="header-badges">
+                <span class="header-badge-light">
+                    <span class="badge-dot"></span>
+                    실시간 연동
+                </span>
+                <span class="header-badge-light secondary">
+                    <span class="badge-dot"></span>
+                    최근 6개월 데이터
+                </span>
+            </div>
+        </header>
 
-    <div class="search-container">
         <div class="search-box">
             <div class="search-row">
                 <div class="search-field">
