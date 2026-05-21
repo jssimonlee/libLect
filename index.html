@@ -2206,6 +2206,38 @@
             alert('도서관 즐겨찾기가 정상적으로 저장되었습니다!');
         }
 
+        // 즐겨찾기 전체 해제 및 데이터 삭제
+        function clearFavoriteLibraries() {
+            if (!myLibraryFavorite || myLibraryFavorite.length === 0) {
+                alert('등록된 즐겨찾기 도서관이 없습니다.');
+                return;
+            }
+
+            if (!confirm('등록된 즐겨찾기 도서관을 모두 해제(삭제)하시겠습니까?')) {
+                return;
+            }
+
+            // 모든 체크박스 해제 비주얼 반영
+            const checkBoxes = document.querySelectorAll('.favorite-library-check');
+            checkBoxes.forEach(cb => cb.checked = false);
+
+            myLibraryFavorite = [];
+            localStorage.removeItem('myLibraryFavorite');
+
+            // 셀렉트 박스 갱신 (즐겨찾기 탭 자동 제거됨)
+            populateInstitutionSelect();
+
+            // 만약 현재 즐겨찾기 탭을 조회 중이었다면 '전체 도서관'으로 이동
+            if (institutionSelect.value === 'favorite') {
+                institutionSelect.value = '';
+                localStorage.setItem('selectedInstitution', '');
+                doSearch();
+            }
+
+            closeFavoriteModal();
+            alert('즐겨찾기가 완전히 삭제되었습니다.');
+        }
+
         // DOM 로드 완료 후 버튼에 이벤트 리스너 바인딩 (버그 원천 차단)
         document.addEventListener('DOMContentLoaded', () => {
             const favoriteConfigBtn = document.getElementById('favoriteConfigBtn');
@@ -2318,9 +2350,12 @@
                             <!-- JavaScript가 체크박스 목록을 주입합니다 -->
                         </div>
                     </div>
-                    <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                        <button type="button" onclick="closeFavoriteModal()" style="padding: 0.6rem 1.2rem; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); font-weight: 600; cursor: pointer; transition: all 0.2s;">취소</button>
-                        <button type="button" class="btn-primary" onclick="saveFavoriteLibraries()" style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #ebd07b 0%, #ca8a04 100%); border: none; color: #1e1b18; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);" onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)';">즐겨찾기 저장</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <button type="button" onclick="clearFavoriteLibraries()" style="padding: 0.6rem 1.2rem; border-radius: 8px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.borderColor='rgba(239, 68, 68, 0.4)';" onmouseout="this.style.background='rgba(239, 68, 68, 0.05)'; this.style.borderColor='rgba(239, 68, 68, 0.2)';">즐겨찾기 전체 해제</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" onclick="closeFavoriteModal()" style="padding: 0.6rem 1.2rem; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); font-weight: 600; cursor: pointer; transition: all 0.2s;">취소</button>
+                            <button type="button" class="btn-primary" onclick="saveFavoriteLibraries()" style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #ebd07b 0%, #ca8a04 100%); border: none; color: #1e1b18; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);" onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)';">즐겨찾기 저장</button>
+                        </div>
                     </div>
                 </div>
             </div>
