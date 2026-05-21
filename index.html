@@ -1101,6 +1101,7 @@
         let searchDone = true;        // 현재 데이터셋 안에서 검색이 끝났는지
         let dataLoadDone = false;     // 최근 도서관 데이터셋을 만들었는지
         let isLoading = false;
+        let isBackgroundSyncing = false; // 2단계 백그라운드 전체 동기화 실행 여부
         let currentKeyword = '';
         let institutionNames = new Set();
         let datasetMeta = null;
@@ -1470,6 +1471,12 @@
                     fetchUrl = `${LIBRARY_DATA_API}?limit=500`;
                     syncMessage = '🔄 최근 강좌 정보 실시간 동기화 중...';
                 }
+            } else {
+                // [시크릿 모드/신규 기기 대책] 캐시가 완전히 없는 최초 접속 시에는
+                // 전체 데이터 대신, 극단적으로 빠른 1단계 최근 100개 데이터 선로드 수행 (0.3~0.5초 완료)
+                syncMode = 'firstPhase';
+                fetchUrl = `${LIBRARY_DATA_API}?limit=100`;
+                syncMessage = '🏛️ 최근 강좌 데이터 고속 로드 중...';
             }
 
             isLoading = true;
@@ -1523,7 +1530,7 @@
                 const rawFetched = Array.isArray(payload.lectures) ? payload.lectures : [];
                 const fetchedLectures = rawFetched.filter(d => !isWholeSetLoan(d));
 
-                if (syncMode === 'full') {
+                if (syncMode === 'full' || syncMode === 'firstPhase') {
                     libraryData = fetchedLectures;
                 } else {
                     libraryData = mergeLectures(libraryData, fetchedLectures);
@@ -1541,7 +1548,7 @@
                     ? payload.institutions
                     : fetchedLectures.map(d => d.institution).filter(Boolean);
                 
-                if (syncMode === 'full') {
+                if (syncMode === 'full' || syncMode === 'firstPhase') {
                     institutionNames = new Set(newInsts);
                 } else {
                     newInsts.forEach(inst => institutionNames.add(inst));
@@ -1550,7 +1557,8 @@
                 populateInstitutionSelect();
 
                 // 3단계: 캐시 보존 및 타임스탬프 갱신
-                saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, now);
+                // 1단계 고속 선로드일 때는 타임스탬프를 0으로 캐싱하여 2단계 전체 로드가 완전히 채워지기 전 브라우저를 새로고침하면 다시 선로드를 하도록 조절
+                saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, syncMode === 'firstPhase' ? 0 : now);
 
                 if (hasCache) {
                     showSyncBadge('✅ 강좌 데이터 동기화 완료!', 'success');
@@ -1561,6 +1569,13 @@
                 }
                 
                 dataLoadDone = true;
+
+                // 1단계 고속 선로딩이 끝나면 화면을 차단하지 않고, 백그라운드에서 2단계 전체 데이터 동기화 실행
+                if (syncMode === 'firstPhase') {
+                    setTimeout(() => {
+                        triggerFullSyncBackground();
+                    }, 300);
+                }
             } catch (e) {
                 if (e.name === 'AbortError') { 
                     isLoading = false; 
@@ -1581,6 +1596,68 @@
             }
 
             isLoading = false;
+        }
+
+        // ── 2단계 백그라운드 전체 데이터 동기화 ──
+        async function triggerFullSyncBackground() {
+            if (isBackgroundSyncing) return;
+            isBackgroundSyncing = true;
+
+            showSyncBadge('🔄 전체 강좌 데이터 실시간 동기화 중...', 'loading');
+
+            try {
+                const res = await fetch(LIBRARY_DATA_API);
+                if (!res.ok) {
+                    throw new Error(`백그라운드 동기화 API 응답 오류: ${res.status}`);
+                }
+                const payload = await res.json();
+                const rawFetched = Array.isArray(payload.lectures) ? payload.lectures : [];
+                const fetchedLectures = rawFetched.filter(d => !isWholeSetLoan(d));
+
+                if (fetchedLectures.length > 0) {
+                    libraryData = fetchedLectures;
+
+                    // 오늘/내일 강좌 상태 갱신
+                    libraryData.forEach(d => {
+                        d.isToday = isTodayLecture(d);
+                        d.isTomorrow = isTomorrowLecture(d);
+                    });
+
+                    datasetMeta = payload.meta || datasetMeta;
+
+                    const newInsts = Array.isArray(payload.institutions)
+                        ? payload.institutions
+                        : fetchedLectures.map(d => d.institution).filter(Boolean);
+                    
+                    institutionNames = new Set(newInsts);
+
+                    // 사용자가 선택해놓은 도서관 옵션을 기억하고 Select 박스를 온전히 최신화
+                    const currentSelected = institutionSelect.value;
+                    populateInstitutionSelect();
+                    if (currentSelected && [...institutionNames].includes(currentSelected)) {
+                        institutionSelect.value = currentSelected;
+                    }
+
+                    // 정규 캐시 데이터 타임스탬프 저장
+                    saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, Date.now());
+
+                    // 사용자가 이미 검색 버튼을 눌렀거나, 도서관 필터가 선택되어 있는 경우 물 흐르듯 화면을 갱신
+                    if (searchDone || institutionSelect.value) {
+                        allData = getSearchBaseData();
+                        updateFilterButtons(getFilterCounts(allData));
+                        renderResults();
+                    } else {
+                        allData = getSearchBaseData();
+                    }
+
+                    showSyncBadge('✅ 전체 강좌 동기화 완료!', 'success');
+                }
+            } catch (err) {
+                console.error('백그라운드 전체 동기화 실패:', err);
+                showSyncBadge('⚠️ 전체 강좌 동기화 실패 (1단계 데이터 유지)', 'error');
+            } finally {
+                isBackgroundSyncing = false;
+            }
         }
 
         // ── 검색 시작 ──
