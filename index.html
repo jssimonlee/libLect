@@ -1333,8 +1333,8 @@
             lastSync: 'liblect_last_sync_time'
         };
 
-        const SYNC_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30분 그레이스 피리어드 (0ms 로딩 보장)
-        const SYNC_TIER_1_MS = 4 * 60 * 60 * 1000;    // 4시간 이내: 최신 100개 동기화
+        const SYNC_GRACE_PERIOD_MS = 4 * 60 * 60 * 1000; // 4시간 그레이스 피리어드 (0ms 로딩 보장)
+        const SYNC_TIER_1_MS = 24 * 60 * 60 * 1000;    // 24시간 이내: 최신 100개 동기화
         const SYNC_TIER_2_MS = 7 * 24 * 60 * 60 * 1000; // 7일 이내: 최신 500개 동기화
 
         function getLectureKey(d) {
@@ -1449,7 +1449,7 @@
             const lastSyncTime = cached ? cached.lastSyncTime : 0;
             const timeDiff = now - lastSyncTime;
 
-            // 2단계: 캐시 유효기간(30분) 확인 및 동기화 필요 여부 결정
+            // 2단계: 캐시 유효기간(4시간) 확인 및 동기화 필요 여부 결정
             if (hasCache && timeDiff < SYNC_GRACE_PERIOD_MS) {
                 dataLoadDone = true;
                 return;
@@ -1458,17 +1458,17 @@
             // 동기화 모드 결정
             let syncMode = 'full'; 
             let fetchUrl = LIBRARY_DATA_API;
-            let syncMessage = '🔄 전체 데이터 동기화 중...';
+            let syncMessage = '🔄 전체 강좌 데이터 실시간 동기화 중...';
 
             if (hasCache) {
                 if (timeDiff < SYNC_TIER_1_MS) {
                     syncMode = 'tier1';
                     fetchUrl = `${LIBRARY_DATA_API}?limit=100`;
-                    syncMessage = '🔄 최신 데이터 업데이트 중... (100개)';
+                    syncMessage = '🔄 실시간 신청 인원 정보 갱신 중...';
                 } else if (timeDiff < SYNC_TIER_2_MS) {
                     syncMode = 'tier2';
                     fetchUrl = `${LIBRARY_DATA_API}?limit=500`;
-                    syncMessage = '🔄 최신 데이터 업데이트 중... (500개)';
+                    syncMessage = '🔄 최근 강좌 정보 실시간 동기화 중...';
                 }
             }
 
