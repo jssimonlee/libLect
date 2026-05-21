@@ -1698,6 +1698,11 @@
             if (isToday) cardClasses.push('today-card');
             else if (isTomorrow) cardClasses.push('tomorrow-card');
 
+            const formatDateTime = (str) => {
+                if (!str) return '';
+                return String(str).replace(/:\d{2}$/, '');
+            };
+
             return `
                 <div class="${cardClasses.join(' ')}">
                     ${isToday ? '<div class="today-badge">오늘수업</div>' : ''}
@@ -1720,7 +1725,7 @@
                         </div>
                         ${d.applyBegin ? `<div class="card-info-item">
                             <span class="label">접수</span>
-                            <span class="info-apply">${d.applyBegin} ~ ${d.applyEnd}</span>
+                            <span class="info-apply">${formatDateTime(d.applyBegin)} ~ ${formatDateTime(d.applyEnd)}</span>
                         </div>` : ''}
                         ${d.reference ? `<div class="card-info-item">
                             <span class="label">문의</span>
