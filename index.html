@@ -912,6 +912,47 @@
                 justify-content: center;
             }
         }
+
+        /* ── 실시간 강좌 카드 상태별 마이크로 강조 애니메이션 ── */
+        @keyframes dynamicHighlight {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+            100% { transform: translateY(0); }
+        }
+
+        .today-card .info-time,
+        .today-card .info-place,
+        .tomorrow-card .info-time,
+        .tomorrow-card .info-place {
+            display: inline-block;
+            font-weight: 800 !important;
+            color: #0f172a;
+            animation: dynamicHighlight 2.2s infinite ease-in-out;
+        }
+
+        .status-upcoming .info-apply {
+            display: inline-block;
+            font-weight: 800 !important;
+            color: #2563eb; /* 접수예정: 신뢰감 있는 인디고 블루 */
+            animation: dynamicHighlight 2.2s infinite ease-in-out;
+        }
+
+        .status-closed .apply-count,
+        .status-closed .wait-count {
+            display: inline-block;
+            font-weight: 800 !important;
+            color: #ef4444; /* 접수마감: 선명한 레드 */
+            animation: dynamicHighlight 2.2s infinite ease-in-out;
+        }
+
+        .status-open .info-apply,
+        .status-open .apply-count,
+        .status-open .wait-count {
+            display: inline-block;
+            font-weight: 800 !important;
+            color: #16a34a; /* 접수중: 싱그러운 초록색 */
+            animation: dynamicHighlight 2.2s infinite ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -1671,15 +1712,15 @@
                         </div>
                         <div class="card-info-item">
                             <span class="label">시간</span>
-                            <span>${d.beginTime} ~ ${d.endTime} (${getDayNames(d.dayOfWeek)})</span>
+                            <span class="info-time">${d.beginTime} ~ ${d.endTime} (${getDayNames(d.dayOfWeek)})</span>
                         </div>
                         <div class="card-info-item">
                             <span class="label">장소</span>
-                            <span>${escapeHtml(d.place)}</span>
+                            <span class="info-place">${escapeHtml(d.place)}</span>
                         </div>
                         ${d.applyBegin ? `<div class="card-info-item">
                             <span class="label">접수</span>
-                            <span>${d.applyBegin} ~ ${d.applyEnd}</span>
+                            <span class="info-apply">${d.applyBegin} ~ ${d.applyEnd}</span>
                         </div>` : ''}
                         ${d.reference ? `<div class="card-info-item">
                             <span class="label">문의</span>
@@ -1693,8 +1734,8 @@
                     </div>
                     <div class="card-footer">
                         <div class="card-apply">
-                            신청 <strong>${d.applyUserNum}</strong>/${d.applyLimitNum}명
-                            ${parseInt(d.waitLimitNum) > 0 ? ` &middot; 대기 ${d.waitUserNum}/${d.waitLimitNum}명` : ''}
+                            신청 <strong class="apply-count">${d.applyUserNum}</strong>/${d.applyLimitNum}명
+                            ${parseInt(d.waitLimitNum) > 0 ? ` &middot; 대기 <strong class="wait-count">${d.waitUserNum}</strong>/${d.waitLimitNum}명` : ''}
                         </div>
                         ${d.detailUrl ? `<a class="card-link" href="${d.detailUrl}" target="_blank">상세보기</a>` : ''}
                     </div>
