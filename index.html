@@ -1228,8 +1228,6 @@
             renderResults();
         }
 
-        initializeApp();
-
         // ── 로컬 스토리지 캐시 및 동기화 최적화 ──
         const CACHE_KEYS = {
             lectures: 'liblect_cached_lectures',
@@ -1886,6 +1884,8 @@
             div.textContent = str;
             return div.innerHTML;
         }
+
+        initializeApp();
     </script>
 </body>
 </html>
