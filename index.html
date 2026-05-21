@@ -1043,8 +1043,8 @@
                             </select>
                             <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                         </div>
-                        <button id="favoriteConfigBtn" type="button" title="즐겨찾기 설정" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--primary)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='var(--text-secondary)'">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>
+                        <button id="favoriteConfigBtn" type="button" title="즐겨찾기 설정" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.transform='scale(1)';">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                         </button>
                     </div>
                 </div>
@@ -1958,16 +1958,8 @@
             
             // 즐겨찾기 탭 추가
             if (myLibraryFavorite && myLibraryFavorite.length > 0) {
-                let favText = '⭐ 내 도서관 즐겨찾기';
-                const shortNames = myLibraryFavorite.map(name => name.replace('도서관', ''));
-                if (shortNames.length === 1) {
-                    favText += ` (${shortNames[0]})`;
-                } else if (shortNames.length === 2) {
-                    favText += ` (${shortNames[0]} · ${shortNames[1]})`;
-                } else {
-                    favText += ` (${shortNames[0]} 외 ${shortNames.length - 1}곳)`;
-                }
-                options.push(`<option value="favorite">${escapeHtml(favText)}</option>`);
+                const favTitle = `즐겨찾기 (${myLibraryFavorite.join(' · ')})`;
+                options.push(`<option value="favorite" title="${escapeHtml(favTitle)}">⭐ ${escapeHtml(favTitle)}</option>`);
                 options.push('<option disabled>────────────────────</option>');
             }
             
@@ -2098,23 +2090,19 @@
                 const savedInst = localStorage.getItem('selectedInstitution');
                 if (savedInst) {
                     let displayName = savedInst;
+                    let displayTitle = '';
                     if (savedInst === 'favorite') {
                         if (myLibraryFavorite && myLibraryFavorite.length > 0) {
-                            const shortNames = myLibraryFavorite.map(name => name.replace('도서관', ''));
-                            if (shortNames.length === 1) {
-                                displayName = `⭐ 내 도서관 즐겨찾기 (${shortNames[0]})`;
-                            } else if (shortNames.length === 2) {
-                                displayName = `⭐ 내 도서관 즐겨찾기 (${shortNames[0]} · ${shortNames[1]})`;
-                            } else {
-                                displayName = `⭐ 내 도서관 즐겨찾기 (${shortNames[0]} 외 ${shortNames.length - 1}곳)`;
-                            }
+                            displayName = `⭐ 즐겨찾기 (${myLibraryFavorite.join(' · ')})`;
+                            displayTitle = `즐겨찾기 (${myLibraryFavorite.join(' · ')})`;
                         } else {
-                            displayName = '⭐ 내 도서관 즐겨찾기';
+                            displayName = '⭐ 즐겨찾기';
+                            displayTitle = '즐겨찾기';
                         }
                     }
                     institutionSelect.innerHTML = `
                         <option value="">전체 도서관</option>
-                        <option value="${escapeHtml(savedInst)}" selected>${escapeHtml(displayName)}</option>
+                        <option value="${escapeHtml(savedInst)}" title="${escapeHtml(displayTitle)}" selected>${escapeHtml(displayName)}</option>
                     `;
                 }
 
