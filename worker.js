@@ -19,7 +19,7 @@ const SWR_WINDOW_SECONDS = 24 * 60 * 60; // 24시간 SWR 허용
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -31,15 +31,34 @@ export default {
             return new Response(null, { status: 204, headers: CORS_HEADERS });
         }
 
-        if (request.method !== 'GET') {
-            return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
-        }
-
         if (url.pathname === '/api/libraryLectures') {
+            if (request.method !== 'GET') {
+                return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+            }
             return handleLibraryLectures(request, ctx);
         }
 
+        if (url.pathname === '/api/assignees') {
+            if (request.method !== 'GET') {
+                return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+            }
+            return handleGetAssignees(env);
+        }
+
+        if (url.pathname === '/api/assignee') {
+            if (request.method === 'POST') {
+                return handlePostAssignee(request, env);
+            } else if (request.method === 'DELETE') {
+                return handleDeleteAssignee(request, env);
+            } else {
+                return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+            }
+        }
+
         if (url.pathname.startsWith('/api/')) {
+            if (request.method !== 'GET') {
+                return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+            }
             return proxyXmlApi(url);
         }
 
@@ -50,6 +69,96 @@ export default {
         ctx.waitUntil(triggerScheduledSync());
     }
 };
+
+async function handleGetAssignees(env) {
+    try {
+        if (!env.DB) {
+            throw new Error("D1 Database binding 'DB' is not set.");
+        }
+        const { results } = await env.DB.prepare("SELECT * FROM assignees").all();
+        const mapping = {};
+        if (results) {
+            results.forEach(row => {
+                mapping[row.lecture_key] = {
+                    name: row.name,
+                    masked: row.masked,
+                    updated_at: row.updated_at
+                };
+            });
+        }
+        return jsonResponse(mapping);
+    } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+            status: 500,
+            headers: {
+                ...CORS_HEADERS,
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+        });
+    }
+}
+
+async function handlePostAssignee(request, env) {
+    try {
+        if (!env.DB) {
+            throw new Error("D1 Database binding 'DB' is not set.");
+        }
+        const body = await request.json();
+        const { lectureKey, name, masked } = body;
+        if (!lectureKey || !name || !masked) {
+            return new Response(JSON.stringify({ error: 'Missing parameters' }), {
+                status: 400,
+                headers: {
+                    ...CORS_HEADERS,
+                    'Content-Type': 'application/json; charset=utf-8',
+                },
+            });
+        }
+        await env.DB.prepare(
+            "INSERT INTO assignees (lecture_key, name, masked, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(lecture_key) DO UPDATE SET name=excluded.name, masked=excluded.masked, updated_at=excluded.updated_at"
+        ).bind(lectureKey, name, masked, Date.now()).run();
+
+        return jsonResponse({ success: true });
+    } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+            status: 500,
+            headers: {
+                ...CORS_HEADERS,
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+        });
+    }
+}
+
+async function handleDeleteAssignee(request, env) {
+    try {
+        if (!env.DB) {
+            throw new Error("D1 Database binding 'DB' is not set.");
+        }
+        const body = await request.json();
+        const { lectureKey } = body;
+        if (!lectureKey) {
+            return new Response(JSON.stringify({ error: 'Missing lectureKey' }), {
+                status: 400,
+                headers: {
+                    ...CORS_HEADERS,
+                    'Content-Type': 'application/json; charset=utf-8',
+                },
+            });
+        }
+        await env.DB.prepare("DELETE FROM assignees WHERE lecture_key = ?").bind(lectureKey).run();
+
+        return jsonResponse({ success: true });
+    } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+            status: 500,
+            headers: {
+                ...CORS_HEADERS,
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+        });
+    }
+}
 
 function jsonResponse(data, headers = {}) {
     return new Response(JSON.stringify(data), {

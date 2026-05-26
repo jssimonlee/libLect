@@ -15,8 +15,113 @@ const MIME_TYPES = {
     '.ico': 'image/x-icon',
 };
 
+const ASSIGNEES_FILE = path.join(__dirname, 'assignees.json');
+
+function readAssignees() {
+    try {
+        if (fs.existsSync(ASSIGNEES_FILE)) {
+            const data = fs.readFileSync(ASSIGNEES_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error('Failed to read assignees.json', e);
+    }
+    return {};
+}
+
+function writeAssignees(data) {
+    try {
+        fs.writeFileSync(ASSIGNEES_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.error('Failed to write assignees.json', e);
+    }
+}
+
 const server = http.createServer((req, res) => {
     const parsed = url.parse(req.url, true);
+
+    // CORS OPTIONS 처리
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+        });
+        res.end();
+        return;
+    }
+
+    // API 프록시: /api/assignees (GET)
+    if (parsed.pathname === '/api/assignees' && req.method === 'GET') {
+        const assignees = readAssignees();
+        res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+        });
+        res.end(JSON.stringify(assignees));
+        return;
+    }
+
+    // API 프록시: /api/assignee (POST)
+    if (parsed.pathname === '/api/assignee' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const payload = JSON.parse(body);
+                const { lectureKey, name, masked } = payload;
+                if (!lectureKey || !name || !masked) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Missing parameters' }));
+                    return;
+                }
+                const assignees = readAssignees();
+                assignees[lectureKey] = { name, masked, updated_at: Date.now() };
+                writeAssignees(assignees);
+
+                res.writeHead(200, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Access-Control-Allow-Origin': '*',
+                });
+                res.end(JSON.stringify({ success: true }));
+            } catch (err) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+            }
+        });
+        return;
+    }
+
+    // API 프록시: /api/assignee (DELETE)
+    if (parsed.pathname === '/api/assignee' && req.method === 'DELETE') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const payload = JSON.parse(body);
+                const { lectureKey } = payload;
+                if (!lectureKey) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Missing lectureKey' }));
+                    return;
+                }
+                const assignees = readAssignees();
+                if (assignees[lectureKey]) {
+                    delete assignees[lectureKey];
+                    writeAssignees(assignees);
+                }
+                res.writeHead(200, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Access-Control-Allow-Origin': '*',
+                });
+                res.end(JSON.stringify({ success: true }));
+            } catch (err) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+            }
+        });
+        return;
+    }
 
     // API 프록시: /api/libraryLectures (로컬 캐시 및 최적화 구현체)
     if (parsed.pathname === '/api/libraryLectures') {

@@ -1291,6 +1291,14 @@
         const LIBRARY_DATA_API = WORKER_BASE
             ? WORKER_BASE.replace(/\/$/, '') + '/api/libraryLectures'
             : '/api/libraryLectures';
+
+        const ASSIGNEES_API = WORKER_BASE
+            ? WORKER_BASE.replace(/\/$/, '') + '/api/assignees'
+            : '/api/assignees';
+
+        const ASSIGNEE_API = WORKER_BASE
+            ? WORKER_BASE.replace(/\/$/, '') + '/api/assignee'
+            : '/api/assignee';
         // ────────────────────────────────────────────────────────────
 
         const CARDS_PER_PAGE = 12;   // 화면에 보여주는 카드 수
@@ -1349,22 +1357,17 @@
             return (d.institution || '') + '::' + (d.name || '');
         }
 
-        // 담당자 데이터 로드
-        function loadAssigneeData() {
+        // 담당자 데이터 로드 (D1 DB 비동기 호출)
+        async function loadAssigneeData() {
             try {
-                const saved = localStorage.getItem('liblect_assignees');
-                if (saved) assigneeData = JSON.parse(saved);
+                const response = await fetch(ASSIGNEES_API);
+                if (response.ok) {
+                    assigneeData = await response.json();
+                } else {
+                    console.error('Failed to load assignee data from server:', response.status);
+                }
             } catch (e) {
-                console.error('Failed to load assignee data:', e);
-            }
-        }
-
-        // 담당자 데이터 저장
-        function saveAssigneeData() {
-            try {
-                localStorage.setItem('liblect_assignees', JSON.stringify(assigneeData));
-            } catch (e) {
-                console.error('Failed to save assignee data:', e);
+                console.error('Failed to fetch assignee data:', e);
             }
         }
 
@@ -1441,13 +1444,6 @@
             let html = `
                 <h4>${isEdit ? '👤 담당자 수정' : '✏️ 담당자 등록'}</h4>
                 <div class="pop-subtitle">이름을 입력하면 보호된 표시 옵션을 선택할 수 있습니다</div>
-            `;
-
-            if (isIncognito) {
-                html += `<div class="assignee-incognito-msg">⚠️ 시크릿 모드에서는 담당자 정보가 저장되지 않습니다</div>`;
-            }
-
-            html += `
                 <div class="pop-input-wrap">
                     <input type="text" id="assigneeNameInput" placeholder="이름을 입력하세요 (예: 홍길동)" value="${escapeHtml(existingName)}" maxlength="10" autocomplete="off" />
                 </div>
@@ -1519,8 +1515,8 @@
             document.getElementById('assigneeSaveBtn').disabled = false;
         }
 
-        // 저장
-        function saveAssignee() {
+        // 저장 (D1 DB 비동기 호출)
+        async function saveAssignee() {
             const overlay = document.getElementById('assigneePopoverOverlay');
             if (!overlay) return;
             const lectureKey = overlay.dataset.lectureKey;
@@ -1529,12 +1525,33 @@
 
             if (!fullName || !selectedMask) return;
 
-            if (isIncognito) {
-                // 시크릿 모드에서는 메모리에만 저장 (페이지 새로고침시 사라짐)
-                assigneeData[lectureKey] = { name: fullName, masked: selectedMask };
-            } else {
-                assigneeData[lectureKey] = { name: fullName, masked: selectedMask };
-                saveAssigneeData();
+            const saveBtn = document.getElementById('assigneeSaveBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = '저장 중...';
+            }
+
+            try {
+                const response = await fetch(ASSIGNEE_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        lectureKey: lectureKey,
+                        name: fullName,
+                        masked: selectedMask
+                    })
+                });
+
+                if (response.ok) {
+                    assigneeData[lectureKey] = { name: fullName, masked: selectedMask, updated_at: Date.now() };
+                } else {
+                    alert('담당자 정보를 저장하지 못했습니다.');
+                }
+            } catch (err) {
+                console.error('Failed to save assignee:', err);
+                alert('네트워크 오류로 담당자 저장에 실패했습니다.');
             }
 
             selectedMask = '';
@@ -1542,14 +1559,38 @@
             renderResults();
         }
 
-        // 삭제
-        function deleteAssignee() {
+        // 삭제 (D1 DB 비동기 호출)
+        async function deleteAssignee() {
             const overlay = document.getElementById('assigneePopoverOverlay');
             if (!overlay) return;
             const lectureKey = overlay.dataset.lectureKey;
 
-            delete assigneeData[lectureKey];
-            if (!isIncognito) saveAssigneeData();
+            const deleteBtn = document.querySelector('.pop-delete');
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.textContent = '삭제 중...';
+            }
+
+            try {
+                const response = await fetch(ASSIGNEE_API, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        lectureKey: lectureKey
+                    })
+                });
+
+                if (response.ok) {
+                    delete assigneeData[lectureKey];
+                } else {
+                    alert('담당자 정보를 삭제하지 못했습니다.');
+                }
+            } catch (err) {
+                console.error('Failed to delete assignee:', err);
+                alert('네트워크 오류로 담당자 삭제에 실패했습니다.');
+            }
 
             selectedMask = '';
             closeAssigneePopover();
@@ -1567,7 +1608,9 @@
         detectIncognito().then(result => {
             isIncognito = result;
         });
-        loadAssigneeData();
+        loadAssigneeData().then(() => {
+            if (dataLoadDone) renderResults();
+        });
         // ────────────────────────────────────────────────────────
 
         let currentKeyword = '';
@@ -1893,6 +1936,9 @@
         async function ensureLibraryDataLoaded() {
             if (dataLoadDone) return;
             if (isLoading) return;
+
+            // 실시간 담당자 정보 동시 조회
+            await loadAssigneeData();
 
             // 1단계: 동기적으로 localStorage 캐시 우선 로드 (즉각적인 화면 복구)
             const cached = loadCacheFromLocalStorage();
