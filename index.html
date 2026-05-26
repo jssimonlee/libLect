@@ -1614,12 +1614,25 @@
         // ────────────────────────────────────────────────────────
 
         let currentKeyword = '';
-        let institutionNames = new Set();
+        const BASELINE_INSTITUTIONS = [
+            '가족만세센터작은도서관', '기아행복마루작은도서관', '남양도서관', '노을빛도서관',
+            '다원이음터도서관', '달빛나래어린이도서관', '동탄중앙이음터도서관', '두빛나래어린이도서관',
+            '둥지나래어린이도서관', '마도작은도서관', '목동이음터도서관', '병점도서관',
+            '봉담도서관', '봉담와우도서관', '봉담커피앤북작은도서관', '비봉작은도서관',
+            '삼괴도서관', '샘내작은도서관', '서신작은도서관', '서연이음터도서관',
+            '송린이음터도서관', '송산도서관', '양감작은도서관', '왕배푸른숲도서관',
+            '정남도서관', '진안도서관', '태안도서관', '팔탄작은도서관',
+            '향남복합문화센터도서관', '화성동탄중앙도서관'
+        ];
+        let institutionNames = new Set(BASELINE_INSTITUTIONS);
         let datasetMeta = null;
         let abortController = null;
 
         const searchInput = document.getElementById('searchInput');
         const institutionSelect = document.getElementById('institutionSelect');
+
+        // 최초 진입 시 도서관 선택 상자 즉시 렌더링 (시크릿 모드에서도 0초 대기)
+        populateInstitutionSelect();
 
         // Enter key
         searchInput.addEventListener('keydown', (e) => {
@@ -1948,7 +1961,7 @@
                 // 기존 캐시에 있는 전질 대출 / 전질대출 강좌 사전 배제
                 libraryData = cached.lectures.filter(d => !isWholeSetLoan(d));
                 datasetMeta = cached.meta;
-                institutionNames = cached.institutions;
+                cached.institutions.forEach(inst => institutionNames.add(inst));
                 
                 // 오늘/내일 여부 실시간 업데이트
                 libraryData.forEach(d => {
@@ -2062,11 +2075,8 @@
                     ? payload.institutions
                     : fetchedLectures.map(d => d.institution).filter(Boolean);
                 
-                if (syncMode === 'full' || syncMode === 'firstPhase') {
-                    institutionNames = new Set(newInsts);
-                } else {
-                    newInsts.forEach(inst => institutionNames.add(inst));
-                }
+                // 새 도서관이 동적으로 추가될 수 있으므로 기존 베이스라인에 안전하게 누적 병합
+                newInsts.forEach(inst => institutionNames.add(inst));
 
                 populateInstitutionSelect();
 
@@ -2143,7 +2153,8 @@
                         ? payload.institutions
                         : fetchedLectures.map(d => d.institution).filter(Boolean);
                     
-                    institutionNames = new Set(newInsts);
+                    // 새 도서관이 동적으로 추가될 수 있으므로 베이스라인에 누적 병합
+                    newInsts.forEach(inst => institutionNames.add(inst));
 
                     // 사용자가 선택해놓은 도서관 옵션을 기억하고 Select 박스를 온전히 최신화
                     const currentSelected = institutionSelect.value;
