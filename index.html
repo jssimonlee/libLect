@@ -678,8 +678,15 @@
         .card-status.closed { background: #fed7d7; color: #742a2a; }
         .card-status.ended { background: #e2e8f0; color: #4a5568; }
 
-        .today-badge {
+        .today-badge-group {
+            display: flex;
+            gap: 0.35rem;
+            align-items: center;
+            margin-bottom: 0.45rem;
             align-self: flex-start;
+        }
+
+        .today-badge {
             padding: 0.24rem 0.62rem;
             border-radius: 999px;
             background: #dfff8f;
@@ -688,7 +695,59 @@
             box-shadow: 0 0 16px rgba(190,242,100,0.8);
             font-size: 0.74rem;
             font-weight: 700;
-            margin-bottom: 0.45rem;
+        }
+
+        .today-sub-badge {
+            padding: 0.24rem 0.62rem;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+        }
+
+        .today-sub-badge.ongoing {
+            background: #dc2626;
+            color: #ffffff;
+            border: 1px solid #b91c1c;
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
+            animation: pulse-glow 1.8s infinite ease-in-out;
+        }
+
+        .today-sub-badge.upcoming {
+            background: #3b82f6;
+            color: #ffffff;
+            border: 1px solid #1d4ed8;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+            animation: gentle-breathe 2.4s infinite ease-in-out;
+        }
+
+        .today-sub-badge.completed {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 14px 6px rgba(220, 38, 38, 0.25);
+                transform: scale(1.04);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+                transform: scale(1);
+            }
+        }
+
+        @keyframes gentle-breathe {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+            100% { transform: scale(1); }
         }
 
         .tomorrow-badge {
@@ -1766,6 +1825,38 @@
             return dayCodes.includes(getApiDayCode(today));
         }
 
+        // 오늘 수업의 시간대별 상태(진행중, 예정, 종료) 판정
+        function getTodayLectureTimeStatus(d) {
+            if (!d.isToday) return null;
+
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMin = now.getMinutes();
+            const currentSec = now.getSeconds();
+            const currentTimeInSeconds = (currentHour * 3600) + (currentMin * 60) + currentSec;
+
+            // HH:MM 또는 HH:MM:SS 형식을 초 단위로 변환
+            const parseTimeToSeconds = (timeStr) => {
+                if (!timeStr) return 0;
+                const parts = timeStr.split(':').map(Number);
+                const hrs = parts[0] || 0;
+                const mins = parts[1] || 0;
+                const secs = parts[2] || 0;
+                return (hrs * 3600) + (mins * 60) + secs;
+            };
+
+            const beginSecs = parseTimeToSeconds(d.beginTime);
+            const endSecs = parseTimeToSeconds(d.endTime);
+
+            if (currentTimeInSeconds < beginSecs) {
+                return 'upcoming';  // 오늘 중 시작 전 (예정)
+            } else if (currentTimeInSeconds >= beginSecs && currentTimeInSeconds <= endSecs) {
+                return 'ongoing';   // 수업 진행 중
+            } else {
+                return 'completed'; // 수업 종료
+            }
+        }
+
         function isTomorrowLecture(d) {
             const tomorrow = getKoreaTomorrowDateOnly();
             const begin = parseDateOnly(d.beginDate);
@@ -2400,9 +2491,28 @@
                 return String(str).replace(/:\d{2}$/, '');
             };
 
+            let todayBadgeHtml = '';
+            if (isToday) {
+                const timeStatus = getTodayLectureTimeStatus(d);
+                let subBadgeHtml = '';
+                if (timeStatus === 'ongoing') {
+                    subBadgeHtml = '<span class="today-sub-badge ongoing">⚡ 진행중</span>';
+                } else if (timeStatus === 'upcoming') {
+                    subBadgeHtml = '<span class="today-sub-badge upcoming">⏰ 예정</span>';
+                } else if (timeStatus === 'completed') {
+                    subBadgeHtml = '<span class="today-sub-badge completed">✓ 종료</span>';
+                }
+                todayBadgeHtml = `
+                    <div class="today-badge-group">
+                        <span class="today-badge">오늘수업</span>
+                        ${subBadgeHtml}
+                    </div>
+                `;
+            }
+
             return `
                 <div class="${cardClasses.join(' ')}">
-                    ${isToday ? '<div class="today-badge">오늘수업</div>' : ''}
+                    ${todayBadgeHtml}
                     ${isTomorrow ? '<div class="tomorrow-badge">내일수업</div>' : ''}
                     <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
                     <div class="card-institution-row">
