@@ -2096,6 +2096,7 @@
 
                 // 1단계 고속 선로딩이 끝나면 화면을 차단하지 않고, 백그라운드에서 2단계 전체 데이터 동기화 실행
                 if (syncMode === 'firstPhase') {
+                    isBackgroundSyncing = true;
                     setTimeout(() => {
                         triggerFullSyncBackground();
                     }, 300);
@@ -2218,6 +2219,21 @@
 
             if (allData.length === 0) {
                 const contentEl = document.getElementById('content');
+                if (isBackgroundSyncing) {
+                    // 백그라운드 전체 동기화가 진행 중일 때는 검색 결과 없음 대신 멋진 스피너와 로딩 상태 표시
+                    contentEl.innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 1.5rem; color: #718096; font-size: 0.93rem; font-weight: 500; line-height: 1.6;">
+                                🔄 전체 강좌 데이터를 실시간으로 가져오는 중입니다...<br>
+                                <span style="font-size: 0.82rem; color: #a0aec0; font-weight: 400; margin-top: 0.5rem; display: inline-block;">
+                                    선택하신 도서관의 전체 강좌 목록을 빠르게 준비하고 있습니다. 잠시만 기다려 주세요!
+                                </span>
+                            </p>
+                        </div>`;
+                    return;
+                }
+
                 contentEl.innerHTML = `
                     <div class="empty-state">
                         <div class="icon">&#128533;</div>
