@@ -260,11 +260,14 @@ async function triggerScheduledSync() {
     const minute = nowKst.getMinutes();
 
     const isWeekend = (day === 0 || day === 6);
-    const isOffHours = (hour >= 18 || hour < 8);
+    
+    // 평일은 밤 10시(22시)까지, 주말은 저녁 6시(18시)까지 30분 단위 고빈도 동기화 작동
+    const maxActiveHour = isWeekend ? 18 : 22;
+    const isOffHours = (hour >= maxActiveHour || hour < 8);
 
-    // 업무 외 시간(평일 밤 18시~아침 08시 및 주말 전체) 판정
-    if (isWeekend || isOffHours) {
-        // 업무 외 시간에는 30분 대신 '6시간마다 한 번(0시, 6시, 12시, 18시)'의 정각 대역(minute < 30)에만 실행하고 스킵
+    // 업무 외 시간(저녁/밤 및 주말 일부) 판정
+    if (isOffHours) {
+        // 업무 외 시간에는 30분 대신 '6시간마다 한 번(0시, 6시, 12시, 18시 등)'의 정각 대역(minute < 30)에만 실행하고 스킵
         const is6HourInterval = (hour % 6 === 0 && minute < 30);
         if (!is6HourInterval) {
             console.log(`[Scheduled Sync] Off-hours skip: 요일 ${day}, 시간 ${hour}:${minute}`);
