@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ebd07b"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fef08a"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Deep premium chocolate-brown squircle background -->
+  <rect x="1" y="1" width="30" height="30" rx="9" fill="#20130b" stroke="url(#goldGrad)" stroke-width="1.5"/>
+  
+  <!-- Highly stylized open book of learning -->
+  <path d="M6.5 12.5 C 9.5 10.5, 12.5 11.8, 16 13.2 C 19.5 11.8, 22.5 10.5, 25.5 12.5 V 23.5 C 22.5 21.5, 19.5 22.2, 16 23.6 C 12.5 22.2, 9.5 21.5, 6.5 23.5 Z" fill="url(#goldGrad)"/>
+  
+  <!-- Center spine line of the book -->
+  <line x1="16" y1="13.2" x2="16" y2="23.6" stroke="#20130b" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Glowing star of knowledge rising from the book -->
+  <path d="M16 3.5 L17.2 6.5 L20.2 6.7 L17.8 8.7 L18.5 11.7 L16 10 L13.5 11.7 L14.2 8.7 L11.8 6.7 L14.8 6.5 Z" fill="url(#starGrad)" filter="url(#glow)"/>
+</svg>

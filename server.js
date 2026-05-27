@@ -13,6 +13,7 @@ const MIME_TYPES = {
     '.json': 'application/json; charset=utf-8',
     '.png': 'image/png',
     '.ico': 'image/x-icon',
+    '.svg': 'image/svg+xml',
 };
 
 const ASSIGNEES_FILE = path.join(__dirname, 'assignees.json');
