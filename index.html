@@ -1859,7 +1859,7 @@
         }
 
         function isTodayLecture(d) {
-            if ((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')) {
+            if (isCanceledLecture(d)) {
                 return false;
             }
             const today = getKoreaTodayDateOnly();
@@ -1909,7 +1909,7 @@
         }
 
         function isTomorrowLecture(d) {
-            if ((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')) {
+            if (isCanceledLecture(d)) {
                 return false;
             }
             const tomorrow = getKoreaTomorrowDateOnly();
@@ -2424,7 +2424,7 @@
         }
 
         function getStatusPriority(d) {
-            const isCanceled = (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강');
+            const isCanceled = isCanceledLecture(d);
             if (isCanceled) return 6;
             if (d.isToday) return 0;
             if (d.isTomorrow) return 1;
@@ -2438,19 +2438,19 @@
         function getFilteredData() {
             let data = [...allData];
             if (currentFilter === 'today') {
-                data = data.filter(d => d.isToday && !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')));
+                data = data.filter(d => d.isToday && !isCanceledLecture(d));
             } else if (currentFilter === 'tomorrow') {
-                data = data.filter(d => d.isTomorrow && !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')));
+                data = data.filter(d => d.isTomorrow && !isCanceledLecture(d));
             } else if (currentFilter === 'date') {
                 if (selectedDateObj) {
-                    data = data.filter(d => !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')) && (isLectureOnDate(d, selectedDateObj) || isApplyingOnDate(d, selectedDateObj)));
+                    data = data.filter(d => !isCanceledLecture(d) && (isLectureOnDate(d, selectedDateObj) || isApplyingOnDate(d, selectedDateObj)));
                 } else {
                     data = [];
                 }
             } else if (currentFilter === '폐강') {
-                data = data.filter(d => (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강'));
+                data = data.filter(d => isCanceledLecture(d));
             } else if (currentFilter !== 'all') {
-                data = data.filter(d => d.status === currentFilter && !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')));
+                data = data.filter(d => d.status === currentFilter && !isCanceledLecture(d));
             }
             data.sort((a, b) => {
                 const prioA = getStatusPriority(a);
@@ -2539,7 +2539,7 @@
         }
 
         function renderCard(d) {
-            const isCanceled = (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강');
+            const isCanceled = isCanceledLecture(d);
             const isToday = d.isToday && !isCanceled;
             const isTomorrow = d.isTomorrow && !isCanceled;
             const cardClasses = ['card', `status-${isCanceled ? 'canceled' : getStatusClass(d.status)}`];
@@ -2733,6 +2733,11 @@
                 .toLowerCase();
         }
 
+        function isCanceledLecture(d) {
+            if (!d) return false;
+            return getSearchBlob(d).includes('폐강');
+        }
+
         function getFilterCounts(data) {
             const counts = {
                 all: data.length,
@@ -2746,7 +2751,7 @@
                 date: 0,
             };
             data.forEach(d => {
-                const isCanceled = (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강');
+                const isCanceled = isCanceledLecture(d);
                 if (isCanceled) {
                     counts['폐강']++;
                     return;
