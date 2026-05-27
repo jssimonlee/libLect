@@ -2507,33 +2507,35 @@
             html += '</div>';
 
             // ── 하단: 페이지 번호 + 다음 + 전체 버튼 ──
-            html += '<div class="pagination">';
+            if (totalFiltered > 10) {
+                html += '<div class="pagination">';
 
-            // 이전 버튼
-            if (displayPage > 1) {
-                html += `<button class="page-btn" onclick="goPage(${displayPage - 1})">이전</button>`;
-            }
-
-            // 페이지 번호들
-            if (totalPages > 1) {
-                const startP = Math.max(1, displayPage - 4);
-                const endP = Math.min(totalPages, startP + 9);
-                for (let i = startP; i <= endP; i++) {
-                    html += `<button class="page-btn ${i === displayPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+                // 이전 버튼
+                if (displayPage > 1) {
+                    html += `<button class="page-btn" onclick="goPage(${displayPage - 1})">이전</button>`;
                 }
-            }
 
-            // 다음 버튼: 아직 더 불러올 데이터가 있으면 표시
-            if (hasNextPageData || !searchDone) {
-                html += `<button class="page-btn btn-next" onclick="loadNextPage()">다음 ></button>`;
-            }
+                // 페이지 번호들
+                if (totalPages > 1) {
+                    const startP = Math.max(1, displayPage - 4);
+                    const endP = Math.min(totalPages, startP + 9);
+                    for (let i = startP; i <= endP; i++) {
+                        html += `<button class="page-btn ${i === displayPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+                    }
+                }
 
-            // 전체 버튼: 아직 API를 끝까지 읽지 않았으면 표시
-            if (!searchDone) {
-                html += `<button class="page-btn btn-all" onclick="loadAll()">전체</button>`;
-            }
+                // 다음 버튼: 아직 더 불러올 데이터가 있으면 표시
+                if (hasNextPageData || !searchDone) {
+                    html += `<button class="page-btn btn-next" onclick="loadNextPage()">다음 ></button>`;
+                }
 
-            html += '</div>';
+                // 전체 버튼: 아직 API를 끝까지 읽지 않았으면 표시
+                if (!searchDone) {
+                    html += `<button class="page-btn btn-all" onclick="loadAll()">전체</button>`;
+                }
+
+                html += '</div>';
+            }
 
             contentEl.innerHTML = html;
         }
