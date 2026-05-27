@@ -2507,30 +2507,28 @@
             html += '</div>';
 
             // ── 하단: 페이지 번호 + 다음 + 전체 버튼 ──
-            if (totalFiltered > 10) {
+            if (totalPages > 1) {
                 html += '<div class="pagination">';
 
-                // 이전 버튼
-                if (displayPage > 1) {
+                // 이전 버튼: 현재 페이지가 1보다 크고, 전체 페이지가 10페이지를 초과할 때만 노출
+                if (displayPage > 1 && totalPages > 10) {
                     html += `<button class="page-btn" onclick="goPage(${displayPage - 1})">이전</button>`;
                 }
 
-                // 페이지 번호들
-                if (totalPages > 1) {
-                    const startP = Math.max(1, displayPage - 4);
-                    const endP = Math.min(totalPages, startP + 9);
-                    for (let i = startP; i <= endP; i++) {
-                        html += `<button class="page-btn ${i === displayPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
-                    }
+                // 페이지 번호들: 1페이지 이상일 때 항상 노출
+                const startP = Math.max(1, displayPage - 4);
+                const endP = Math.min(totalPages, startP + 9);
+                for (let i = startP; i <= endP; i++) {
+                    html += `<button class="page-btn ${i === displayPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
                 }
 
-                // 다음 버튼: 실제로 다음 페이지 데이터가 존재할 때만 표시
-                if (hasNextPageData) {
+                // 다음 버튼: 다음 페이지가 존재하고, 전체 페이지가 10페이지를 초과할 때만 노출
+                if (hasNextPageData && totalPages > 10) {
                     html += `<button class="page-btn btn-next" onclick="loadNextPage()">다음 ></button>`;
                 }
 
-                // 전체 버튼: 백그라운드 전체 로드가 완료되지 않았고 보여줄 페이지가 여러 개일 때만 표시
-                if (!searchDone && totalPages > 1) {
+                // 전체 버튼: 백그라운드 전체 로드가 완료되지 않았고 페이지가 10페이지를 초과할 때만 노출
+                if (!searchDone && totalPages > 10) {
                     html += `<button class="page-btn btn-all" onclick="loadAll()">전체</button>`;
                 }
 
