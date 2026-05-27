@@ -769,6 +769,24 @@
             color: #4c51bf;
             font-weight: 600;
             margin-bottom: 0.4rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            transition: all 0.15s ease;
+        }
+        .card-institution:hover {
+            color: #2b6cb0;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+        .card-institution svg {
+            opacity: 0.55;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .card-institution:hover svg {
+            opacity: 1;
+            transform: translate(1px, -1px);
         }
 
         .card-title {
@@ -2525,7 +2543,10 @@
                     ${isTomorrow ? '<div class="tomorrow-badge">내일수업</div>' : ''}
                     <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
                     <div class="card-institution-row">
-                        <div class="card-institution">${d.institution}</div>
+                        <a href="${getInstitutionUrl(d.institution)}" target="_blank" rel="noopener noreferrer" class="card-institution" title="${escapeHtml(d.institution)} 홈페이지로 이동">
+                            ${d.institution}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 10px; height: 10px; margin-left: 1px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </a>
                         ${renderAssigneeButton(d)}
                     </div>
                     <div class="card-title">${escapeHtml(d.name)}</div>
@@ -2783,6 +2804,42 @@
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
+        }
+
+        function getInstitutionUrl(name) {
+            if (!name) return 'https://www.hscitylib.or.kr';
+            
+            const mapping = {
+                '남양도서관': 'https://www.hscitylib.or.kr/nylib/',
+                '병점도서관': 'https://www.hscitylib.or.kr/bjlib/',
+                '봉담도서관': 'https://www.hscitylib.or.kr/bdlib/',
+                '삼괴도서관': 'https://www.hscitylib.or.kr/sglib/',
+                '송산도서관': 'https://www.hscitylib.or.kr/sslib/',
+                '진안도서관': 'https://www.hscitylib.or.kr/jalib/',
+                '태안도서관': 'https://www.hscitylib.or.kr/talib/',
+                '동탄복합문화센터도서관': 'https://www.hscitylib.or.kr/dtlib/',
+                '두빛나래어린이도서관': 'https://www.hscitylib.or.kr/dbnarae/',
+                '둥지나래어린이도서관': 'https://www.hscitylib.or.kr/djnarae/',
+                '다원이음터도서관': 'https://www.hscitylib.or.kr/dwlib/',
+                '동탄다원이음터도서관': 'https://www.hscitylib.or.kr/dwlib/',
+                '서연이음터도서관': 'https://www.hscitylib.or.kr/sylib/',
+                '동탄서연이음터도서관': 'https://www.hscitylib.or.kr/sylib/',
+                '왕배푸른숲도서관': 'https://www.hscitylib.or.kr/wblib/',
+                '동탄목동이음터도서관': 'https://www.hscitylib.or.kr/mdlib/',
+                '목동이음터도서관': 'https://www.hscitylib.or.kr/mdlib/',
+                '동탄중앙이음터도서관': 'https://www.hscitylib.or.kr/ctlib/',
+                '송린이음터도서관': 'https://www.hscitylib.or.kr/srlib/',
+            };
+            
+            if (mapping[name]) return mapping[name];
+            
+            for (const key in mapping) {
+                if (name.includes(key) || key.includes(name)) {
+                    return mapping[key];
+                }
+            }
+            
+            return 'https://www.hscitylib.or.kr';
         }
 
         initializeApp();
