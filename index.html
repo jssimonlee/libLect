@@ -2801,6 +2801,25 @@
             }
         }
 
+        // 도서관 즐겨찾기 개수 표시 배지 갱신
+        function updateFavoriteCountBadge() {
+            const badge = document.getElementById('favoriteCountBadge');
+            if (!badge) return;
+
+            const count = document.querySelectorAll('.favorite-library-check:checked').length;
+            if (count < 2) {
+                badge.style.background = 'rgba(239, 68, 68, 0.12)';
+                badge.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                badge.style.color = '#f87171';
+                badge.innerHTML = `⚠️ 현재 ${count}개 선택됨 (최소 2개 선택 필요)`;
+            } else {
+                badge.style.background = 'rgba(16, 185, 129, 0.12)';
+                badge.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                badge.style.color = '#34d399';
+                badge.innerHTML = `✅ 현재 ${count}개 선택됨 (저장 가능)`;
+            }
+        }
+
         // 도서관 체크박스 리스트 생성 (현재 즐겨찾기 포함 여부에 따라 자동 체크)
         function renderModalCheckboxGrid() {
             const grid = document.getElementById('modalLibraryCheckboxGrid');
@@ -2815,18 +2834,21 @@
                 const isChecked = myLibraryFavorite.includes(name) ? 'checked' : '';
                 return `
                     <label class="modal-checkbox-item">
-                        <input type="checkbox" value="${escapeHtml(name)}" class="favorite-library-check" ${isChecked}>
+                        <input type="checkbox" value="${escapeHtml(name)}" class="favorite-library-check" ${isChecked} onchange="updateFavoriteCountBadge()">
                         <span>${escapeHtml(name.replace('도서관', ''))}</span>
                     </label>
                 `;
             }).join('');
+
+            // 초기 카운트 배지 상태 반영
+            updateFavoriteCountBadge();
         }
 
         // 즐겨찾기 저장 및 반영
         function saveFavoriteLibraries() {
             const checkedBoxes = document.querySelectorAll('.favorite-library-check:checked');
-            if (checkedBoxes.length === 0) {
-                alert('최소 1개 이상의 도서관을 선택해 주세요.');
+            if (checkedBoxes.length < 2) {
+                alert('자주 이용하는 도서관을 2개 이상 선택해 주세요. (현재 ' + checkedBoxes.length + '개 선택됨)');
                 return;
             }
 
@@ -2861,6 +2883,9 @@
             // 모든 체크박스 해제 비주얼 반영
             const checkBoxes = document.querySelectorAll('.favorite-library-check');
             checkBoxes.forEach(cb => cb.checked = false);
+
+            // 카운트 배지 비주얼 즉시 갱신
+            updateFavoriteCountBadge();
 
             myLibraryFavorite = [];
             localStorage.removeItem('myLibraryFavorite');
@@ -2982,10 +3007,15 @@
             </div>
             <div class="modal-body">
                 <div class="group-create-form" style="background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);">
-                    <p style="margin-top: 0; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
-                        자주 이용하는 도서관들을 선택해 주세요.<br>
+                    <p style="margin-top: 0; margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
+                        자주 이용하는 도서관들을 <span style="color: #ebd07b; font-weight: 700; border-bottom: 2px solid rgba(235, 208, 123, 0.4); padding-bottom: 1px; font-size: 0.95rem;">2개 이상</span> 선택해 주세요.<br>
                         즐겨찾기로 등록된 도서관들의 강좌를 한데 모아 한 번에 검색해 볼 수 있습니다.
                     </p>
+                    <div style="margin-bottom: 0.75rem;">
+                        <div id="favoriteCountBadge" style="font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 0.3rem 0.6rem; border-radius: 6px; transition: all 0.2s;">
+                            <!-- JavaScript가 동적으로 채워넣습니다 -->
+                        </div>
+                    </div>
                     <div style="margin-bottom: 1.25rem;">
                         <div id="modalLibraryCheckboxGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.5rem; max-height: 260px; overflow-y: auto; padding: 0.75rem; background: rgba(0,0,0,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                             <!-- JavaScript가 체크박스 목록을 주입합니다 -->
