@@ -2486,9 +2486,16 @@
             if (isToday) cardClasses.push('today-card');
             else if (isTomorrow) cardClasses.push('tomorrow-card');
 
-            const formatDateTime = (str) => {
+            const classYear = d.beginDate ? d.beginDate.substring(0, 4) : '';
+
+            const formatApplyDateTime = (str) => {
                 if (!str) return '';
-                return String(str).replace(/:\d{2}$/, '');
+                const cleanStr = String(str).replace(/:\d{2}$/, '').trim();
+                // 접수의 년도가 강좌 시작 년도와 같다면 년도를 생략하여 "월-일 시:분" 포맷으로 노출
+                if (classYear && (cleanStr.startsWith(classYear + '-') || cleanStr.startsWith(classYear + '.'))) {
+                    return cleanStr.substring(5);
+                }
+                return cleanStr;
             };
 
             let todayBadgeHtml = '';
@@ -2535,11 +2542,7 @@
                         </div>
                         ${d.applyBegin ? `<div class="card-info-item">
                             <span class="label">접수</span>
-                            <span class="info-apply">${formatDateTime(d.applyBegin)} ~ ${formatDateTime(d.applyEnd)}</span>
-                        </div>` : ''}
-                        ${d.reference ? `<div class="card-info-item">
-                            <span class="label">문의</span>
-                            <span>${d.reference}</span>
+                            <span class="info-apply">${formatApplyDateTime(d.applyBegin)} ~ ${formatApplyDateTime(d.applyEnd)}</span>
                         </div>` : ''}
                     </div>
                     <div class="card-tags">
