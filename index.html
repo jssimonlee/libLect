@@ -2190,6 +2190,7 @@
                 if (syncMode === 'firstPhase') {
                     isBackgroundSyncing = true;
                     setTimeout(() => {
+                        isBackgroundSyncing = false;
                         triggerFullSyncBackground();
                     }, 300);
                 }
