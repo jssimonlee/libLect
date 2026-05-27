@@ -366,6 +366,7 @@
         .filter-btn.upcoming.active { background: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35); }
         .filter-btn.closed.active { background: #ef4444; color: white; border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); }
         .filter-btn.ended.active { background: #78716c; color: white; border-color: #78716c; box-shadow: 0 4px 12px rgba(120, 113, 108, 0.35); }
+        .filter-btn.canceled.active { background: #991b1b; color: white; border-color: #991b1b; box-shadow: 0 4px 12px rgba(153, 27, 27, 0.35); }
 
         .filter-btn.active {
             transform: translateY(-1px);
@@ -417,6 +418,8 @@
 
         .filter-btn.ended { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
         .filter-btn.ended:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .filter-btn.canceled { background: #fef2f2; border-color: #fee2e2; color: #991b1b; }
+        .filter-btn.canceled:hover { background: #ffe4e4; border-color: #fecaca; }
 
         .main-content {
             max-width: 1100px;
@@ -678,6 +681,18 @@
         .card-status.upcoming { background: #bee3f8; color: #2a4365; }
         .card-status.closed { background: #fed7d7; color: #742a2a; }
         .card-status.ended { background: #e2e8f0; color: #4a5568; }
+        .card-status.canceled { background: #fee2e2; color: #991b1b; border-left: 1px solid rgba(239,68,68,0.2); border-bottom: 1px solid rgba(239,68,68,0.2); }
+
+        .card.canceled-card {
+            border: 1px dashed rgba(153, 27, 27, 0.35) !important;
+            background: rgba(254, 242, 242, 0.3) !important;
+            opacity: 0.8 !important;
+            box-shadow: none !important;
+        }
+        .card.canceled-card .card-title {
+            text-decoration: line-through;
+            color: #78716c;
+        }
 
         .today-badge-group {
             display: flex;
@@ -1358,6 +1373,7 @@
                 <button class="filter-btn upcoming" data-filter="접수예정" onclick="setFilter('접수예정', this)">접수예정(0)</button>
                 <button class="filter-btn closed" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감(0)</button>
                 <button class="filter-btn ended" data-filter="강좌종료" onclick="setFilter('강좌종료', this)">강좌종료(0)</button>
+                <button class="filter-btn canceled" data-filter="폐강" onclick="setFilter('폐강', this)">폐강(0)</button>
             </div>
         </div>
     </div>
@@ -1843,6 +1859,9 @@
         }
 
         function isTodayLecture(d) {
+            if ((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')) {
+                return false;
+            }
             const today = getKoreaTodayDateOnly();
             const begin = parseDateOnly(d.beginDate);
             const end = parseDateOnly(d.endDate);
@@ -1890,6 +1909,9 @@
         }
 
         function isTomorrowLecture(d) {
+            if ((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')) {
+                return false;
+            }
             const tomorrow = getKoreaTomorrowDateOnly();
             const begin = parseDateOnly(d.beginDate);
             const end = parseDateOnly(d.endDate);
@@ -2402,29 +2424,33 @@
         }
 
         function getStatusPriority(d) {
+            const isCanceled = (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강');
+            if (isCanceled) return 6;
             if (d.isToday) return 0;
             if (d.isTomorrow) return 1;
             if (d.status === '접수중') return 2;
             if (d.status === '접수예정') return 3;
             if (d.status === '접수마감') return 4;
             if (d.status === '강좌종료') return 5;
-            return 6;
+            return 7;
         }
 
         function getFilteredData() {
             let data = [...allData];
             if (currentFilter === 'today') {
-                data = data.filter(d => d.isToday);
+                data = data.filter(d => d.isToday && !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')));
             } else if (currentFilter === 'tomorrow') {
-                data = data.filter(d => d.isTomorrow);
+                data = data.filter(d => d.isTomorrow && !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')));
             } else if (currentFilter === 'date') {
                 if (selectedDateObj) {
-                    data = data.filter(d => isLectureOnDate(d, selectedDateObj) || isApplyingOnDate(d, selectedDateObj));
+                    data = data.filter(d => !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')) && (isLectureOnDate(d, selectedDateObj) || isApplyingOnDate(d, selectedDateObj)));
                 } else {
                     data = [];
                 }
+            } else if (currentFilter === '폐강') {
+                data = data.filter(d => (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강'));
             } else if (currentFilter !== 'all') {
-                data = data.filter(d => d.status === currentFilter);
+                data = data.filter(d => d.status === currentFilter && !((d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강')));
             }
             data.sort((a, b) => {
                 const prioA = getStatusPriority(a);
@@ -2513,10 +2539,12 @@
         }
 
         function renderCard(d) {
-            const isToday = d.isToday;
-            const isTomorrow = d.isTomorrow;
-            const cardClasses = ['card', `status-${getStatusClass(d.status)}`];
-            if (isToday) cardClasses.push('today-card');
+            const isCanceled = (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강');
+            const isToday = d.isToday && !isCanceled;
+            const isTomorrow = d.isTomorrow && !isCanceled;
+            const cardClasses = ['card', `status-${isCanceled ? 'canceled' : getStatusClass(d.status)}`];
+            if (isCanceled) cardClasses.push('canceled-card');
+            else if (isToday) cardClasses.push('today-card');
             else if (isTomorrow) cardClasses.push('tomorrow-card');
 
             const classYear = d.beginDate ? d.beginDate.substring(0, 4) : '';
@@ -2554,7 +2582,7 @@
                 <div class="${cardClasses.join(' ')}">
                     ${todayBadgeHtml}
                     ${isTomorrow ? '<div class="tomorrow-badge">내일수업</div>' : ''}
-                    <div class="card-status ${getStatusClass(d.status)}">${d.status}</div>
+                    <div class="card-status ${isCanceled ? 'canceled' : getStatusClass(d.status)}">${isCanceled ? '폐강' : d.status}</div>
                     <div class="card-institution-row">
                         <a href="${getInstitutionUrl(d.institution)}" target="_blank" rel="noopener noreferrer" class="card-institution" title="${escapeHtml(d.institution)} 홈페이지로 이동">
                             ${d.institution}
@@ -2714,9 +2742,16 @@
                 '접수예정': 0,
                 '접수마감': 0,
                 '강좌종료': 0,
+                '폐강': 0,
                 date: 0,
             };
             data.forEach(d => {
+                const isCanceled = (d.name || '').includes('폐강') || (d.content || '').includes('폐강') || (d.remark || '').includes('폐강') || (d.place || '').includes('폐강');
+                if (isCanceled) {
+                    counts['폐강']++;
+                    return;
+                }
+                
                 if (d.isToday) counts.today++;
                 if (d.isTomorrow) counts.tomorrow++;
                 if (selectedDateObj && (isLectureOnDate(d, selectedDateObj) || isApplyingOnDate(d, selectedDateObj))) {
@@ -2738,6 +2773,7 @@
                 '접수예정': '접수예정',
                 '접수마감': '접수마감',
                 '강좌종료': '강좌종료',
+                '폐강': '폐강',
             };
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 const filter = btn.dataset.filter;
