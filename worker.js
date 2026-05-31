@@ -14,7 +14,7 @@ const SOURCE_API_PATH = '/api/apiLectureList.do';
 const INITIAL_API_PER_PAGE = 1000;
 const NEXT_API_PER_PAGE = 500;
 const RECENT_MONTHS = 6;
-const CACHE_TTL_SECONDS = 30 * 60;
+const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6시간 CDN 엣지 캐시 (Cron이 30분마다 갱신하므로 실제 신선도 유지)
 const SWR_WINDOW_SECONDS = 24 * 60 * 60; // 24시간 SWR 허용
 
 const CORS_HEADERS = {
@@ -183,6 +183,7 @@ async function handleLibraryLectures(request, ctx) {
     const cache = caches.default;
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit'), 10) : null;
+    const isForceRefresh = url.searchParams.has('_t');
 
     const cacheUrl = new URL(request.url);
     if (limit) {
@@ -192,44 +193,46 @@ async function handleLibraryLectures(request, ctx) {
     }
     const cacheKey = new Request(cacheUrl.toString(), request);
 
-    const cached = await cache.match(cacheKey);
-    if (cached) {
-        const now = Date.now();
-        const dateHeader = cached.headers.get('Date');
-        let shouldRevalidate = false;
-        let isStale = false;
+    if (!isForceRefresh) {
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+            const now = Date.now();
+            const dateHeader = cached.headers.get('Date');
+            let shouldRevalidate = false;
+            let isStale = false;
 
-        if (dateHeader) {
-            const cacheTime = new Date(dateHeader).getTime();
-            const ageMs = now - cacheTime;
+            if (dateHeader) {
+                const cacheTime = new Date(dateHeader).getTime();
+                const ageMs = now - cacheTime;
 
-            if (ageMs > CACHE_TTL_SECONDS * 1000) {
+                if (ageMs > CACHE_TTL_SECONDS * 1000) {
+                    shouldRevalidate = true;
+                    if (ageMs < (CACHE_TTL_SECONDS + SWR_WINDOW_SECONDS) * 1000) {
+                        isStale = true;
+                    }
+                }
+            } else {
                 shouldRevalidate = true;
-                if (ageMs < (CACHE_TTL_SECONDS + SWR_WINDOW_SECONDS) * 1000) {
-                    isStale = true;
-                }
             }
-        } else {
-            shouldRevalidate = true;
-        }
 
-        if (shouldRevalidate && isStale) {
-            // SWR: Serve stale content immediately, revalidate in background
-            ctx.waitUntil((async () => {
-                try {
-                    const result = await buildLibraryLectureDataset(limit);
-                    const response = jsonResponse(result, {
-                        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
-                        'X-Cache': 'MISS',
-                    });
-                    await cache.put(cacheKey, response.clone());
-                } catch (err) {
-                    console.error('Background SWR sync failed:', err);
-                }
-            })());
-            return withCorsHeaders(cached, 'STALE');
-        } else if (!shouldRevalidate) {
-            return withCorsHeaders(cached, 'HIT');
+            if (shouldRevalidate && isStale) {
+                // SWR: Serve stale content immediately, revalidate in background
+                ctx.waitUntil((async () => {
+                    try {
+                        const result = await buildLibraryLectureDataset(limit);
+                        const response = jsonResponse(result, {
+                            'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+                            'X-Cache': 'MISS',
+                        });
+                        await cache.put(cacheKey, response.clone());
+                    } catch (err) {
+                        console.error('Background SWR sync failed:', err);
+                    }
+                })());
+                return withCorsHeaders(cached, 'STALE');
+            } else if (!shouldRevalidate) {
+                return withCorsHeaders(cached, 'HIT');
+            }
         }
     }
 

@@ -1029,6 +1029,62 @@
             color: #fca5a5;
         }
 
+        /* 데이터 신선도 표시 바 */
+        .data-freshness-bar {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            margin-top: 0.45rem;
+            background: rgba(92, 64, 51, 0.04);
+            border-radius: 8px;
+            font-size: 0.72rem;
+            color: #78716c;
+            line-height: 1.3;
+        }
+        .data-freshness-bar.visible {
+            display: flex;
+        }
+        .freshness-time {
+            font-weight: 600;
+            color: #5c4033;
+        }
+        .freshness-refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            background: rgba(59, 130, 246, 0.06);
+            color: #3b82f6;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .freshness-refresh-btn:hover {
+            background: rgba(59, 130, 246, 0.14);
+            border-color: rgba(59, 130, 246, 0.45);
+            transform: translateY(-1px);
+        }
+        .freshness-refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .freshness-refresh-btn .refresh-spin {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 640px) {
             .hero-combined-container {
                 margin: 1.5rem 1rem 0;
@@ -1499,6 +1555,10 @@
                 <button class="filter-btn closed" data-filter="접수마감" onclick="setFilter('접수마감', this)">접수마감(0)</button>
                 <button class="filter-btn ended" data-filter="강좌종료" onclick="setFilter('강좌종료', this)">강좌종료(0)</button>
                 <button class="filter-btn canceled" data-filter="폐강" onclick="setFilter('폐강', this)">폐강(0)</button>
+            </div>
+            <div class="data-freshness-bar" id="dataFreshnessBar">
+                <span>📊 <span id="freshnessText">데이터 확인 중...</span></span>
+                <button class="freshness-refresh-btn" id="freshnessRefreshBtn" onclick="forceRefreshData()" title="최신 데이터를 서버에서 새로 불러옵니다">🔄 최신 데이터 불러오기</button>
             </div>
         </div>
     </div>
@@ -2359,7 +2419,7 @@
             lastSync: 'liblect_last_sync_time'
         };
 
-        const SYNC_GRACE_PERIOD_MS = 4 * 60 * 60 * 1000; // 4시간 그레이스 피리어드 (0ms 로딩 보장)
+        const SYNC_GRACE_PERIOD_MS = 12 * 60 * 60 * 1000; // 12시간 그레이스 피리어드 (0ms 로딩 보장)
         const SYNC_TIER_1_MS = 24 * 60 * 60 * 1000;    // 24시간 이내: 최신 100개 동기화
         const SYNC_TIER_2_MS = 7 * 24 * 60 * 60 * 1000; // 7일 이내: 최신 500개 동기화
 
@@ -2446,6 +2506,101 @@
             }
         }
 
+        // ── 데이터 신선도 표시 ──
+        function getRelativeTimeText(timestampMs) {
+            if (!timestampMs) return '알 수 없음';
+            const diffMs = Date.now() - timestampMs;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+
+            if (diffSec < 60) return '방금 전 데이터';
+            if (diffMin < 60) return `${diffMin}분 전 데이터`;
+            if (diffHour < 24) return `${diffHour}시간 전 데이터`;
+            return `${diffDay}일 전 데이터`;
+        }
+
+        function updateFreshnessBar() {
+            const bar = document.getElementById('dataFreshnessBar');
+            const textEl = document.getElementById('freshnessText');
+            if (!bar || !textEl) return;
+
+            const lastSync = localStorage.getItem(CACHE_KEYS.lastSync);
+            const ts = lastSync ? parseInt(lastSync, 10) : 0;
+
+            if (ts > 0) {
+                textEl.innerHTML = `<span class="freshness-time">${getRelativeTimeText(ts)}</span>`;
+                bar.classList.add('visible');
+            } else {
+                bar.classList.remove('visible');
+            }
+        }
+
+        // 1분마다 신선도 텍스트 자동 갱신
+        setInterval(updateFreshnessBar, 60 * 1000);
+
+        // ── 수동 강제 새로고침 ──
+        async function forceRefreshData() {
+            const btn = document.getElementById('freshnessRefreshBtn');
+            if (!btn) return;
+            if (btn.disabled) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="refresh-spin">🔄</span> 불러오는 중...';
+
+            showSyncBadge('🔄 최신 데이터를 서버에서 직접 불러오는 중...', 'loading');
+
+            try {
+                // 캐시 바이패스를 위한 고유 타임스탬프 파라미터 추가
+                const freshUrl = `${LIBRARY_DATA_API}?_t=${Date.now()}`;
+                const res = await fetch(freshUrl);
+                if (!res.ok) throw new Error(`서버 응답 오류: ${res.status}`);
+                
+                const payload = await res.json();
+                const rawFetched = Array.isArray(payload.lectures) ? payload.lectures : [];
+                const fetchedLectures = rawFetched.filter(d => !isWholeSetLoan(d));
+
+                if (fetchedLectures.length > 0) {
+                    libraryData = fetchedLectures;
+
+                    libraryData.forEach(d => { updateLectureState(d); });
+
+                    datasetMeta = payload.meta || datasetMeta;
+
+                    const newInsts = Array.isArray(payload.institutions)
+                        ? payload.institutions
+                        : fetchedLectures.map(d => d.institution).filter(Boolean);
+                    
+                    institutionNames.clear();
+                    newInsts.forEach(inst => institutionNames.add(inst));
+
+                    const currentSelected = institutionSelect.value;
+                    populateInstitutionSelect();
+                    if (currentSelected && [...institutionNames].includes(currentSelected)) {
+                        institutionSelect.value = currentSelected;
+                    }
+
+                    saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, Date.now());
+
+                    allData = getSearchBaseData();
+                    updateFilterButtons(getFilterCounts(allData));
+                    renderResults();
+
+                    showSyncBadge('✅ 최신 데이터 불러오기 완료!', 'success');
+                } else {
+                    showSyncBadge('⚠️ 서버에서 데이터를 받지 못했습니다', 'error');
+                }
+            } catch (err) {
+                console.error('강제 새로고침 실패:', err);
+                showSyncBadge('⚠️ 최신 데이터 불러오기 실패', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔄 최신 데이터 불러오기';
+                updateFreshnessBar();
+            }
+        }
+
         // ── Worker 캐시에서 최근 도서관 데이터셋 가져오기 ──
         async function ensureLibraryDataLoaded() {
             if (dataLoadDone) return;
@@ -2477,9 +2632,10 @@
             const lastSyncTime = cached ? cached.lastSyncTime : 0;
             const timeDiff = now - lastSyncTime;
 
-            // 2단계: 캐시 유효기간(4시간) 확인 및 동기화 필요 여부 결정
+            // 2단계: 캐시 유효기간(12시간) 확인 및 동기화 필요 여부 결정
             if (hasCache && timeDiff < SYNC_GRACE_PERIOD_MS) {
                 dataLoadDone = true;
+                updateFreshnessBar();
                 return;
             }
 
@@ -2592,6 +2748,7 @@
                 }
                 
                 dataLoadDone = true;
+                updateFreshnessBar();
 
                 // 1단계 고속 선로딩이 끝나면 화면을 차단하지 않고, 백그라운드에서 2단계 전체 데이터 동기화 실행
                 if (syncMode === 'firstPhase') {
@@ -2612,7 +2769,8 @@
                 if (hasCache) {
                     // 캐시가 존재할 때 통신 에러가 나면, 캐시 데이터로 백오프 작동 (오프라인 모드 배지 팝업)
                     showSyncBadge('⚠️ 업데이트 실패 (기존 캐시 사용)', 'error');
-                    dataLoadDone = true; 
+                    dataLoadDone = true;
+                    updateFreshnessBar();
                 } else {
                     contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${e.message}</p></div>`;
                     isLoading = false;
@@ -2676,6 +2834,7 @@
                     }
 
                     showSyncBadge('✅ 전체 강좌 동기화 완료!', 'success');
+                    updateFreshnessBar();
                 }
             } catch (err) {
                 console.error('백그라운드 전체 동기화 실패:', err);
