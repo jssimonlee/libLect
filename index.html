@@ -3346,7 +3346,22 @@
         }
 
         function getSearchBlob(d) {
-            return Object.values(d)
+            if (!d) return '';
+            // 검색에 유용한 실제 사용자 노출 텍스트 필드만 엄선하여 검색 뭉치(Blob)를 생성
+            const searchableFields = [
+                d.name,            // 강좌명
+                d.targetNm,        // 대상명 (예: 초등, 성인)
+                d.targetDetail,    // 대상 상세 (예: 1~3학년)
+                d.place,           // 장소 (예: 배움터, 온라인)
+                d.freeNm,          // 무료 여부 (예: 무료)
+                d.institution,     // 도서관 기관명
+                d.classNm,         // 강좌 분류명 (예: 인문학)
+                d.status,          // 접수 상태 (예: 접수중, 폐강)
+                d.receiptMethod,   // 접수 방법 (예: 인터넷)
+                d.reference        // 비고/설명
+            ];
+
+            return searchableFields
                 .filter(value => value !== null && value !== undefined)
                 .map(value => String(value))
                 .join(' ')
