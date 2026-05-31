@@ -1155,7 +1155,7 @@
         }
         .assignee-btn.set {
             background: color-mix(in srgb, var(--assignee-color) 6%, #ffffff);
-            color: color-mix(in srgb, var(--assignee-color) 85%, #000000);
+            color: color-mix(in srgb, var(--assignee-color) 35%, #000000);
             border: 1px solid color-mix(in srgb, var(--assignee-color) 20%, #ffffff);
             padding-left: 0.8rem; /* 세로바 영역 확보 */
         }
@@ -1640,7 +1640,7 @@
             '#3b82f6', // Blue (선명한 파란색)
             '#10b981', // Green (선명한 초록색)
             '#eab308', // Yellow (선명한 노란색)
-            '#276749', // Mint (선명한 민트색)
+            '#a7f3d0', // Mint (선명한 민트색)
             '#1f2937'  // Black (선명한 검은색)
         ];
 
@@ -1652,8 +1652,9 @@
             if (!palette) return;
 
             palette.innerHTML = ASSIGNEE_COLORS.map(c => {
-                const checkColor = c === '#eab308' ? '#1f2937' : '#ffffff';
-                const textShadow = c === '#eab308' ? 'none' : '0 1px 3px rgba(0,0,0,0.5)';
+                const isLightColor = c === '#eab308' || c === '#a7f3d0';
+                const checkColor = isLightColor ? '#1f2937' : '#ffffff';
+                const textShadow = isLightColor ? 'none' : '0 1px 3px rgba(0,0,0,0.5)';
                 return `<button type="button" class="assignee-color-btn ${c === activeColor ? 'selected' : ''}" style="background-color: ${c}; position: relative;" onclick="selectColor('${c}')" title="${getColorName(c)}">
                     ${c === activeColor ? `<span style="color:${checkColor}; font-size:16px; font-weight:900; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none; text-shadow: ${textShadow};">✓</span>` : ''}
                 </button>`;
@@ -1670,7 +1671,7 @@
                 '#3b82f6': '파란색',
                 '#10b981': '초록색',
                 '#eab308': '노란색',
-                '#276749': '민트색',
+                '#a7f3d0': '민트색',
                 '#1f2937': '검은색'
             };
             return names[c] || '기본 색상';
