@@ -82,6 +82,7 @@ async function handleGetAssignees(env) {
                 mapping[row.lecture_key] = {
                     name: row.name,
                     masked: row.masked,
+                    color: row.color || '#8b5a2b',
                     updated_at: row.updated_at
                 };
             });
@@ -104,7 +105,7 @@ async function handlePostAssignee(request, env) {
             throw new Error("D1 Database binding 'DB' is not set.");
         }
         const body = await request.json();
-        const { lectureKey, name, masked } = body;
+        const { lectureKey, name, masked, color } = body;
         if (!lectureKey || !name || !masked) {
             return new Response(JSON.stringify({ error: 'Missing parameters' }), {
                 status: 400,
@@ -114,9 +115,10 @@ async function handlePostAssignee(request, env) {
                 },
             });
         }
+        const resolvedColor = color || '#8b5a2b';
         await env.DB.prepare(
-            "INSERT INTO assignees (lecture_key, name, masked, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(lecture_key) DO UPDATE SET name=excluded.name, masked=excluded.masked, updated_at=excluded.updated_at"
-        ).bind(lectureKey, name, masked, Date.now()).run();
+            "INSERT INTO assignees (lecture_key, name, masked, color, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(lecture_key) DO UPDATE SET name=excluded.name, masked=excluded.masked, color=excluded.color, updated_at=excluded.updated_at"
+        ).bind(lectureKey, name, masked, resolvedColor, Date.now()).run();
 
         return jsonResponse({ success: true });
     } catch (err) {

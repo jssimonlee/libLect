@@ -70,14 +70,14 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const payload = JSON.parse(body);
-                const { lectureKey, name, masked } = payload;
+                const { lectureKey, name, masked, color } = payload;
                 if (!lectureKey || !name || !masked) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: 'Missing parameters' }));
                     return;
                 }
                 const assignees = readAssignees();
-                assignees[lectureKey] = { name, masked, updated_at: Date.now() };
+                assignees[lectureKey] = { name, masked, color: color || '#8b5a2b', updated_at: Date.now() };
                 writeAssignees(assignees);
 
                 res.writeHead(200, {

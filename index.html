@@ -1255,6 +1255,32 @@
             box-shadow: 0 4px 14px rgba(59,130,246,0.35);
             transform: translateY(-1px);
         }
+        .assignee-color-palette {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        .assignee-color-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+        }
+        .assignee-color-btn:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.18);
+        }
+        .assignee-color-btn.selected {
+            border-color: #5c4033;
+            transform: scale(1.25);
+            box-shadow: 0 0 10px rgba(92,64,51,0.5);
+        }
         .assignee-pop-actions {
             display: flex;
             gap: 0.5rem;
@@ -1510,13 +1536,62 @@
             return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
+        const ASSIGNEE_COLORS = [
+            '#8b5a2b', // Espresso Warm Brown
+            '#52796f', // Soft Sage Green
+            '#4682b4', // Steel Blue
+            '#8e7cc3', // Soft Lavender Purple
+            '#cd5c5c'  // Coral Terracotta
+        ];
+
+        let selectedColor = '#8b5a2b';
+
+        function renderColorPalette(activeColor) {
+            selectedColor = activeColor;
+            const palette = document.getElementById('assigneeColorPalette');
+            if (!palette) return;
+
+            palette.innerHTML = ASSIGNEE_COLORS.map(c => 
+                `<button type="button" class="assignee-color-btn ${c === activeColor ? 'selected' : ''}" style="background-color: ${c};" onclick="selectColor('${c}')" title="${getColorName(c)}"></button>`
+            ).join('');
+        }
+
+        window.selectColor = function(color) {
+            renderColorPalette(color);
+        };
+
+        function getColorName(c) {
+            const names = {
+                '#8b5a2b': '따뜻한 에스프레소 브라운',
+                '#52796f': '차분한 세이지 그린',
+                '#4682b4': '세련된 스틸 블루',
+                '#8e7cc3': '차분한 라벤더 퍼플',
+                '#cd5c5c': '우아한 코랄 테라코타'
+            };
+            return names[c] || '기본 색상';
+        }
+
+        function findPreviousColorForAssignee(currentInstitution, currentName) {
+            if (!currentInstitution || !currentName) return '';
+            for (const [key, value] of Object.entries(assigneeData)) {
+                const item = libraryData.find(l => String(l.lectureIdx) === String(key) || `${l.institution}::${l.name}` === String(key));
+                if (item && item.institution === currentInstitution && value.name === currentName) {
+                    if (value.color && value.color !== 'default') {
+                        return value.color;
+                    }
+                }
+            }
+            return '';
+        }
+
         // 담당자 버튼 HTML 렌더링
         function renderAssigneeButton(d) {
             const key = getLectureKey(d);
             const info = assigneeData[key];
             const safeKey = escapeAttr(key);
             if (info && info.masked) {
-                return `<button class="assignee-btn set" data-lecture-key="${safeKey}" data-edit="1" title="담당자 수정"><span class="assignee-icon">👤</span>담당: ${escapeHtml(info.masked)}</button>`;
+                const color = info.color || '#8b5a2b';
+                return `<button class="assignee-btn set" data-lecture-key="${safeKey}" data-edit="1" title="담당자 수정"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="assignee-svg-icon" style="color: ${color}; width: 12px; height: 12px; margin-right: 3px; display: inline-block; vertical-align: -1.5px;"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" /></svg>담당: ${escapeHtml(info.masked)}</button>`;
             }
             return `<button class="assignee-btn unset" data-lecture-key="${safeKey}" data-edit="0" title="담당자 등록"><span class="assignee-icon">✏️</span>담당자등록</button>`;
         }
@@ -1539,6 +1614,7 @@
             const existing = assigneeData[lectureKey];
             const existingName = existing ? existing.name : '';
             const existingMasked = existing ? existing.masked : '';
+            const existingColor = existing ? existing.color : '#8b5a2b';
 
             const overlay = document.createElement('div');
             overlay.className = 'assignee-popover-overlay';
@@ -1555,6 +1631,8 @@
                     <input type="text" id="assigneeNameInput" placeholder="이름을 입력하세요 (예: 홍길동)" value="${escapeHtml(existingName)}" maxlength="10" autocomplete="off" />
                 </div>
                 <div class="assignee-mask-options" id="assigneeMaskOptions"></div>
+                <div class="pop-subtitle" style="margin-top: 1.25rem; font-weight:600; color:#5c4033;">🎨 담당자 고유 색상 선택</div>
+                <div class="assignee-color-palette" id="assigneeColorPalette"></div>
                 <div class="assignee-pop-actions">
                     ${isEdit ? '<button class="pop-delete" onclick="deleteAssignee()">삭제</button>' : ''}
                     <button class="pop-cancel" onclick="closeAssigneePopover()">취소</button>
@@ -1571,8 +1649,22 @@
 
             const nameInput = document.getElementById('assigneeNameInput');
             nameInput.addEventListener('input', () => {
+                const val = nameInput.value.trim();
                 updateMaskOptions(nameInput.value);
+
+                // 동일 도서관 내의 동일 이름이 등록된 적이 있는지 자동 추적하여 추천 선택
+                const d = libraryData.find(item => String(item.lectureIdx) === String(lectureKey) || `${item.institution}::${item.name}` === String(lectureKey));
+                const currentInst = d ? d.institution : '';
+                const prevColor = findPreviousColorForAssignee(currentInst, val);
+                if (prevColor) {
+                    renderColorPalette(prevColor);
+                }
             });
+
+            // 기존 색상 또는 기본 색상 팔레트 렌더링
+            setTimeout(() => {
+                renderColorPalette(existingColor);
+            }, 20);
 
             // 기존 이름이 있으면 마스크 옵션 즉시 표시
             if (existingName) {
@@ -1633,6 +1725,21 @@
             if (!fullName || !selectedMask) return;
 
             const saveBtn = document.getElementById('assigneeSaveBtn');
+
+            // 기존 동일 도서관에 동일 이름으로 등록된 적이 있던 색상 추적 검증
+            const d = libraryData.find(item => String(item.lectureIdx) === String(lectureKey) || `${item.institution}::${item.name}` === String(lectureKey));
+            const currentInst = d ? d.institution : '';
+            const previousColor = findPreviousColorForAssignee(currentInst, fullName);
+            
+            if (previousColor && selectedColor !== previousColor) {
+                const oldName = getColorName(previousColor);
+                const newName = getColorName(selectedColor);
+                const confirmChange = confirm(`⚠️ 안내: 이 도서관에 동일한 이름의 담당자에게 이미 [${oldName}] 색상이 지정되어 있었습니다.\n\n정말로 이 담당자의 고유 색상을 [${newName}]으로 변경하시겠습니까?`);
+                if (!confirmChange) {
+                    return;
+                }
+            }
+
             if (saveBtn) {
                 saveBtn.disabled = true;
                 saveBtn.textContent = '저장 중...';
@@ -1647,12 +1754,18 @@
                     body: JSON.stringify({
                         lectureKey: lectureKey,
                         name: fullName,
-                        masked: selectedMask
+                        masked: selectedMask,
+                        color: selectedColor
                     })
                 });
 
                 if (response.ok) {
-                    assigneeData[lectureKey] = { name: fullName, masked: selectedMask, updated_at: Date.now() };
+                    assigneeData[lectureKey] = { 
+                        name: fullName, 
+                        masked: selectedMask, 
+                        color: selectedColor, 
+                        updated_at: Date.now() 
+                    };
                 } else {
                     alert('담당자 정보를 저장하지 못했습니다.');
                 }
