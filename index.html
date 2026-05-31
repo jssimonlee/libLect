@@ -1841,6 +1841,17 @@
             return date;
         }
 
+        function updateLectureState(d) {
+            d.isToday = isTodayLecture(d);
+            d.isTomorrow = isTomorrowLecture(d);
+
+            const today = getKoreaTodayDateOnly();
+            const end = parseDateOnly(d.endDate);
+            if (end && today > end) {
+                d.status = '강좌종료';
+            }
+        }
+
         function getApiDayCode(date) {
             const jsDay = date.getUTCDay();
             return jsDay === 0 ? '7' : String(jsDay);
@@ -2110,8 +2121,7 @@
                 
                 // 오늘/내일 여부 실시간 업데이트
                 libraryData.forEach(d => {
-                    d.isToday = isTodayLecture(d);
-                    d.isTomorrow = isTomorrowLecture(d);
+                    updateLectureState(d);
                 });
                 
                 populateInstitutionSelect();
@@ -2210,8 +2220,7 @@
 
                 // 오늘/내일 강좌 상태 갱신
                 libraryData.forEach(d => {
-                    d.isToday = isTodayLecture(d);
-                    d.isTomorrow = isTomorrowLecture(d);
+                    updateLectureState(d);
                 });
 
                 datasetMeta = payload.meta || datasetMeta;
@@ -2290,8 +2299,7 @@
 
                     // 오늘/내일 강좌 상태 갱신
                     libraryData.forEach(d => {
-                        d.isToday = isTodayLecture(d);
-                        d.isTomorrow = isTomorrowLecture(d);
+                        updateLectureState(d);
                     });
 
                     datasetMeta = payload.meta || datasetMeta;
