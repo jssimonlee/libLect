@@ -1620,8 +1620,8 @@
             '#ef4444', // Red (선명한 빨간색)
             '#3b82f6', // Blue (선명한 파란색)
             '#10b981', // Green (선명한 초록색)
-            '#8b5cf6', // Purple (선명한 보라색)
-            '#f97316'  // Orange (선명한 주황색)
+            '#eab308', // Yellow (선명한 노란색)
+            '#1f2937'  // Black (선명한 검은색)
         ];
 
         let selectedColor = '#ef4444';
@@ -1631,11 +1631,13 @@
             const palette = document.getElementById('assigneeColorPalette');
             if (!palette) return;
 
-            palette.innerHTML = ASSIGNEE_COLORS.map(c => 
-                `<button type="button" class="assignee-color-btn ${c === activeColor ? 'selected' : ''}" style="background-color: ${c}; position: relative;" onclick="selectColor('${c}')" title="${getColorName(c)}">
-                    ${c === activeColor ? '<span style="color:#ffffff; font-size:16px; font-weight:900; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">✓</span>' : ''}
-                </button>`
-            ).join('');
+            palette.innerHTML = ASSIGNEE_COLORS.map(c => {
+                const checkColor = c === '#eab308' ? '#1f2937' : '#ffffff';
+                const textShadow = c === '#eab308' ? 'none' : '0 1px 3px rgba(0,0,0,0.5)';
+                return `<button type="button" class="assignee-color-btn ${c === activeColor ? 'selected' : ''}" style="background-color: ${c}; position: relative;" onclick="selectColor('${c}')" title="${getColorName(c)}">
+                    ${c === activeColor ? `<span style="color:${checkColor}; font-size:16px; font-weight:900; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none; text-shadow: ${textShadow};">✓</span>` : ''}
+                </button>`;
+            }).join('');
         }
 
         window.selectColor = function(color) {
@@ -1647,8 +1649,8 @@
                 '#ef4444': '빨간색',
                 '#3b82f6': '파란색',
                 '#10b981': '초록색',
-                '#8b5cf6': '보라색',
-                '#f97316': '주황색'
+                '#eab308': '노란색',
+                '#1f2937': '검은색'
             };
             return names[c] || '기본 색상';
         }
