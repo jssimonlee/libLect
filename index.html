@@ -1281,6 +1281,86 @@
             transform: scale(1.25);
             box-shadow: 0 0 10px rgba(92,64,51,0.5);
         }
+        .color-choice-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+        .color-choice-dialog {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 440px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            box-sizing: border-box;
+            border: 1px solid #e3dac9;
+        }
+        .color-choice-dialog h4 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            font-size: 1.15rem;
+            color: #5c4033;
+        }
+        .color-choice-dialog .dialog-body {
+            font-size: 0.92rem;
+            color: #4a5568;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        .color-choice-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .color-choice-btn {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: 1.5px solid transparent;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .color-choice-btn.choice-all {
+            background: #3b82f6;
+            color: #ffffff;
+        }
+        .color-choice-btn.choice-all:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        .color-choice-btn.choice-only {
+            background: #f3f4f6;
+            color: #374151;
+            border-color: #d1d5db;
+        }
+        .color-choice-btn.choice-only:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+        .color-choice-btn.choice-cancel {
+            background: #ffffff;
+            color: #9ca3af;
+            border-color: transparent;
+            font-weight: 500;
+            margin-top: 0.2rem;
+            box-shadow: none;
+        }
+        .color-choice-btn.choice-cancel:hover {
+            color: #4b5563;
+        }
         .assignee-pop-actions {
             display: flex;
             gap: 0.5rem;
@@ -1537,14 +1617,14 @@
         }
 
         const ASSIGNEE_COLORS = [
-            '#8b5a2b', // Espresso Warm Brown
-            '#52796f', // Soft Sage Green
-            '#4682b4', // Steel Blue
-            '#8e7cc3', // Soft Lavender Purple
-            '#cd5c5c'  // Coral Terracotta
+            '#ef4444', // Red (선명한 빨간색)
+            '#3b82f6', // Blue (선명한 파란색)
+            '#10b981', // Green (선명한 초록색)
+            '#8b5cf6', // Purple (선명한 보라색)
+            '#f97316'  // Orange (선명한 주황색)
         ];
 
-        let selectedColor = '#8b5a2b';
+        let selectedColor = '#ef4444';
 
         function renderColorPalette(activeColor) {
             selectedColor = activeColor;
@@ -1552,7 +1632,9 @@
             if (!palette) return;
 
             palette.innerHTML = ASSIGNEE_COLORS.map(c => 
-                `<button type="button" class="assignee-color-btn ${c === activeColor ? 'selected' : ''}" style="background-color: ${c};" onclick="selectColor('${c}')" title="${getColorName(c)}"></button>`
+                `<button type="button" class="assignee-color-btn ${c === activeColor ? 'selected' : ''}" style="background-color: ${c}; position: relative;" onclick="selectColor('${c}')" title="${getColorName(c)}">
+                    ${c === activeColor ? '<span style="color:#ffffff; font-size:16px; font-weight:900; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">✓</span>' : ''}
+                </button>`
             ).join('');
         }
 
@@ -1562,11 +1644,11 @@
 
         function getColorName(c) {
             const names = {
-                '#8b5a2b': '따뜻한 에스프레소 브라운',
-                '#52796f': '차분한 세이지 그린',
-                '#4682b4': '세련된 스틸 블루',
-                '#8e7cc3': '차분한 라벤더 퍼플',
-                '#cd5c5c': '우아한 코랄 테라코타'
+                '#ef4444': '빨간색',
+                '#3b82f6': '파란색',
+                '#10b981': '초록색',
+                '#8b5cf6': '보라색',
+                '#f97316': '주황색'
             };
             return names[c] || '기본 색상';
         }
@@ -1584,13 +1666,45 @@
             return '';
         }
 
+        // 3버튼 커스텀 다이얼로그를 동적으로 띄우는 함수
+        function showColorChoiceDialog(oldColor, newColor, onChoice) {
+            const oldName = getColorName(oldColor);
+            const newName = getColorName(newColor);
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'color-choice-overlay';
+            overlay.id = 'colorChoiceOverlay';
+            
+            overlay.innerHTML = `
+                <div class="color-choice-dialog">
+                    <h4>⚠️ 담당자 색상 변경 설정</h4>
+                    <div class="dialog-body">
+                        이 도서관에 동일한 이름의 담당자에게 이미 다른 색상(<strong>[${oldName}]</strong>)이 지정되어 있었습니다.<br><br>
+                        원하시는 저장 방식을 선택해 주세요:
+                    </div>
+                    <div class="color-choice-btn-group">
+                        <button type="button" class="color-choice-btn choice-all" onclick="handleChoice('all')">이 담당자의 전체 강좌 색상 일괄 변경</button>
+                        <button type="button" class="color-choice-btn choice-only" onclick="handleChoice('only')">이 강좌만 개별 색상 변경</button>
+                        <button type="button" class="color-choice-btn choice-cancel" onclick="handleChoice('cancel')">취소</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            
+            window.handleChoice = function(choice) {
+                document.body.removeChild(overlay);
+                onChoice(choice);
+            };
+        }
+
         // 담당자 버튼 HTML 렌더링
         function renderAssigneeButton(d) {
             const key = getLectureKey(d);
             const info = assigneeData[key];
             const safeKey = escapeAttr(key);
             if (info && info.masked) {
-                const color = info.color || '#8b5a2b';
+                const color = info.color || '#ef4444';
                 return `<button class="assignee-btn set" data-lecture-key="${safeKey}" data-edit="1" title="담당자 수정"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="assignee-svg-icon" style="color: ${color}; width: 12px; height: 12px; margin-right: 3px; display: inline-block; vertical-align: -1.5px;"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" /></svg>담당: ${escapeHtml(info.masked)}</button>`;
             }
             return `<button class="assignee-btn unset" data-lecture-key="${safeKey}" data-edit="0" title="담당자 등록"><span class="assignee-icon">✏️</span>담당자등록</button>`;
@@ -1614,7 +1728,7 @@
             const existing = assigneeData[lectureKey];
             const existingName = existing ? existing.name : '';
             const existingMasked = existing ? existing.masked : '';
-            const existingColor = existing ? existing.color : '#8b5a2b';
+            const existingColor = existing ? existing.color : '#ef4444';
 
             const overlay = document.createElement('div');
             overlay.className = 'assignee-popover-overlay';
@@ -1732,51 +1846,128 @@
             const previousColor = findPreviousColorForAssignee(currentInst, fullName);
             
             if (previousColor && selectedColor !== previousColor) {
-                const oldName = getColorName(previousColor);
-                const newName = getColorName(selectedColor);
-                const confirmChange = confirm(`⚠️ 안내: 이 도서관에 동일한 이름의 담당자에게 이미 [${oldName}] 색상이 지정되어 있었습니다.\n\n정말로 이 담당자의 고유 색상을 [${newName}]으로 변경하시겠습니까?`);
-                if (!confirmChange) {
-                    return;
-                }
-            }
+                showColorChoiceDialog(previousColor, selectedColor, async (choice) => {
+                    if (choice === 'cancel') {
+                        return; // 그냥 취소 후 복귀
+                    }
+                    
+                    if (saveBtn) {
+                        saveBtn.disabled = true;
+                        saveBtn.textContent = '저장 중...';
+                    }
 
-            if (saveBtn) {
-                saveBtn.disabled = true;
-                saveBtn.textContent = '저장 중...';
-            }
+                    if (choice === 'all') {
+                        // 옵션 1: 도서관 내 동일 풀네임을 가진 모든 강좌들의 색상을 일괄 변경 저장
+                        const allRelatedKeys = [];
+                        for (const [key, value] of Object.entries(assigneeData)) {
+                            const item = libraryData.find(l => String(l.lectureIdx) === String(key) || `${l.institution}::${l.name}` === String(key));
+                            if (item && item.institution === currentInst && value.name === fullName) {
+                                allRelatedKeys.push(key);
+                            }
+                        }
 
-            try {
-                const response = await fetch(ASSIGNEE_API, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        lectureKey: lectureKey,
-                        name: fullName,
-                        masked: selectedMask,
-                        color: selectedColor
-                    })
+                        if (!allRelatedKeys.includes(lectureKey)) {
+                            allRelatedKeys.push(lectureKey);
+                        }
+
+                        try {
+                            await Promise.all(allRelatedKeys.map(key => 
+                                fetch(ASSIGNEE_API, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        lectureKey: key,
+                                        name: fullName,
+                                        masked: key === lectureKey ? selectedMask : (assigneeData[key] ? assigneeData[key].masked : selectedMask),
+                                        color: selectedColor
+                                    })
+                                })
+                            ));
+
+                            allRelatedKeys.forEach(key => {
+                                assigneeData[key] = {
+                                    name: fullName,
+                                    masked: key === lectureKey ? selectedMask : (assigneeData[key] ? assigneeData[key].masked : selectedMask),
+                                    color: selectedColor,
+                                    updated_at: Date.now()
+                                };
+                            });
+                        } catch (e) {
+                            console.error('Failed to batch update assignee colors:', e);
+                            alert('일괄 저장 도중 오류가 발생했습니다.');
+                        }
+                    } else if (choice === 'only') {
+                        // 옵션 2: 오직 현재 수정한 이 강좌에만 새로운 색상을 개별 적용 저장
+                        try {
+                            const response = await fetch(ASSIGNEE_API, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    lectureKey: lectureKey,
+                                    name: fullName,
+                                    masked: selectedMask,
+                                    color: selectedColor
+                                })
+                            });
+
+                            if (response.ok) {
+                                assigneeData[lectureKey] = {
+                                    name: fullName,
+                                    masked: selectedMask,
+                                    color: selectedColor,
+                                    updated_at: Date.now()
+                                };
+                            }
+                        } catch (e) {
+                            console.error('Failed to save single assignee color:', e);
+                            alert('저장 도중 오류가 발생했습니다.');
+                        }
+                    }
+
+                    selectedMask = '';
+                    closeAssigneePopover();
+                    renderResults();
                 });
-
-                if (response.ok) {
-                    assigneeData[lectureKey] = { 
-                        name: fullName, 
-                        masked: selectedMask, 
-                        color: selectedColor, 
-                        updated_at: Date.now() 
-                    };
-                } else {
-                    alert('담당자 정보를 저장하지 못했습니다.');
+            } else {
+                // 이전 지정 색상과 동일하거나 신규 배정 시
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = '저장 중...';
                 }
-            } catch (err) {
-                console.error('Failed to save assignee:', err);
-                alert('네트워크 오류로 담당자 저장에 실패했습니다.');
-            }
 
-            selectedMask = '';
-            closeAssigneePopover();
-            renderResults();
+                try {
+                    const response = await fetch(ASSIGNEE_API, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            lectureKey: lectureKey,
+                            name: fullName,
+                            masked: selectedMask,
+                            color: selectedColor
+                        })
+                    });
+
+                    if (response.ok) {
+                        assigneeData[lectureKey] = { 
+                            name: fullName, 
+                            masked: selectedMask, 
+                            color: selectedColor, 
+                            updated_at: Date.now() 
+                        };
+                    } else {
+                        alert('담당자 정보를 저장하지 못했습니다.');
+                    }
+                } catch (err) {
+                    console.error('Failed to save assignee:', err);
+                    alert('네트워크 오류로 담당자 저장에 실패했습니다.');
+                }
+
+                selectedMask = '';
+                closeAssigneePopover();
+                renderResults();
+            }
         }
 
         // 삭제 (D1 DB 비동기 호출)
