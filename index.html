@@ -2555,6 +2555,83 @@
         // 1분마다 신선도 텍스트 자동 갱신
         setInterval(updateFreshnessBar, 60 * 1000);
 
+        // ── 브라우저 정기 백그라운드 자동 동기화 (Smart Silent Sync) ──
+        async function silentBackgroundSync() {
+            if (isLoading || isBackgroundSyncing) return;
+
+            try {
+                const lastSync = localStorage.getItem(CACHE_KEYS.lastSync);
+                let localTs = 0;
+                if (lastSync) {
+                    localTs = /^\d+$/.test(lastSync) ? parseInt(lastSync, 10) : (Date.parse(lastSync) || 0);
+                }
+
+                const res = await fetch(LIBRARY_DATA_API);
+                if (!res.ok) return;
+
+                const payload = await res.json();
+                const remoteTs = payload.meta && payload.meta.generatedAt
+                    ? (isNaN(payload.meta.generatedAt) ? Date.parse(payload.meta.generatedAt) : Number(payload.meta.generatedAt))
+                    : 0;
+
+                // 서버의 데이터가 로컬 데이터보다 새로운 경우에만 조용히 업데이트
+                if (remoteTs > localTs) {
+                    const rawFetched = Array.isArray(payload.lectures) ? payload.lectures : [];
+                    const fetchedLectures = rawFetched.filter(d => !isWholeSetLoan(d));
+
+                    if (fetchedLectures.length > 0) {
+                        libraryData = fetchedLectures;
+
+                        libraryData.forEach(d => {
+                            updateLectureState(d);
+                        });
+
+                        datasetMeta = payload.meta || datasetMeta;
+
+                        const newInsts = Array.isArray(payload.institutions)
+                            ? payload.institutions
+                            : fetchedLectures.map(d => d.institution).filter(Boolean);
+                        
+                        newInsts.forEach(inst => institutionNames.add(inst));
+
+                        const currentSelected = institutionSelect.value;
+                        populateInstitutionSelect();
+                        if (currentSelected && [...institutionNames].includes(currentSelected)) {
+                            institutionSelect.value = currentSelected;
+                        }
+
+                        saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, remoteTs);
+
+                        allData = getSearchBaseData();
+                        updateFilterButtons(getFilterCounts(allData));
+                        renderResults();
+
+                        showSyncBadge('✨ 최신 강좌 정보 자동 업데이트 완료!', 'success');
+                    }
+                }
+            } catch (err) {
+                console.error('Silent background sync failed:', err);
+            }
+        }
+
+        // 30분마다 정기 백그라운드 자동 동기화 실행 (사이트가 켜져 있는 동안)
+        setInterval(silentBackgroundSync, 30 * 60 * 1000);
+
+        // 사용자가 다른 탭/작업을 하다가 브라우저 탭으로 돌아왔을 때 마지막 동기화 후 30분이 넘었다면 실시간 동기화
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                const lastSync = localStorage.getItem(CACHE_KEYS.lastSync);
+                let localTs = 0;
+                if (lastSync) {
+                    localTs = /^\d+$/.test(lastSync) ? parseInt(lastSync, 10) : (Date.parse(lastSync) || 0);
+                }
+                const timeDiff = Date.now() - localTs;
+                if (timeDiff > 30 * 60 * 1000) {
+                    silentBackgroundSync();
+                }
+            }
+        });
+
         // ── 수동 강제 새로고침 ──
         async function forceRefreshData() {
             const btn = document.getElementById('freshnessRefreshBtn');
