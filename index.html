@@ -1730,6 +1730,9 @@
             const existingMasked = existing ? existing.masked : '';
             const existingColor = existing ? existing.color : '#ef4444';
 
+            // 기존 마스킹 옵션 변수 초기화
+            selectedMask = existingMasked;
+
             const overlay = document.createElement('div');
             overlay.className = 'assignee-popover-overlay';
             overlay.id = 'assigneePopoverOverlay';
