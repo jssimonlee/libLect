@@ -1876,7 +1876,17 @@
             const currentInst = d ? d.institution : '';
             const previousColor = findPreviousColorForAssignee(currentInst, fullName);
             
-            if (previousColor && selectedColor !== previousColor) {
+            // 동일 도서관 내에 이 담당자명으로 등록된 강좌 수 계산
+            let relatedCount = 0;
+            for (const [key, value] of Object.entries(assigneeData)) {
+                const item = libraryData.find(l => String(l.lectureIdx) === String(key) || `${l.institution}::${l.name}` === String(key));
+                if (item && item.institution === currentInst && value.name === fullName) {
+                    relatedCount++;
+                }
+            }
+            
+            // 다른 강좌도 존재하는 경우에만 3버튼 경고 모달을 띄우고, 이 담당자의 유일한 강좌인 경우 묻지 않고 바로 저장
+            if (previousColor && selectedColor !== previousColor && relatedCount > 1) {
                 showColorChoiceDialog(previousColor, selectedColor, async (choice) => {
                     if (choice === 'cancel') {
                         return; // 그냥 취소 후 복귀
