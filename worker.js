@@ -524,29 +524,19 @@ function parseDateOnly(value) {
 }
 
 function getKoreaTodayDateOnly() {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Seoul',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    }).formatToParts(new Date());
-
-    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-    return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+    const kstMs = Date.now() + (9 * 60 * 60 * 1000);
+    const kstDate = new Date(kstMs);
+    return new Date(Date.UTC(kstDate.getUTCFullYear(), kstDate.getUTCMonth(), kstDate.getUTCDate()));
 }
 
 function getKoreaNow() {
-    const now = new Date();
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Seoul',
-        year: 'numeric', month: 'numeric', day: 'numeric',
-        hour: 'numeric', minute: 'numeric', second: 'numeric',
-        hour12: false
-    });
-    
-    const parts = formatter.formatToParts(now);
-    const v = Object.fromEntries(parts.map(p => [p.type, p.value]));
-    return new Date(Number(v.year), Number(v.month) - 1, Number(v.day), Number(v.hour), Number(v.minute), Number(v.second));
+    const kstMs = Date.now() + (9 * 60 * 60 * 1000);
+    const kstDate = new Date(kstMs);
+    return {
+        getDay: () => kstDate.getUTCDay(),
+        getHours: () => kstDate.getUTCHours(),
+        getMinutes: () => kstDate.getUTCMinutes()
+    };
 }
 
 function addMonths(date, months) {
