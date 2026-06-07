@@ -190,16 +190,49 @@ async function handleLibraryLectures(request, env, ctx) {
         try {
             const cachedRow = await env.DB.prepare("SELECT value, updated_at FROM global_cache WHERE cache_key = ?").bind(cacheKeyStr).first();
             if (cachedRow) {
-                // D1 캐시 데이터 즉시 반환 (0ms급 응답)
-                return new Response(cachedRow.value, {
-                    status: 200,
-                    headers: {
-                        ...CORS_HEADERS,
-                        'Content-Type': 'application/json; charset=utf-8',
-                        'X-Cache': 'HIT',
-                        'Date': new Date(cachedRow.updated_at).toUTCString(),
-                    },
-                });
+                const cacheAgeMs = Date.now() - cachedRow.updated_at;
+                const cacheAgeSec = cacheAgeMs / 1000;
+
+                if (cacheAgeSec <= CACHE_TTL_SECONDS) {
+                    // TTL 이내: 신선한 캐시 즉시 반환
+                    return new Response(cachedRow.value, {
+                        status: 200,
+                        headers: {
+                            ...CORS_HEADERS,
+                            'Content-Type': 'application/json; charset=utf-8',
+                            'X-Cache': 'HIT',
+                            'X-Cache-Age': String(Math.floor(cacheAgeSec)),
+                            'Date': new Date(cachedRow.updated_at).toUTCString(),
+                        },
+                    });
+                } else if (cacheAgeSec <= SWR_WINDOW_SECONDS) {
+                    // SWR 윈도우 이내: stale 데이터 즉시 반환 + 백그라운드 갱신
+                    ctx.waitUntil((async () => {
+                        try {
+                            console.log(`[SWR] Background revalidation for key: ${cacheKeyStr}`);
+                            const result = await buildLibraryLectureDataset(limit);
+                            const jsonStr = JSON.stringify(result);
+                            await env.DB.prepare("INSERT OR REPLACE INTO global_cache (cache_key, value, updated_at) VALUES (?, ?, ?)")
+                                .bind(cacheKeyStr, jsonStr, Date.now())
+                                .run();
+                            console.log(`[SWR] Background revalidation complete for key: ${cacheKeyStr}`);
+                        } catch (err) {
+                            console.error('[SWR] Background revalidation failed:', err);
+                        }
+                    })());
+
+                    return new Response(cachedRow.value, {
+                        status: 200,
+                        headers: {
+                            ...CORS_HEADERS,
+                            'Content-Type': 'application/json; charset=utf-8',
+                            'X-Cache': 'STALE',
+                            'X-Cache-Age': String(Math.floor(cacheAgeSec)),
+                            'Date': new Date(cachedRow.updated_at).toUTCString(),
+                        },
+                    });
+                }
+                // SWR 윈도우 초과: 캐시 무효 → 아래에서 실시간 수집
             }
         } catch (e) {
             console.error('D1 cache read failed:', e);

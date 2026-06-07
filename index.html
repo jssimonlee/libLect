@@ -2558,6 +2558,7 @@
         // ── 브라우저 정기 백그라운드 자동 동기화 (Smart Silent Sync) ──
         async function silentBackgroundSync() {
             if (isLoading || isBackgroundSyncing) return;
+            isBackgroundSyncing = true;
 
             try {
                 const lastSync = localStorage.getItem(CACHE_KEYS.lastSync);
@@ -2566,16 +2567,23 @@
                     localTs = /^\d+$/.test(lastSync) ? parseInt(lastSync, 10) : (Date.parse(lastSync) || 0);
                 }
 
-                const res = await fetch(LIBRARY_DATA_API);
+                const localAge = Date.now() - localTs;
+                // 로컬 캐시가 30분 이상 지났으면 캐시 바이패스(_t 파라미터)로 서버에 직접 요청
+                const needsFresh = localAge > SYNC_GRACE_PERIOD_MS;
+                const fetchUrl = needsFresh
+                    ? `${LIBRARY_DATA_API}?_t=${Date.now()}`
+                    : LIBRARY_DATA_API;
+
+                const res = await fetch(fetchUrl);
                 if (!res.ok) return;
 
                 const payload = await res.json();
-                const remoteTs = payload.meta && payload.meta.generatedAt
+                const remoteGenerated = payload.meta && payload.meta.generatedAt
                     ? (isNaN(payload.meta.generatedAt) ? Date.parse(payload.meta.generatedAt) : Number(payload.meta.generatedAt))
                     : 0;
 
-                // 서버의 데이터가 로컬 데이터보다 새로운 경우에만 조용히 업데이트
-                if (remoteTs > localTs) {
+                // 서버 데이터의 generatedAt가 로컬보다 새로운 경우 → 실질적으로 데이터가 갱신됨
+                if (remoteGenerated > localTs || needsFresh) {
                     const rawFetched = Array.isArray(payload.lectures) ? payload.lectures : [];
                     const fetchedLectures = rawFetched.filter(d => !isWholeSetLoan(d));
 
@@ -2600,32 +2608,40 @@
                             institutionSelect.value = currentSelected;
                         }
 
-                        saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, remoteTs);
+                        // lastSync에는 현재 브라우저 시간(Date.now())을 저장하여 신선도를 정확히 표시
+                        saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, Date.now());
 
                         allData = getSearchBaseData();
                         updateFilterButtons(getFilterCounts(allData));
                         renderResults();
 
                         showSyncBadge('✨ 최신 강좌 정보 자동 업데이트 완료!', 'success');
+                        updateFreshnessBar();
                     }
                 }
             } catch (err) {
                 console.error('Silent background sync failed:', err);
+            } finally {
+                isBackgroundSyncing = false;
             }
         }
 
         // 30분마다 정기 백그라운드 자동 동기화 실행 (사이트가 켜져 있는 동안)
         setInterval(silentBackgroundSync, 30 * 60 * 1000);
 
-        // 사용자가 다른 탭/작업을 하다가 브라우저 탭으로 돌아왔을 때 마지막 동기화 후 30분이 넘었다면 실시간 동기화
+        // 사용자가 다른 탭/작업을 하다가 브라우저 탭으로 돌아왔을 때
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
+                // 탭 복귀 시 즉시 신선도 텍스트 갱신 (경과 시간 정확히 표시)
+                updateFreshnessBar();
+
                 const lastSync = localStorage.getItem(CACHE_KEYS.lastSync);
                 let localTs = 0;
                 if (lastSync) {
                     localTs = /^\d+$/.test(lastSync) ? parseInt(lastSync, 10) : (Date.parse(lastSync) || 0);
                 }
                 const timeDiff = Date.now() - localTs;
+                // 마지막 동기화 후 30분이 넘었다면 백그라운드 갱신 자동 기동
                 if (timeDiff > 30 * 60 * 1000) {
                     silentBackgroundSync();
                 }
@@ -2673,10 +2689,8 @@
                         institutionSelect.value = currentSelected;
                     }
 
-                    const generatedAtMs = payload.meta && payload.meta.generatedAt
-                        ? (isNaN(payload.meta.generatedAt) ? Date.parse(payload.meta.generatedAt) : Number(payload.meta.generatedAt))
-                        : Date.now();
-                    saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, generatedAtMs);
+                    // lastSync에는 브라우저 현재 시간을 저장하여 신선도를 정확히 표시
+                    saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, Date.now());
 
                     allData = getSearchBaseData();
                     updateFilterButtons(getFilterCounts(allData));
@@ -2832,10 +2846,8 @@
 
                 // 3단계: 캐시 보존 및 타임스탬프 갱신
                 // 1단계 고속 선로드일 때는 타임스탬프를 0으로 캐싱하여 2단계 전체 로드가 완전히 채워지기 전 브라우저를 새로고침하면 다시 선로드를 하도록 조절
-                const generatedAtMs = payload.meta && payload.meta.generatedAt
-                    ? (isNaN(payload.meta.generatedAt) ? Date.parse(payload.meta.generatedAt) : Number(payload.meta.generatedAt))
-                    : now;
-                saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, syncMode === 'firstPhase' ? 0 : generatedAtMs);
+                // lastSync에는 브라우저 현재 시간을 저장하여 신선도를 정확히 표시
+                saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, syncMode === 'firstPhase' ? 0 : Date.now());
 
                 if (hasCache) {
                     showSyncBadge('✅ 강좌 데이터 동기화 완료!', 'success');
@@ -2919,11 +2931,8 @@
                         institutionSelect.value = currentSelected;
                     }
 
-                    // 정규 캐시 데이터 타임스탬프 저장
-                    const generatedAtMs = payload.meta && payload.meta.generatedAt
-                        ? (isNaN(payload.meta.generatedAt) ? Date.parse(payload.meta.generatedAt) : Number(payload.meta.generatedAt))
-                        : Date.now();
-                    saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, generatedAtMs);
+                    // lastSync에는 브라우저 현재 시간을 저장하여 신선도를 정확히 표시
+                    saveCacheToLocalStorage(libraryData, datasetMeta, institutionNames, Date.now());
 
                     // 사용자가 이미 검색 버튼을 눌렀거나, 도서관 필터가 선택되어 있는 경우 물 흐르듯 화면을 갱신
                     if (searchDone || institutionSelect.value) {
