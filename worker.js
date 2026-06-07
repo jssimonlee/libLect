@@ -14,7 +14,7 @@ const SOURCE_API_PATH = '/api/apiLectureList.do';
 const INITIAL_API_PER_PAGE = 1000;
 const NEXT_API_PER_PAGE = 500;
 const RECENT_MONTHS = 6;
-const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6시간 CDN 엣지 캐시 (Cron이 30분마다 갱신하므로 실제 신선도 유지)
+const CACHE_TTL_SECONDS = 30 * 60; // 30분 CDN 엣지 캐시 (만료 시 SWR 백그라운드 갱신 자동 기동)
 const SWR_WINDOW_SECONDS = 24 * 60 * 60; // 24시간 SWR 허용
 
 const CORS_HEADERS = {
