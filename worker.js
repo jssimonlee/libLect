@@ -35,7 +35,7 @@ export default {
             if (request.method !== 'GET') {
                 return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
             }
-            return handleLibraryLectures(request, ctx);
+            return handleLibraryLectures(request, env, ctx);
         }
 
         if (url.pathname === '/api/assignees') {
@@ -66,7 +66,7 @@ export default {
     },
 
     async scheduled(event, env, ctx) {
-        ctx.waitUntil(triggerScheduledSync());
+        ctx.waitUntil(triggerScheduledSync(env));
     }
 };
 
@@ -179,72 +179,60 @@ function withCorsHeaders(response, xCache) {
     return new Response(response.body, { status: response.status, headers: newHeaders });
 }
 
-async function handleLibraryLectures(request, ctx) {
-    const cache = caches.default;
+async function handleLibraryLectures(request, env, ctx) {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit'), 10) : null;
     const isForceRefresh = url.searchParams.has('_t');
 
-    const cacheUrl = new URL(request.url);
-    if (limit) {
-        cacheUrl.search = `?limit=${limit}`;
-    } else {
-        cacheUrl.search = '';
-    }
-    const cacheKey = new Request(cacheUrl.toString(), request);
+    const cacheKeyStr = limit ? `libraryLectures_${limit}` : 'libraryLectures_all';
 
-    if (!isForceRefresh) {
-        const cached = await cache.match(cacheKey);
-        if (cached) {
-            const now = Date.now();
-            const dateHeader = cached.headers.get('Date');
-            let shouldRevalidate = false;
-            let isStale = false;
-
-            if (dateHeader) {
-                const cacheTime = new Date(dateHeader).getTime();
-                const ageMs = now - cacheTime;
-
-                if (ageMs > CACHE_TTL_SECONDS * 1000) {
-                    shouldRevalidate = true;
-                    if (ageMs < (CACHE_TTL_SECONDS + SWR_WINDOW_SECONDS) * 1000) {
-                        isStale = true;
-                    }
-                }
-            } else {
-                shouldRevalidate = true;
+    if (!isForceRefresh && env.DB) {
+        try {
+            const cachedRow = await env.DB.prepare("SELECT value, updated_at FROM global_cache WHERE cache_key = ?").bind(cacheKeyStr).first();
+            if (cachedRow) {
+                // D1 캐시 데이터 즉시 반환 (0ms급 응답)
+                return new Response(cachedRow.value, {
+                    status: 200,
+                    headers: {
+                        ...CORS_HEADERS,
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'X-Cache': 'HIT',
+                        'Date': new Date(cachedRow.updated_at).toUTCString(),
+                    },
+                });
             }
-
-            if (shouldRevalidate && isStale) {
-                // SWR: Serve stale content immediately, revalidate in background
-                ctx.waitUntil((async () => {
-                    try {
-                        const result = await buildLibraryLectureDataset(limit);
-                        const response = jsonResponse(result, {
-                            'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
-                            'X-Cache': 'MISS',
-                        });
-                        await cache.put(cacheKey, response.clone());
-                    } catch (err) {
-                        console.error('Background SWR sync failed:', err);
-                    }
-                })());
-                return withCorsHeaders(cached, 'STALE');
-            } else if (!shouldRevalidate) {
-                return withCorsHeaders(cached, 'HIT');
-            }
+        } catch (e) {
+            console.error('D1 cache read failed:', e);
         }
     }
 
+    // 캐시가 없거나 강제 새로고침인 경우: 실시간 수집 및 D1 캐시 갱신
     try {
         const result = await buildLibraryLectureDataset(limit);
-        const response = jsonResponse(result, {
-            'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
-            'X-Cache': 'MISS',
-        });
+        const jsonStr = JSON.stringify(result);
+        const now = Date.now();
 
-        ctx.waitUntil(cache.put(cacheKey, response.clone()));
-        return response;
+        if (env.DB) {
+            ctx.waitUntil((async () => {
+                try {
+                    await env.DB.prepare("INSERT OR REPLACE INTO global_cache (cache_key, value, updated_at) VALUES (?, ?, ?)")
+                        .bind(cacheKeyStr, jsonStr, now)
+                        .run();
+                } catch (err) {
+                    console.error('D1 cache write failed:', err);
+                }
+            })());
+        }
+
+        return new Response(jsonStr, {
+            status: 200,
+            headers: {
+                ...CORS_HEADERS,
+                'Content-Type': 'application/json; charset=utf-8',
+                'X-Cache': 'MISS',
+                'Date': new Date(now).toUTCString(),
+            },
+        });
     } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), {
             status: 502,
@@ -257,7 +245,12 @@ async function handleLibraryLectures(request, ctx) {
     }
 }
 
-async function triggerScheduledSync() {
+async function triggerScheduledSync(env) {
+    if (!env.DB) {
+        console.error('[Scheduled Sync] D1 Database binding is missing.');
+        return;
+    }
+
     // 1. 현재 한국 표준시(KST) 기준 시간 정보 획득
     const nowKst = getKoreaNow();
     const day = nowKst.getDay(); // 0: 일요일, 6: 토요일
@@ -283,27 +276,23 @@ async function triggerScheduledSync() {
         console.log(`[Scheduled Sync] Work-hours sync running (30-min interval): 요일 ${day}, 시간 ${hour}:${minute}`);
     }
 
-    const targetUrls = [
-        'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures',
-        'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures?limit=100',
-        'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures?limit=500'
-    ];
+    const limits = [null, 100, 500];
+    const now = Date.now();
 
-    const timestamp = Date.now();
-    for (const urlStr of targetUrls) {
+    for (const limit of limits) {
+        const cacheKeyStr = limit ? `libraryLectures_${limit}` : 'libraryLectures_all';
         try {
-            // Scheduled Event(크론) 컨텍스트에서는 Cache API(caches.default.put)를 직접 호출하면 에러가 납니다.
-            // 대신, 자기 자신의 HTTP API를 _t(강제 새로고침 파라미터)를 붙여 fetch 요청을 보냅니다.
-            // 이렇게 하면 fetch 핸들러가 구동되어, 안전하게 외부 데이터를 긁어와 캐시를 갱신 및 저장하게 됩니다.
-            const freshUrl = urlStr + (urlStr.includes('?') ? '&' : '?') + `_t=${timestamp}`;
-            console.log(`[Scheduled Sync] Fetching: ${freshUrl}`);
-            const res = await fetch(freshUrl);
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            console.log(`[Scheduled Sync] Successfully warmed up cache for: ${urlStr}`);
+            console.log(`[Scheduled Sync] Building dataset for key: ${cacheKeyStr}`);
+            const result = await buildLibraryLectureDataset(limit);
+            const jsonStr = JSON.stringify(result);
+
+            await env.DB.prepare("INSERT OR REPLACE INTO global_cache (cache_key, value, updated_at) VALUES (?, ?, ?)")
+                .bind(cacheKeyStr, jsonStr, now)
+                .run();
+                
+            console.log(`[Scheduled Sync] Successfully updated D1 cache for key: ${cacheKeyStr}`);
         } catch (err) {
-            console.error(`Cron warm-up failed for: ${urlStr}`, err);
+            console.error(`[Scheduled Sync] Failed for key ${cacheKeyStr}:`, err);
         }
     }
 }
