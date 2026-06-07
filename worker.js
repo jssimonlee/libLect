@@ -283,23 +283,25 @@ async function triggerScheduledSync() {
         console.log(`[Scheduled Sync] Work-hours sync running (30-min interval): 요일 ${day}, 시간 ${hour}:${minute}`);
     }
 
-    const cache = caches.default;
     const targetUrls = [
         'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures',
         'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures?limit=100',
         'https://liblect-proxy.jssimonlee.workers.dev/api/libraryLectures?limit=500'
     ];
 
+    const timestamp = Date.now();
     for (const urlStr of targetUrls) {
         try {
-            const cacheKey = new Request(urlStr);
-            const limit = urlStr.includes('limit=100') ? 100 : (urlStr.includes('limit=500') ? 500 : null);
-            const result = await buildLibraryLectureDataset(limit);
-            const response = jsonResponse(result, {
-                'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
-                'X-Cache': 'MISS',
-            });
-            await cache.put(cacheKey, response);
+            // Scheduled Event(크론) 컨텍스트에서는 Cache API(caches.default.put)를 직접 호출하면 에러가 납니다.
+            // 대신, 자기 자신의 HTTP API를 _t(강제 새로고침 파라미터)를 붙여 fetch 요청을 보냅니다.
+            // 이렇게 하면 fetch 핸들러가 구동되어, 안전하게 외부 데이터를 긁어와 캐시를 갱신 및 저장하게 됩니다.
+            const freshUrl = urlStr + (urlStr.includes('?') ? '&' : '?') + `_t=${timestamp}`;
+            console.log(`[Scheduled Sync] Fetching: ${freshUrl}`);
+            const res = await fetch(freshUrl);
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            console.log(`[Scheduled Sync] Successfully warmed up cache for: ${urlStr}`);
         } catch (err) {
             console.error(`Cron warm-up failed for: ${urlStr}`, err);
         }
