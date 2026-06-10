@@ -1826,8 +1826,8 @@
             const existingMasked = existing ? existing.masked : '';
             const existingColor = existing ? existing.color : '#ef4444';
 
-            // 기존 마스킹 옵션 변수 초기화
-            selectedMask = existingMasked;
+            // 개인정보 보호: 기존 이름/마스킹 표시 안 함 (새로 입력하도록 초기화)
+            selectedMask = '';
 
             const overlay = document.createElement('div');
             overlay.className = 'assignee-popover-overlay';
@@ -1841,7 +1841,7 @@
                 <h4>${isEdit ? '👤 담당자 수정' : '✏️ 담당자 등록'}</h4>
                 <div class="pop-subtitle">이름을 입력하면 보호된 표시 옵션을 선택할 수 있습니다</div>
                 <div class="pop-input-wrap">
-                    <input type="text" id="assigneeNameInput" placeholder="이름을 입력하세요 (예: 홍길동)" value="${escapeHtml(existingName)}" maxlength="10" autocomplete="off" />
+                    <input type="text" id="assigneeNameInput" placeholder="이름을 입력하세요 (예: 홍길동)" value="" maxlength="10" autocomplete="off" />
                 </div>
                 <div class="assignee-mask-options" id="assigneeMaskOptions"></div>
                 <div class="pop-subtitle" style="margin-top: 1.25rem; font-weight:600; color:#5c4033;">🎨 담당자 고유 색상 선택</div>
@@ -1879,22 +1879,7 @@
                 renderColorPalette(existingColor);
             }, 20);
 
-            // 기존 이름이 있으면 마스크 옵션 즉시 표시
-            if (existingName) {
-                setTimeout(() => {
-                    updateMaskOptions(existingName);
-                    // 기존 선택값 하이라이트
-                    if (existingMasked) {
-                        const btns = document.querySelectorAll('.assignee-mask-btn');
-                        btns.forEach(b => {
-                            if (b.textContent === existingMasked) {
-                                b.classList.add('selected');
-                                document.getElementById('assigneeSaveBtn').disabled = false;
-                            }
-                        });
-                    }
-                }, 50);
-            }
+            // 개인정보 보호: 기존 이름을 표시하지 않으므로 마스크 옵션도 빈 상태로 시작
 
             // 포커스
             setTimeout(() => nameInput.focus(), 100);
