@@ -2540,6 +2540,50 @@
         // 1분마다 신선도 텍스트 자동 갱신
         setInterval(updateFreshnessBar, 60 * 1000);
 
+        // ── 오늘수업 상태 배지(수업중/예정/종료) 실시간 자동 갱신 ──
+        function updateTodayLectureBadges() {
+            const badges = document.querySelectorAll('.today-sub-badge[data-begin-time][data-end-time]');
+            if (badges.length === 0) return;
+
+            const now = new Date();
+            const currentTimeInSeconds = (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
+
+            const parseTimeToSeconds = (timeStr) => {
+                if (!timeStr) return 0;
+                const parts = timeStr.split(':').map(Number);
+                return ((parts[0] || 0) * 3600) + ((parts[1] || 0) * 60) + (parts[2] || 0);
+            };
+
+            badges.forEach(badge => {
+                const beginSecs = parseTimeToSeconds(badge.dataset.beginTime);
+                const endSecs = parseTimeToSeconds(badge.dataset.endTime);
+
+                let newStatus, newClass, newLabel;
+                if (currentTimeInSeconds < beginSecs) {
+                    newStatus = 'upcoming';
+                    newClass = 'today-sub-badge upcoming';
+                    newLabel = '⏰ 예정';
+                } else if (currentTimeInSeconds >= beginSecs && currentTimeInSeconds <= endSecs) {
+                    newStatus = 'ongoing';
+                    newClass = 'today-sub-badge ongoing';
+                    newLabel = '⚡ 수업중';
+                } else {
+                    newStatus = 'completed';
+                    newClass = 'today-sub-badge completed';
+                    newLabel = '✓ 종료';
+                }
+
+                // 상태가 바뀌었을 때만 DOM 업데이트 (불필요한 리플로우 방지)
+                if (badge.className !== newClass) {
+                    badge.className = newClass;
+                    badge.textContent = newLabel;
+                }
+            });
+        }
+
+        // 30초마다 오늘수업 상태 배지 자동 갱신
+        setInterval(updateTodayLectureBadges, 30 * 1000);
+
         // ── 브라우저 정기 백그라운드 자동 동기화 (Smart Silent Sync) ──
         async function silentBackgroundSync() {
             if (isLoading || isBackgroundSyncing) return;
@@ -2619,6 +2663,8 @@
             if (document.visibilityState === 'visible') {
                 // 탭 복귀 시 즉시 신선도 텍스트 갱신 (경과 시간 정확히 표시)
                 updateFreshnessBar();
+                // 탭 복귀 시 오늘수업 상태 배지도 즉시 갱신
+                updateTodayLectureBadges();
 
                 const lastSync = localStorage.getItem(CACHE_KEYS.lastSync);
                 let localTs = 0;
@@ -3177,12 +3223,13 @@
             if (isToday) {
                 const timeStatus = getTodayLectureTimeStatus(d);
                 let subBadgeHtml = '';
+                const badgeAttrs = `data-begin-time="${d.beginTime || ''}" data-end-time="${d.endTime || ''}"`;
                 if (timeStatus === 'ongoing') {
-                    subBadgeHtml = '<span class="today-sub-badge ongoing">⚡ 수업중</span>';
+                    subBadgeHtml = `<span class="today-sub-badge ongoing" ${badgeAttrs}>⚡ 수업중</span>`;
                 } else if (timeStatus === 'upcoming') {
-                    subBadgeHtml = '<span class="today-sub-badge upcoming">⏰ 예정</span>';
+                    subBadgeHtml = `<span class="today-sub-badge upcoming" ${badgeAttrs}>⏰ 예정</span>`;
                 } else if (timeStatus === 'completed') {
-                    subBadgeHtml = '<span class="today-sub-badge completed">✓ 종료</span>';
+                    subBadgeHtml = `<span class="today-sub-badge completed" ${badgeAttrs}>✓ 종료</span>`;
                 }
                 todayBadgeHtml = `
                     <div class="today-badge-group">
