@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>화성시 도서관 강좌 검색</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="rules-search.css?v=3">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
@@ -1512,6 +1513,22 @@
         <div class="spinner-mini"></div>
         <span id="syncBadgeText">데이터 동기화 중...</span>
     </div>
+    <nav class="app-mode-switcher" aria-label="업무 기능 선택">
+        <div class="app-mode-switcher-inner">
+            <div class="app-brand">
+                <span class="app-brand-icon" aria-hidden="true">🏛️</span>
+                <span>화성시립도서관 업무 도우미</span>
+            </div>
+            <div class="app-mode-tabs" role="tablist" aria-label="검색 기능">
+                <button id="lectureModeTab" class="app-mode-tab active" type="button" role="tab" aria-selected="true" aria-controls="lectureModePanel" data-app-mode="lectures">
+                    <span aria-hidden="true">📚</span> 강좌 찾기
+                </button>
+                <button id="rulesModeTab" class="app-mode-tab" type="button" role="tab" aria-selected="false" aria-controls="rulesModePanel" data-app-mode="rules">
+                    <span aria-hidden="true">📑</span> 규정·이용안내
+                </button>
+            </div>
+        </div>
+    </nav>
     <div class="hero-combined-container">
         <header>
             <h1>화성시 도서관 강좌 검색</h1>
@@ -1580,6 +1597,57 @@
             </div>
         </div>
     </div>
+
+    <section id="rulesModePanel" class="rules-mode-panel app-mode-hidden" role="tabpanel" aria-labelledby="rulesModeTab" aria-hidden="true">
+        <div class="rules-hero">
+            <div class="rules-heading-row">
+                <div>
+                    <p class="rules-eyebrow">직원용 빠른 검색</p>
+                    <h1>규정·이용안내 검색</h1>
+                    <p class="rules-description">공식 이용안내와 화성시 시립도서관 운영규정에서 근거를 바로 찾습니다.</p>
+                </div>
+                <div class="rules-source-status" title="앱에 저장된 공식 자료 색인을 검색합니다.">
+                    <span class="rules-status-dot" aria-hidden="true"></span>
+                    무료 · 로컬 검색
+                </div>
+            </div>
+
+            <form id="rulesSearchForm" class="rules-search-form" role="search">
+                <label for="rulesSearchInput">찾고 싶은 규정이나 업무 내용을 입력하세요</label>
+                <div class="rules-search-controls">
+                    <div class="rules-input-wrap">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input id="rulesSearchInput" type="search" autocomplete="off" placeholder="예: 노을빛 몇 시까지 해요?, 남양 장난감은 며칠 빌려요?">
+                    </div>
+                    <button type="submit" class="rules-search-button">검색</button>
+                </div>
+            </form>
+
+            <div class="rules-quick-topics" aria-label="빠른 주제">
+                <span>빠른 주제</span>
+                <button type="button" data-rules-query="회원가입">회원</button>
+                <button type="button" data-rules-query="대출 반납 연체">대출·반납</button>
+                <button type="button" data-rules-query="휴관 이용시간">휴관·운영시간</button>
+                <button type="button" data-rules-query="도서관 이용시간 휴관 시설 주차 특화서비스">도서관별 안내</button>
+                <button type="button" data-rules-query="문화교실 강좌">문화교실</button>
+                <button type="button" data-rules-query="자료 선정 기증 폐기">자료관리</button>
+                <button type="button" data-rules-query="시설 대관 사물함 분실물">시설관리</button>
+            </div>
+        </div>
+
+        <div class="rules-content-wrap">
+            <div class="rules-toolbar">
+                <div id="rulesResultSummary" class="rules-result-summary">주제를 선택하거나 검색어를 입력해 보세요.</div>
+                <div class="rules-source-filters" role="group" aria-label="자료 출처 필터">
+                    <button type="button" class="active" data-rules-source="all">전체</button>
+                    <button type="button" data-rules-source="guide">최신 이용안내</button>
+                    <button type="button" data-rules-source="regulation">운영규정</button>
+                    <button type="button" data-rules-source="law">관련 법령</button>
+                </div>
+            </div>
+            <div id="rulesSearchResults" class="rules-results" aria-live="polite"></div>
+        </div>
+    </section>
 
     <script>
         // ── 프록시 설정 ──────────────────────────────────────────────
@@ -3826,5 +3894,7 @@
             </div>
         </div>
     </div>
+    <script src="rules-data.js"></script>
+    <script src="rules-search.js?v=10"></script>
 </body>
 </html>
