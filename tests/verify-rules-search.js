@@ -2,7 +2,7 @@
 
 global.window = {};
 require('../rules-data.js');
-const { rankEntries, makeAnswerExtract } = require('../rules-search.js');
+const { rankEntries, makeAnswerExtract, cleanGuideText, getGuideFacts, displayTitle } = require('../rules-search.js');
 const questions = require('./rules-search-questions.js');
 const generalQuestions = require('./rules-search-general-questions.js');
 
@@ -87,6 +87,32 @@ items.forEach((query, index) => {
 
 verifyQuestions(questions, primaryIntents, unsupported, titleChecks);
 verifyQuestions(generalQuestions, generalIntents, generalUnsupported, generalTitleChecks, 100);
+
+const phoneResult = rankEntries('\ub178\uc744\ube5b \uc804\ud654\ubc88\ud638', 'all', 1);
+const phoneFacts = getGuideFacts(phoneResult.ranked[0]?.entry || {}, phoneResult.analysis);
+if (!phoneFacts.some(item => item.label === '\uc804\ud654' && item.value === '031-226-3301')) {
+    failures.push('\uad6c\uc870\ud654 \uac80\uc0c9: \ub178\uc744\ube5b\ub3c4\uc11c\uad00 \uc804\ud654\ubc88\ud638 \ucd94\ucd9c \uc2e4\ud328');
+}
+
+const busResult = rankEntries('\ub178\uc744\ube5b \ub3c4\uc11c\uad00 \ubc84\uc2a4 \uc815\ubcf4', 'all', 1);
+const busFacts = getGuideFacts(busResult.ranked[0]?.entry || {}, busResult.analysis);
+if (!busFacts.some(item => item.label === '\ubc84\uc2a4' && /81.*H65.*35-1/.test(item.value))) {
+    failures.push('\uad6c\uc870\ud654 \uac80\uc0c9: \ub178\uc744\ube5b\ub3c4\uc11c\uad00 \ubc84\uc2a4 \ub178\uc120 \ucd94\ucd9c \uc2e4\ud328');
+}
+
+const hoursResult = rankEntries('\ub178\uc744\ube5b \ub3c4\uc11c\uad00 \uc6b4\uc601\uc2dc\uac04', 'all', 1);
+const hoursFacts = getGuideFacts(hoursResult.ranked[0]?.entry || {}, hoursResult.analysis);
+if (!hoursFacts.some(item => item.label === '\uc774\uc6a9\uc2dc\uac04' && /\ud3c9\uc77c 09:30~22:00/.test(item.value))) {
+    failures.push('\uad6c\uc870\ud654 \uac80\uc0c9: \ub178\uc744\ube5b\ub3c4\uc11c\uad00 \uc6b4\uc601\uc2dc\uac04 \ucd94\ucd9c \uc2e4\ud328');
+}
+
+if (/\uad50\ud1b5\ud3b8\(\ubc84\uc2a4 \uc774\uc6a9 \uc2dc\)\s+\uad50\ud1b5\ud3b8\(\ubc84\uc2a4 \uc774\uc6a9 \uc2dc\)/.test(cleanGuideText(busResult.ranked[0]?.entry?.text))) {
+    failures.push('\uad6c\uc870\ud654 \uac80\uc0c9: \uc5f0\uc18d\ub41c \uad50\ud1b5\ud3b8 \uba38\ub9ac\ub9d0 \uc81c\uac70 \uc2e4\ud328');
+}
+
+if (!/\uacac\ud559 \uc2e0\uccad/.test(displayTitle({ sourceType: 'guide', title: '\ub178\uc744\ube5b\ub3c4\uc11c\uad00 \ub3c4\uc11c\uad00\uacac\ud559\uc2e0\uccad' }))) {
+    failures.push('\uad6c\uc870\ud654 \uac80\uc0c9: \uacb0\uacfc \uc81c\ubaa9 \uc815\ub9ac \uc2e4\ud328');
+}
 
 if (failures.length) {
     console.error(`FAIL ${150 - failures.length}/150`);

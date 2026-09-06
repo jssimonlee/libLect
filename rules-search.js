@@ -526,13 +526,143 @@
         };
     }
 
+    const GUIDE_NOISE_LINES = new Set([
+        '목록', '다운로드', '신청조회', '신청하기', '더보기', '바로가기',
+        '※ 좌우 화면이동으로 내용 확인이 가능합니다.',
+    ].map(normalize));
+
+    function cleanGuideLines(value) {
+        const result = [];
+        String(value || '').split(/\r?\n/).forEach(rawLine => {
+            const line = rawLine.replace(/\s+/g, ' ').trim();
+            const normalizedLine = normalize(line);
+            if (!line || GUIDE_NOISE_LINES.has(normalizedLine)) return;
+            const previous = result[result.length - 1] || '';
+            if (normalizedLine && normalize(previous) === normalizedLine) return;
+            if (line === ':' && result.length) return;
+            result.push(line.replace(/^:\s*/, ''));
+        });
+        return result;
+    }
+
+    function cleanGuideText(value) {
+        return cleanGuideLines(value).join(' ')
+            .replace(/(\uc774\uc6a9\uc2dc\uac04\uc548\ub0b4|\ud734\uad00\uc548\ub0b4|\ud68c\uc6d0\uac00\uc785\uc548\ub0b4|\uc8fc\ucc28\uc548\ub0b4)(?:\s+\1)+/g, '$1')
+            .replace(/\uc2e0\uccad\uc2dc \uc720\uc758\uc0ac\ud56d\s+\uc2e0\uccad\uc2dc \uc8fc\uc758\uc0ac\ud56d/g, '\uc2e0\uccad \uc720\uc758\uc0ac\ud56d')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function findLabeledValue(lines, labels, validator = value => value.length >= 2) {
+        const normalizedLabels = labels.map(normalize);
+        for (let index = 0; index < lines.length; index += 1) {
+            const line = lines[index];
+            const normalizedLine = normalize(line);
+            const labelIndex = normalizedLabels.findIndex(label => normalizedLine === label || normalizedLine.startsWith(label));
+            if (labelIndex < 0) continue;
+            const label = labels[labelIndex];
+            const inline = line.replace(new RegExp(`^${escapeRegex(label)}\\s*:?\\s*`, 'i'), '').trim();
+            if (validator(inline)) return inline;
+            for (let offset = 1; offset <= 3 && index + offset < lines.length; offset += 1) {
+                const candidate = lines[index + offset].replace(/^:\s*/, '').trim();
+                if (validator(candidate)) return candidate;
+            }
+        }
+        return '';
+    }
+
+    function extractBusRoutes(lines) {
+        const start = lines.findIndex(line => /\uad50\ud1b5\ud3b8.*\ubc84\uc2a4|\ubc84\uc2a4.*\uc774\uc6a9/.test(normalize(line)));
+        if (start < 0) return '';
+        const routes = [];
+        const routePattern = /^(?:[A-Z]\d{1,3}(?:-\d{1,2})?|\d{1,4}(?:-\d{1,2})?)(?:\s*,\s*(?:[A-Z]\d{1,3}(?:-\d{1,2})?|\d{1,4}(?:-\d{1,2})?))*$/i;
+        lines.slice(start + 1, start + 80).some(line => {
+            if (/\uc2b9\uc6a9\ucc28|\uc790\uac00\uc6a9|\uc8fc\ucc28/.test(normalize(line))) return true;
+            const candidate = line.replace(/^(?:\uc77c\ubc18|\ub9c8\uc744|\uc9c1\ud589)\s*:\s*/, '').trim();
+            if (!routePattern.test(candidate)) return false;
+            candidate.split(/\s*,\s*/).forEach(route => {
+                if (!routes.includes(route) && routes.length < 10) routes.push(route);
+            });
+            return false;
+        });
+        return routes.join(', ');
+    }
+
+    function extractHours(lines) {
+        const flat = lines.join(' ');
+        const matches = [...flat.matchAll(/(\ud3c9\uc77c|\uc8fc\ub9d0|\ud1a0\s*~\s*\uc77c|\uc6d4\s*~\s*\uae08|\ud654\s*~\s*\ud1a0)\s*:?\s*(\d{1,2}:\d{2}\s*[~\-–]\s*\d{1,2}:\d{2})/g)];
+        return [...new Set(matches.map(match => `${match[1].replace(/\s/g, '')} ${match[2].replace(/\s/g, '')}`))].slice(0, 3).join(' · ');
+    }
+
+    function getGuideFacts(entry, analysis) {
+        if (entry.sourceType !== 'guide') return [];
+        const lines = cleanGuideLines(entry.text);
+        const flat = lines.join(' ');
+        const intentIds = new Set((analysis?.intents || []).map(intent => intent.id));
+        const facts = [];
+        const addFact = (label, value) => {
+            const cleaned = String(value || '').replace(/\s+/g, ' ').trim().replace(/[\s,;·]+$/, '');
+            if (cleaned && !facts.some(item => normalize(item.label) === normalize(label))) facts.push({ label, value: cleaned });
+        };
+        const phoneMatch = flat.match(/(?:\uc804\ud654\ubc88\ud638|\ubb38\uc758(?:\uc804\ud654)?)\s*:?\s*(0\d{1,2}-\d{3,4}-\d{4})/);
+        const faxMatch = flat.match(/\ud329\uc2a4\ubc88\ud638\s*:?\s*(0\d{1,2}-\d{3,4}-\d{4})/);
+        const address = findLabeledValue(lines, ['\uc8fc\uc18c'], value => /(?:\uacbd\uae30|\ud654\uc131\uc2dc|\ub85c\s|\uae38\s|\uc74d|\uba74|\ub3d9)/.test(value) && value.length >= 8);
+        const hours = extractHours(lines) || findLabeledValue(lines, ['\uc774\uc6a9\uc2dc\uac04', '\uc6b4\uc601\uc2dc\uac04'], value => /\d{1,2}:\d{2}/.test(value));
+        const closed = findLabeledValue(lines, ['\uc815\uae30\ud734\uad00', '\ud734\uad00\uc77c'], value => value.length >= 4 && !/^(?:\uad6c\ubd84|\ub0b4\uc6a9)$/.test(value));
+        const buses = extractBusRoutes(lines);
+
+        if (intentIds.has('phone')) {
+            addFact('\uc804\ud654', phoneMatch?.[1]);
+            addFact('\ud329\uc2a4', faxMatch?.[1]);
+            addFact('\uc8fc\uc18c', address);
+        }
+        if (intentIds.has('address')) {
+            addFact('\uc8fc\uc18c', address);
+            addFact('\ubc84\uc2a4', buses ? `${buses} \ubc88` : '');
+            addFact('\uc804\ud654', phoneMatch?.[1]);
+        }
+        if (intentIds.has('hours')) {
+            addFact('\uc774\uc6a9\uc2dc\uac04', hours);
+            addFact('\ud734\uad00', closed);
+        }
+        if (intentIds.has('closed')) {
+            addFact('\ud734\uad00', closed);
+            addFact('\uc774\uc6a9\uc2dc\uac04', hours);
+        }
+        if (intentIds.has('facility')) {
+            addFact('\uc8fc\uc694\uc2dc\uc124', findLabeledValue(lines, ['\uc8fc\uc694\uc2dc\uc124'], value => value.length >= 3));
+            addFact('\uc88c\uc11d', findLabeledValue(lines, ['\uc88c\uc11d\uc218'], value => /\d/.test(value)));
+        }
+        if (intentIds.has('interlibrary')) addFact('\uc0c1\ud638\ub300\ucc28', findLabeledValue(lines, ['\uc0c1\ud638\ub300\ucc28'], value => value.length >= 3));
+        return facts.slice(0, 4);
+    }
+
+    function renderFacts(facts, query) {
+        if (!facts.length) return '';
+        return `<dl class="rules-facts">${facts.map(fact => `
+            <div><dt>${escapeHtml(fact.label)}</dt><dd>${highlight(fact.value, query)}</dd></div>`).join('')}</dl>`;
+    }
+
+    function displayTitle(entry) {
+        if (entry.sourceType !== 'guide') return entry.title;
+        return String(entry.title || '')
+            .replace(/\ub3c4\uc11c\uad00\s+\ub3c4\uc11c\uad00(?=\uc774\uc6a9\uc548\ub0b4|\uacac\ud559\uc2e0\uccad|SNS)/g, '\ub3c4\uc11c\uad00 ')
+            .replace(/\ub3c4\uc11c\uad00\s*\uacac\ud559\uc2e0\uccad/g, '\ub3c4\uc11c\uad00 \uacac\ud559 \uc2e0\uccad')
+            .replace(/\ub3c4\uc11c\uad00\uc774\uc6a9\uc548\ub0b4/g, '\uc774\uc6a9\uc548\ub0b4')
+            .replace(/\ub3c4\uc11c\uad00SNS/g, 'SNS')
+            .replace(/\uc790\uc6d0\ubd09\uc0ac\uc2e0\uccad/g, '\uc790\uc6d0\ubd09\uc0ac \uc2e0\uccad');
+    }
+
     function makeSnippet(entry, query, analysis) {
-        const text = String(entry.text || '').replace(/\n{3,}/g, '\n\n').trim();
-        if (text.length <= 440) return text;
+        const text = entry.sourceType === 'guide'
+            ? cleanGuideText(entry.text)
+            : String(entry.text || '').replace(/\n{3,}/g, '\n\n').trim();
+        const maxLength = entry.sourceType === 'guide' ? 260 : 440;
+        if (text.length <= maxLength) return text;
         const match = findRawMatch(text, query, analysis);
         const center = match ? match.start : 0;
-        const start = Math.max(0, center - 110);
-        const end = Math.min(text.length, Math.max(center + 310, start + 440));
+        const start = Math.max(0, center - (entry.sourceType === 'guide' ? 30 : 110));
+        const end = Math.min(text.length, Math.max(center + maxLength - 30, start + maxLength));
         return `${start > 0 ? '…' : ''}${text.slice(start, end).trim()}${end < text.length ? '…' : ''}`;
     }
 
@@ -556,14 +686,16 @@
         const location = [entry.section, entry.page ? `PDF ${entry.page}쪽` : ''].filter(Boolean).join(' · ');
         const version = entry.version ? `기준 ${entry.version}` : '';
         const snippet = makeSnippet(entry, query, analysis);
+        const facts = getGuideFacts(entry, analysis);
         return `
             <article class="rules-result-card">
                 <div class="rules-card-topline">
                     <span class="rules-source-badge ${escapeHtml(entry.sourceType)}">${escapeHtml(SOURCE_LABELS[entry.sourceType] || '자료')}</span>
                     <span class="rules-card-location">${escapeHtml(location)}</span>
                 </div>
-                <h2>${highlight(entry.title, query)}</h2>
-                <p>${highlight(snippet, query)}</p>
+                <h2>${highlight(displayTitle(entry), query)}</h2>
+                ${renderFacts(facts, query)}
+                ${facts.length ? '' : `<p>${highlight(snippet, query)}</p>`}
                 <div class="rules-card-footer">
                     <span class="rules-card-meta">${escapeHtml(entry.sourceTitle || '')}${version ? ` · ${escapeHtml(version)}` : ''}</span>
                     <span class="rules-card-actions">${sourceLink(entry)}</span>
@@ -572,7 +704,9 @@
     }
 
     function makeAnswerExtract(entry, analysis, query) {
-        const text = String(entry.text || '').replace(/\s+/g, ' ').trim();
+        const text = entry.sourceType === 'guide'
+            ? cleanGuideText(entry.text)
+            : String(entry.text || '').replace(/\s+/g, ' ').trim();
         if (!text) return '';
         let focus = null;
         const normalizedQuery = normalize(query);
@@ -635,6 +769,7 @@
             ? `<div class="rules-query-correction">검색어 보정: ${analysis.corrections.map(item => `${escapeHtml(item.from)} → ${escapeHtml(item.to)}`).join(', ')}</div>`
             : '';
         const version = item.entry.version ? ` · 기준 ${escapeHtml(item.entry.version)}` : '';
+        const facts = getGuideFacts(item.entry, analysis);
         return `
             <section class="rules-quick-answer" aria-label="빠른 답변">
                 <div class="rules-answer-heading">
@@ -643,7 +778,7 @@
                 </div>
                 ${interpretation.length ? `<div class="rules-interpretation">${interpretation.map(label => `<span>${escapeHtml(label)}</span>`).join('')}</div>` : ''}
                 ${correctionText}
-                <p>${highlight(makeAnswerExtract(item.entry, analysis, query), query)}</p>
+                ${facts.length ? renderFacts(facts, query) : `<p>${highlight(makeAnswerExtract(item.entry, analysis, query), query)}</p>`}
                 <div class="rules-answer-source">
                     <span>${escapeHtml(item.entry.sourceTitle || '')}${version}</span>
                     ${sourceLink(item.entry)}
@@ -674,6 +809,15 @@
         if (analysis.unsupportedReason) return { analysis, ranked: [] };
         const ranked = entries
             .filter(entry => source === 'all' || entry.sourceType === source)
+            .filter(entry => {
+                if (!analysis.library || entry.sourceType !== 'guide') return true;
+                if (entry._libraryIdentity.includes(analysis.library.normalizedName)) return true;
+                if (analysis.library.aliases.some(alias => entry._libraryIdentity.includes(alias))) return true;
+                const belongsToAnotherLibrary = libraryCatalog.some(library =>
+                    library.normalizedName !== analysis.library.normalizedName
+                    && entry._libraryIdentity.includes(library.normalizedName));
+                return !belongsToAnotherLibrary;
+            })
             .map(entry => ({ entry, match: scoreEntry(entry, query, analysis) }))
             .filter(item => item.match)
             .sort((a, b) => {
@@ -701,7 +845,15 @@
             return;
         }
 
-        const { analysis, ranked } = rankEntries(currentQuery, currentSource, 15);
+        const rankedResult = rankEntries(currentQuery, currentSource, 12);
+        const analysis = rankedResult.analysis;
+        let ranked = rankedResult.ranked;
+        if (analysis.library && analysis.intents.length && ranked.length > 1) {
+            const minimumScore = ranked[0].match.score * 0.74;
+            ranked = ranked.filter((item, index) => index === 0 || item.match.score >= minimumScore).slice(0, 8);
+        } else {
+            ranked = ranked.slice(0, 10);
+        }
 
         summaryNode.textContent = `“${currentQuery}” 검색 결과 ${ranked.length}건`;
         if (!ranked.length) {
@@ -714,7 +866,8 @@
             return;
         }
         const quickAnswer = renderQuickAnswer(ranked[0], analysis, currentQuery);
-        const cards = ranked.map(item => renderCard(item.entry, currentQuery, analysis)).join('');
+        const cardItems = quickAnswer ? ranked.slice(1) : ranked;
+        const cards = cardItems.map(item => renderCard(item.entry, currentQuery, analysis)).join('');
         const hasRegulationResult = ranked.some(item => item.entry.sourceType === 'regulation');
         resultsNode.innerHTML = quickAnswer + cards + (hasRegulationResult ? renderRegulationNotice() : '');
     }
@@ -802,7 +955,7 @@
 
     if (typeof module !== 'undefined' && module.exports) {
         prepareEntries();
-        module.exports = { analyzeQuery, rankEntries, makeAnswerExtract };
+        module.exports = { analyzeQuery, rankEntries, makeAnswerExtract, cleanGuideText, getGuideFacts, displayTitle };
         return;
     }
 
