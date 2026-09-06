@@ -136,28 +136,6 @@
     line-height: 1.65;
 }
 
-.rules-source-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    flex-shrink: 0;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #bae6fd;
-    border-radius: 999px;
-    color: #075985;
-    background: rgba(255, 255, 255, 0.72);
-    font-size: 0.75rem;
-    font-weight: 750;
-}
-
-.rules-status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
-}
-
 .rules-search-form {
     margin-top: 1.5rem;
 }
@@ -629,10 +607,6 @@
     .rules-notice {
         align-items: stretch;
         flex-direction: column;
-    }
-
-    .rules-source-status {
-        align-self: flex-start;
     }
 
     .rules-search-controls {
