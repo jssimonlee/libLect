@@ -2,7 +2,7 @@
 
 global.window = {};
 require('../rules-data.js');
-const { rankEntries, makeAnswerExtract, cleanGuideText, getGuideFacts, displayTitle } = require('../rules-search.js');
+const { analyzeQuery, rankEntries, makeAnswerExtract, cleanGuideText, getGuideFacts, getRegulationFacts, displayTitle } = require('../rules-search.js');
 const questions = require('./rules-search-questions.js');
 const generalQuestions = require('./rules-search-general-questions.js');
 
@@ -122,6 +122,31 @@ if (rankEntries('\ub300\ucd9c \uae30\uac04', 'regulation', 1).ranked[0]?.entry.s
 }
 if (rankEntries('\ub3c4\uc11c\uad00\ubc95', 'other', 1).ranked[0]?.entry.sourceType !== 'law') {
     failures.push('\ucd9c\ucc98 \ubd84\ub958: \uae30\ud0c0 \ud544\ud130 \uc2e4\ud328');
+}
+
+const returnResult = rankEntries('반납 규정', 'all', 1);
+const returnFacts = getRegulationFacts(returnResult.ranked[0]?.entry || {}, returnResult.analysis);
+if (!/제16조/.test(returnResult.ranked[0]?.entry.title || '') || returnFacts.length !== 4
+    || !returnFacts.some(item => /모든 화성시 시립도서관/.test(item.value))) {
+    failures.push('반납 규정: 제16조 핵심 항목 정리 실패');
+}
+
+const ambiguousCentral = analyzeQuery('중앙도서관 운영시간');
+const ambiguousNames = new Set(ambiguousCentral.libraries.map(item => item.name));
+if (!ambiguousCentral.ambiguousLibrary || ambiguousNames.size !== 2
+    || !ambiguousNames.has('화성동탄중앙도서관') || !ambiguousNames.has('중앙이음터도서관')) {
+    failures.push('도서관 식별: 중앙도서관 모호 별칭 처리 실패');
+}
+
+const centralRanked = rankEntries('중앙도서관 운영시간', 'website', 4).ranked;
+if (!centralRanked.some(item => /화성동탄중앙도서관.*이용안내/.test(item.entry.title))
+    || !centralRanked.some(item => /중앙이음터도서관.*이용안내/.test(item.entry.title))) {
+    failures.push('도서관 식별: 중앙도서관 검색에서 두 이용안내 노출 실패');
+}
+
+if (analyzeQuery('화성동탄중앙도서관 운영시간').libraries.length !== 1
+    || analyzeQuery('중앙이음터도서관 운영시간').libraries.length !== 1) {
+    failures.push('도서관 식별: 정확한 중앙 도서관명 단일 선택 실패');
 }
 
 if (failures.length) {

@@ -246,8 +246,14 @@
         if (stem && stem !== '중앙') aliases.add(stem);
         if (stem.endsWith('이음터') && stem.slice(0, -3) !== '중앙') aliases.add(stem.slice(0, -3));
         if (stem.endsWith('나래') && stem.length > 2) aliases.add(stem);
-        if (name === '화성동탄중앙도서관') aliases.add('동탄중앙');
-        if (name === '중앙이음터도서관') aliases.add('동탄중앙이음터');
+        if (name === '화성동탄중앙도서관') {
+            aliases.add('동탄중앙');
+            aliases.add('중앙도서관');
+        }
+        if (name === '중앙이음터도서관') {
+            aliases.add('동탄중앙이음터');
+            aliases.add('중앙도서관');
+        }
         return [...aliases].filter(alias => alias.length >= 2);
     }
 
@@ -284,7 +290,11 @@
             .split(/\s+/)
             .map(normalize)
             .filter(term => /^[ㄱ-ㅎ]{3,}$/.test(term));
-        const libraryMatches = libraryCatalog
+        const ambiguousCentralLibrary = interpretedQuery.includes('중앙도서관')
+            && !interpretedQuery.includes('화성동탄중앙')
+            && !interpretedQuery.includes('동탄중앙도서관')
+            && !interpretedQuery.includes('중앙이음터');
+        let libraryMatches = libraryCatalog
             .map(library => {
                 const textMatch = library.aliases
                     .filter(alias => alias.length <= 3
@@ -298,6 +308,13 @@
             })
             .filter(library => library.matchedAlias)
             .sort((a, b) => b.matchedAlias.length - a.matchedAlias.length);
+        if (!ambiguousCentralLibrary && libraryMatches.some(item => item.matchedAlias !== '중앙도서관')) {
+            libraryMatches = libraryMatches.filter(item => item.matchedAlias !== '중앙도서관');
+        }
+        if (ambiguousCentralLibrary) {
+            const centralNames = new Set(['화성동탄중앙도서관', '중앙이음터도서관']);
+            libraryMatches = libraryMatches.filter(item => centralNames.has(item.name));
+        }
         const library = libraryMatches[0] || null;
         let intents = INTENT_RULES.filter(intent => intent.cues.some(cue => interpretedQuery.includes(normalize(cue))));
         const addIntent = id => {
@@ -342,7 +359,16 @@
                         : intents.some(intent => intent.id === 'print') && !library && /(요금|얼마|무료)/.test(interpretedQuery)
                             ? '복사·출력·스캔 요금은 도서관별로 다를 수 있습니다. 확인할 도서관명을 함께 입력해 주세요.'
                 : '';
-        return { normalizedQuery, interpretedQuery, library, libraries: libraryMatches, intents, corrections, unsupportedReason };
+        return {
+            normalizedQuery,
+            interpretedQuery,
+            library,
+            libraries: libraryMatches,
+            ambiguousLibrary: ambiguousCentralLibrary && libraryMatches.length > 1,
+            intents,
+            corrections,
+            unsupportedReason,
+        };
     }
 
     function getTermVariants(term, analysis) {
@@ -458,10 +484,13 @@
         }
         if (fullPhrase && entry._searchText.includes(fullPhrase)) score += 25;
         score += matchedTerms * matchedTerms * 3;
-        if (analysis?.library) {
-            if (entry._libraryIdentity.includes(analysis.library.normalizedName)) score += 70;
-            else if (analysis.library.aliases.some(alias => entry._libraryIdentity.includes(alias))) score += 45;
-            else if (entry._searchText.includes(analysis.library.normalizedName)) score += 8;
+        if (analysis?.libraries?.length) {
+            const matchingLibrary = analysis.libraries.find(library =>
+                entry._libraryIdentity.includes(library.normalizedName)
+                || library.aliases.some(alias => alias !== '중앙도서관' && entry._libraryIdentity.includes(alias)));
+            if (matchingLibrary && entry._libraryIdentity.includes(matchingLibrary.normalizedName)) score += 70;
+            else if (matchingLibrary) score += 45;
+            else if (analysis.libraries.some(library => entry._searchText.includes(library.normalizedName))) score += 8;
         }
         analysis?.intents.forEach(intent => {
             if (intent.anchors.some(anchor => entry._searchText.includes(normalize(anchor)))) score += 14;
@@ -637,6 +666,22 @@
         return facts.slice(0, 4);
     }
 
+    function getRegulationFacts(entry, analysis) {
+        if (entry.sourceType !== 'regulation') return [];
+        const intentIds = new Set((analysis?.intents || []).map(intent => intent.id));
+        if (!intentIds.has('return') || !normalize(entry.title).includes('자료의반납및연체')) return [];
+        return [
+            { label: '일반자료 반납', value: '모든 화성시 시립도서관에서 가능' },
+            { label: '책배달 자료', value: '대출한 해당 사립작은도서관에 반납' },
+            { label: '연체', value: '연체일수만큼 관외대출 정지 (반납 다음 날부터 계산)' },
+            { label: '90일 초과 연체', value: '반납일로부터 6개월간 관외대출 정지' },
+        ];
+    }
+
+    function getResultFacts(entry, analysis) {
+        return getGuideFacts(entry, analysis).concat(getRegulationFacts(entry, analysis)).slice(0, 4);
+    }
+
     function renderFacts(facts, query) {
         if (!facts.length) return '';
         return `<dl class="rules-facts">${facts.map(fact => `
@@ -709,7 +754,7 @@
         const location = [entry.section, entry.page ? `PDF ${entry.page}쪽` : ''].filter(Boolean).join(' · ');
         const version = entry.version ? `기준 ${entry.version}` : '';
         const snippet = makeSnippet(entry, query, analysis);
-        const facts = getGuideFacts(entry, analysis);
+        const facts = getResultFacts(entry, analysis);
         return `
             <article class="rules-result-card">
                 <div class="rules-card-topline">
@@ -783,7 +828,7 @@
     }
 
     function renderQuickAnswer(item, analysis, query) {
-        if (!item || !analysis.intents.length || item.entry.sourceType === 'law') return '';
+        if (!item || !analysis.intents.length || item.entry.sourceType === 'law' || analysis.ambiguousLibrary) return '';
         const interpretation = [
             analysis.library?.name,
             ...analysis.intents.map(intent => intent.label),
@@ -792,7 +837,7 @@
             ? `<div class="rules-query-correction">검색어 보정: ${analysis.corrections.map(item => `${escapeHtml(item.from)} → ${escapeHtml(item.to)}`).join(', ')}</div>`
             : '';
         const version = item.entry.version ? ` · 기준 ${escapeHtml(item.entry.version)}` : '';
-        const facts = getGuideFacts(item.entry, analysis);
+        const facts = getResultFacts(item.entry, analysis);
         return `
             <section class="rules-quick-answer" aria-label="빠른 답변">
                 <div class="rules-answer-heading">
@@ -833,11 +878,12 @@
         const ranked = entries
             .filter(entry => source === 'all' || sourceCategory(entry) === source)
             .filter(entry => {
-                if (!analysis.library || entry.sourceType !== 'guide') return true;
-                if (entry._libraryIdentity.includes(analysis.library.normalizedName)) return true;
-                if (analysis.library.aliases.some(alias => entry._libraryIdentity.includes(alias))) return true;
+                if (!analysis.libraries?.length || entry.sourceType !== 'guide') return true;
+                if (analysis.libraries.some(library => entry._libraryIdentity.includes(library.normalizedName))) return true;
+                if (analysis.libraries.some(library => library.aliases.some(alias =>
+                    alias !== '중앙도서관' && entry._libraryIdentity.includes(alias)))) return true;
                 const belongsToAnotherLibrary = libraryCatalog.some(library =>
-                    library.normalizedName !== analysis.library.normalizedName
+                    !analysis.libraries.some(selected => selected.normalizedName === library.normalizedName)
                     && entry._libraryIdentity.includes(library.normalizedName));
                 return !belongsToAnotherLibrary;
             })
@@ -994,7 +1040,7 @@
 
     if (typeof module !== 'undefined' && module.exports) {
         prepareEntries();
-        module.exports = { analyzeQuery, rankEntries, makeAnswerExtract, cleanGuideText, getGuideFacts, displayTitle };
+        module.exports = { analyzeQuery, rankEntries, makeAnswerExtract, cleanGuideText, getGuideFacts, getRegulationFacts, displayTitle };
         return;
     }
 
