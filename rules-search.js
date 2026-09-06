@@ -165,12 +165,6 @@
         fees: 2,
     };
 
-    const PREFERRED_LIBRARY_INTENTS = new Set([
-        'member', 'loan', 'return', 'reservation', 'loan-count', 'loan-period', 'overdue', 'lost',
-        'hours', 'closed', 'phone', 'address', 'parking', 'print', 'facility', 'locker', 'visit',
-        'volunteer', 'toy', 'makebooks', 'music', 'original-db',
-    ]);
-
     let currentSource = 'all';
     let currentQuery = '';
     let entries = [];
@@ -313,6 +307,13 @@
         } catch (_) {
             return null;
         }
+    }
+
+    function isPreferredLibraryEntry(entry, analysis) {
+        const preferred = analysis?.preferredLibrary;
+        if (!preferred || entry.sourceType !== 'guide') return false;
+        return entry._libraryIdentity.includes(preferred.normalizedName)
+            || preferred.aliases.some(alias => alias !== '중앙도서관' && entry._libraryIdentity.includes(alias));
     }
 
     function analyzeQuery(query) {
@@ -601,14 +602,6 @@
             if (matchingLibrary && entry._libraryIdentity.includes(matchingLibrary.normalizedName)) score += 70;
             else if (matchingLibrary) score += 45;
             else if (analysis.libraries.some(library => entry._searchText.includes(library.normalizedName))) score += 8;
-        }
-        const canPreferStoredLibrary = analysis?.preferredLibrary
-            && !/규정|조문|제\d+조/.test(normalize(query))
-            && (!analysis.intents.length || analysis.intents.some(intent => PREFERRED_LIBRARY_INTENTS.has(intent.id)));
-        if (canPreferStoredLibrary && entry.sourceType === 'guide') {
-            const preferred = analysis.preferredLibrary;
-            if (entry._libraryIdentity.includes(preferred.normalizedName)) score += 220;
-            else if (preferred.aliases.some(alias => alias !== '중앙도서관' && entry._libraryIdentity.includes(alias))) score += 170;
         }
         analysis?.intents.forEach(intent => {
             if (intent.anchors.some(anchor => entry._searchText.includes(normalize(anchor)))) score += 14;
@@ -1018,7 +1011,11 @@
             .filter(item => item.match)
             .sort((a, b) => {
                 if (b.match.score !== a.match.score) return b.match.score - a.match.score;
-                return b.match.matchedTerms - a.match.matchedTerms;
+                if (b.match.matchedTerms !== a.match.matchedTerms) return b.match.matchedTerms - a.match.matchedTerms;
+                const preferredA = isPreferredLibraryEntry(a.entry, analysis);
+                const preferredB = isPreferredLibraryEntry(b.entry, analysis);
+                if (preferredA !== preferredB) return preferredA ? -1 : 1;
+                return 0;
             })
             .slice(0, limit);
         return { analysis, ranked };

@@ -212,9 +212,14 @@ window.localStorage = {
         return key === 'selectedInstitution' ? '노을빛도서관' : null;
     },
 };
-const preferredLibraryResult = rankEntries('운영시간', 'website', 3);
-if (!/노을빛도서관.*이용안내/.test(preferredLibraryResult.ranked[0]?.entry.title || '')) {
-    failures.push('강좌 도서관 연동: 선택한 노을빛도서관 우선 노출 실패');
+const accuracyFirstResult = rankEntries('운영시간', 'all', 3);
+if (!/제4조.*이용시간/.test(accuracyFirstResult.ranked[0]?.entry.title || '')) {
+    failures.push('강좌 도서관 연동: 선택 도서관이 더 정확한 결과를 앞지름');
+}
+const preferredLibraryResult = rankEntries('반납 규정', 'all', 10);
+const firstGuideResult = preferredLibraryResult.ranked.find(item => item.entry.sourceType === 'guide');
+if (!/노을빛도서관.*이용안내/.test(firstGuideResult?.entry.title || '')) {
+    failures.push('강좌 도서관 연동: 정확도 동률 결과에서 선택한 노을빛도서관 우선 노출 실패');
 }
 const explicitLibraryResult = rankEntries('태안도서관 운영시간', 'website', 3);
 if (!/태안도서관.*이용안내/.test(explicitLibraryResult.ranked[0]?.entry.title || '')) {
@@ -222,7 +227,7 @@ if (!/태안도서관.*이용안내/.test(explicitLibraryResult.ranked[0]?.entry
 }
 delete window.localStorage;
 
-const totalRegressionCases = 150 + synonymCases.length + 2;
+const totalRegressionCases = 150 + synonymCases.length + 3;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
