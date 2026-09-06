@@ -207,10 +207,26 @@ synonymCases.forEach(([query, required, forbidden, titlePattern], index) => {
     }
 });
 
+window.localStorage = {
+    getItem(key) {
+        return key === 'selectedInstitution' ? '노을빛도서관' : null;
+    },
+};
+const preferredLibraryResult = rankEntries('운영시간', 'website', 3);
+if (!/노을빛도서관.*이용안내/.test(preferredLibraryResult.ranked[0]?.entry.title || '')) {
+    failures.push('강좌 도서관 연동: 선택한 노을빛도서관 우선 노출 실패');
+}
+const explicitLibraryResult = rankEntries('태안도서관 운영시간', 'website', 3);
+if (!/태안도서관.*이용안내/.test(explicitLibraryResult.ranked[0]?.entry.title || '')) {
+    failures.push('강좌 도서관 연동: 질문에 명시한 태안도서관 우선 적용 실패');
+}
+delete window.localStorage;
+
+const totalRegressionCases = 150 + synonymCases.length + 2;
 if (failures.length) {
-    console.error(`FAIL ${150 + synonymCases.length - failures.length}/${150 + synonymCases.length}`);
+    console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
     process.exitCode = 1;
 } else {
-    console.log(`PASS ${150 + synonymCases.length}/${150 + synonymCases.length}`);
+    console.log(`PASS ${totalRegressionCases}/${totalRegressionCases}`);
 }

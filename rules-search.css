@@ -341,6 +341,10 @@
     font-size: 0.72rem;
 }
 
+.rules-answer-source {
+    margin-top: 1rem;
+}
+
 .rules-interpretation {
     display: flex;
     flex-wrap: wrap;

@@ -165,6 +165,12 @@
         fees: 2,
     };
 
+    const PREFERRED_LIBRARY_INTENTS = new Set([
+        'member', 'loan', 'return', 'reservation', 'loan-count', 'loan-period', 'overdue', 'lost',
+        'hours', 'closed', 'phone', 'address', 'parking', 'print', 'facility', 'locker', 'visit',
+        'volunteer', 'toy', 'makebooks', 'music', 'original-db',
+    ]);
+
     let currentSource = 'all';
     let currentQuery = '';
     let entries = [];
@@ -295,6 +301,20 @@
         });
     }
 
+    function getPreferredLibrary() {
+        try {
+            const selected = normalize(window.localStorage?.getItem('selectedInstitution'));
+            if (!selected || selected === 'favorite') return null;
+            return libraryCatalog
+                .filter(library => library.normalizedName === selected
+                    || library.aliases.some(alias => alias !== '중앙도서관'
+                        && (selected.includes(alias) || alias.includes(selected))))
+                .sort((left, right) => right.normalizedName.length - left.normalizedName.length)[0] || null;
+        } catch (_) {
+            return null;
+        }
+    }
+
     function analyzeQuery(query) {
         const normalizedQuery = normalize(query);
         const rawTerms = String(query || '').trim().split(/\s+/).map(stripKoreanEnding).filter(term => term.length >= 2);
@@ -335,6 +355,7 @@
             libraryMatches = libraryMatches.filter(item => centralNames.has(item.name));
         }
         const library = libraryMatches[0] || null;
+        const preferredLibrary = libraryMatches.length ? null : getPreferredLibrary();
         let intents = INTENT_RULES.filter(intent => intent.cues.some(cue => interpretedQuery.includes(normalize(cue))));
         const addIntent = id => {
             const intent = INTENT_RULES.find(item => item.id === id);
@@ -440,6 +461,7 @@
             library,
             libraries: libraryMatches,
             ambiguousLibrary: ambiguousCentralLibrary && libraryMatches.length > 1,
+            preferredLibrary,
             intents,
             objects,
             actions,
@@ -579,6 +601,14 @@
             if (matchingLibrary && entry._libraryIdentity.includes(matchingLibrary.normalizedName)) score += 70;
             else if (matchingLibrary) score += 45;
             else if (analysis.libraries.some(library => entry._searchText.includes(library.normalizedName))) score += 8;
+        }
+        const canPreferStoredLibrary = analysis?.preferredLibrary
+            && !/규정|조문|제\d+조/.test(normalize(query))
+            && (!analysis.intents.length || analysis.intents.some(intent => PREFERRED_LIBRARY_INTENTS.has(intent.id)));
+        if (canPreferStoredLibrary && entry.sourceType === 'guide') {
+            const preferred = analysis.preferredLibrary;
+            if (entry._libraryIdentity.includes(preferred.normalizedName)) score += 220;
+            else if (preferred.aliases.some(alias => alias !== '중앙도서관' && entry._libraryIdentity.includes(alias))) score += 170;
         }
         analysis?.intents.forEach(intent => {
             if (intent.anchors.some(anchor => entry._searchText.includes(normalize(anchor)))) score += 14;
