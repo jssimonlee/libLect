@@ -149,10 +149,68 @@ if (analyzeQuery('화성동탄중앙도서관 운영시간').libraries.length !=
     failures.push('도서관 식별: 정확한 중앙 도서관명 단일 선택 실패');
 }
 
+const synonymCases = [
+    ['책 대여', ['loan'], [], /대출 권수|자료의대출/],
+    ['자료 빌리기', ['loan'], [], /대출 권수|자료의대출/],
+    ['관외대출은 몇 권이에요', ['loan', 'loan-count'], [], /대출 권수/],
+    ['도서 반환은 어디에서 하나요', ['return'], [], /제16조.*반납/],
+    ['책 돌려주기', ['return'], [], /제16조.*반납/],
+    ['책을 가져다주려면', ['return'], [], /제16조.*반납/],
+    ['타관반납 가능한가요', ['return'], [], /제16조.*반납/],
+    ['대출 기한이 언제예요', ['loan-period'], [], /대출 권수/],
+    ['반납예정일을 연기하고 싶어요', ['loan-period'], [], /대출 권수/],
+    ['재대출 가능한가요', ['loan-period'], [], /대출 권수/],
+    ['책을 더 빌리고 싶어요', ['loan', 'loan-period'], [], /대출 권수/],
+    ['대출 기한을 넘겼어요', ['overdue'], [], /연체|제16조.*반납/],
+    ['책 반납이 늦었어요', ['overdue'], [], /연체|제16조.*반납/],
+    ['놀잇감 빌리기', ['toy'], ['loan'], /장난감도서관/],
+    ['장난감 몇 점 빌려요', ['toy', 'loan-count'], ['loan'], /장난감도서관/],
+    ['회의실 대여', ['rental'], ['loan', 'toy'], /제52조.*시설대관/],
+    ['강당 사용 신청', ['rental'], ['loan'], /제52조.*시설대관|시설현황/],
+    ['공간 대여 가능한가요', ['rental'], ['loan', 'toy'], /제52조.*시설대관/],
+    ['복합기 사용 방법', ['print'], [], /이용안내|시설현황/],
+    ['스캐너를 사용할 수 있나요', ['print'], [], /이용안내|시설현황/],
+    ['원문 출력 가능한가요', ['print'], [], /원문|이용안내|시설현황/],
+    ['도서관 카드를 잃어버렸어요', ['member'], ['lost'], /회원가입|제7조|이용안내/],
+    ['도서관에서 개인 물건을 잃어버렸어요', ['found-item'], ['lost'], /습득물|분실물/],
+    ['습득물은 어디에 맡겨요', ['found-item'], ['lost'], /습득물|분실물/],
+    ['회원 등록에 필요한 서류', ['member'], [], /회원가입 대상|제7조/],
+    ['대출증 재발급', ['member'], ['lost'], /회원가입|제7조|이용안내|대출 권수/],
+    ['자료 구입 신청', ['request-book'], [], /희망도서/],
+    ['신간 신청하고 싶어요', ['request-book'], [], /희망도서/],
+    ['다른 도서관 책 빌리기', ['interlibrary'], [], /제22조.*상호대차/],
+    ['기관 방문을 신청하려면', ['visit'], [], /견학/],
+    ['봉사 시간 확인', ['volunteer'], [], /자원봉사/],
+    ['책 기부 방법', ['donation'], [], /기증/],
+    ['불용 처리 기준', ['discard'], [], /폐기|제적/],
+    ['강의 접수 마감', ['class-guide'], [], /도서관 강좌 신청 방법/],
+    ['특강 신청 방법', ['class-guide'], [], /도서관 강좌 신청 방법/],
+    ['문 닫는 시간이 몇 시예요', ['hours'], ['closed'], /제4조.*이용시간|이용안내/],
+    ['문 닫는 날이 언제예요', ['closed'], [], /정기 휴관일|이용안내/],
+    ['도서관 소재지', ['address'], [], /찾아오시는길/],
+    ['대표번호 알려줘', ['phone'], [], /찾아오시는길/],
+    ['물품 보관함 신청', ['locker'], [], /사물함/],
+];
+
+synonymCases.forEach(([query, required, forbidden, titlePattern], index) => {
+    const { analysis, ranked } = rankEntries(query, 'all', 3);
+    const intentIds = new Set(analysis.intents.map(intent => intent.id));
+    required.forEach(intent => {
+        if (!intentIds.has(intent)) failures.push(`유사어 ${index + 1}: '${query}'에서 ${intent} 의도 누락`);
+    });
+    forbidden.forEach(intent => {
+        if (intentIds.has(intent)) failures.push(`유사어 ${index + 1}: '${query}'에서 잘못된 ${intent} 의도 감지`);
+    });
+    if (!ranked[0]) failures.push(`유사어 ${index + 1}: '${query}' 검색 결과 없음`);
+    else if (titlePattern && !titlePattern.test(ranked[0].entry.title)) {
+        failures.push(`유사어 ${index + 1}: '${query}' 첫 결과가 '${ranked[0].entry.title}'`);
+    }
+});
+
 if (failures.length) {
-    console.error(`FAIL ${150 - failures.length}/150`);
+    console.error(`FAIL ${150 + synonymCases.length - failures.length}/${150 + synonymCases.length}`);
     failures.forEach(failure => console.error(`- ${failure}`));
     process.exitCode = 1;
 } else {
-    console.log('PASS 150/150');
+    console.log(`PASS ${150 + synonymCases.length}/${150 + synonymCases.length}`);
 }

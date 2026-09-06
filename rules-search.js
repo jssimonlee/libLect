@@ -7,64 +7,79 @@
         law: '기타',
     };
 
+    // These are safe, context-independent expressions. Ambiguous words such as
+    // "대여", "반환", "예약" are expanded later only after the object and
+    // action in the question have been identified.
     const SYNONYM_GROUPS = [
-        ['연체', '미반납', '반납지연', '대출정지'],
-        ['대출', '대여', '빌리기', '빌려', '빌릴', '도서대여'],
-        ['반납', '돌려주기', '돌려줘'],
+        ['연체', '미반납', '반납지연', '기한초과', '장기연체', '대출정지', '이용정지'],
+        ['대출', '빌리기', '빌려가기', '빌려', '빌릴', '관외대출', '도서대출'],
+        ['반납', '돌려주기', '돌려줘', '책돌려주기'],
         ['무인반납함', '무인반납기', '무인도서대출반납기'],
-        ['휴관', '쉬는날', '문닫는날', '휴무', '쉬나요'],
-        ['이용시간', '운영시간', '여는시간', '닫는시간', '몇시', '개관시간', '폐관시간'],
-        ['회원가입', '회원증', '도서관카드'],
-        ['분실', '잃어버림', '변상'],
-        ['희망도서', '신청도서'],
-        ['상호대차', '책두레'],
-        ['문화교실', '강좌', '프로그램'],
-        ['폐강', '강좌취소'],
+        ['휴관', '쉬는날', '문닫는날', '휴무', '정기휴관', '임시휴관'],
+        ['이용시간', '운영시간', '여는시간', '닫는시간', '몇시', '개관시간', '폐관시간', '마감시간'],
+        ['회원가입', '회원등록', '신규가입', '정회원가입'],
+        ['회원증', '도서관카드', '대출증', '이용증', '모바일회원증', '온라인회원증'],
+        ['분실', '잃어버림', '잃어버렸', '변상', '배상'],
+        ['희망도서', '신청도서', '구입희망도서', '자료구입신청', '신간신청'],
+        ['상호대차', '책두레', '타관대출', '도서관간대출'],
+        ['문화강좌', '강좌', '강의', '수업', '문화교실', '프로그램', '특강'],
+        ['폐강', '강좌취소', '수업취소'],
         ['강사', '강사료'],
-        ['기증', '도서기증'],
-        ['폐기', '제적'],
-        ['대관', '시설사용'],
-        ['사물함', '락커'],
-        ['노트북', '전자기기', '태블릿'],
-        ['출력', '프린트', '프린터', '인쇄', '복사'],
-        ['주차', '주차장', '주차비', '주차요금', '차량'],
-        ['전화', '전화번호', '연락처', '문의번호'],
-        ['주소', '위치', '오시는길', '찾아가는길', '교통편'],
-        ['견학', '도서관견학', '현장학습'],
-        ['자원봉사', '봉사활동', '봉사신청'],
-        ['장난감도서관', '장난감대여', '장난감'],
-        ['메이크북스', '메이크북', '메이커스페이스', '책만들기'],
-        ['원문db', '원문검색', '국회전자도서관', '국립중앙도서관'],
+        ['기증', '도서기증', '자료기증', '책기부', '기부'],
+        ['폐기', '제적', '장서폐기', '불용처리'],
+        ['대관', '시설대관', '공간대여', '시설사용', '공간사용', '사용허가'],
+        ['사물함', '락커', '보관함', '물품보관함'],
+        ['노트북', '전자기기', '태블릿', '컴퓨터', 'pc'],
+        ['출력', '프린트', '프린터', '인쇄', '복사', '복합기', '스캔', '스캐너', '원문출력'],
+        ['주차', '주차장', '주차비', '주차요금', '무료주차', '차량', '입차', '출차'],
+        ['전화', '전화번호', '연락처', '문의번호', '대표번호', '내선번호'],
+        ['주소', '위치', '소재지', '오시는길', '찾아가는길', '길찾기', '교통편'],
+        ['견학', '도서관견학', '현장학습', '단체방문', '기관방문'],
+        ['자원봉사', '봉사활동', '봉사신청', '봉사시간', '1365', '봉사확인서'],
+        ['장난감도서관', '장난감대여', '놀잇감', '장난감'],
+        ['메이크북스', '메이크북', '메이커스페이스', '책만들기', '독립출판', '제본', '제작실'],
+        ['원문db', '원문검색', '학술db', '논문검색', '국회전자도서관', '국립중앙도서관'],
+    ];
+
+    const CONTEXTUAL_SYNONYM_GROUPS = [
+        { intents: ['loan'], terms: ['대출', '대여', '빌리기', '빌려가기', '빌려', '빌릴', '관외대출', '반출'] },
+        { intents: ['return'], terms: ['반납', '반환', '돌려주기', '돌려줘', '가져다주기', '타관반납', '교차반납'] },
+        { intents: ['loan-period'], terms: ['대출기간', '대출기한', '반납기한', '반납예정일', '이용기간', '대여기간', '며칠', '몇일'] },
+        { intents: ['loan-period'], terms: ['연장', '기간연장', '대출연장', '반납일연기', '연기', '연기하고', '더빌리기', '재대출'] },
+        { intents: ['reservation'], terms: ['도서예약', '대출예약', '예약도서', '예약걸기', '예약순번', '대기순번'] },
+        { intents: ['rental'], terms: ['대관', '시설대관', '공간대여', '장소대여', '시설사용', '공간사용', '사용신청', '사용허가'] },
+        { intents: ['found-item'], terms: ['분실물', '습득물', '유실물', '주운물건', '놓고간물건', '소지품분실'] },
     ];
 
     const INTENT_RULES = [
-        { id: 'member', label: '회원가입·회원증', cues: ['회원가입', '회원증', '모바일회원증', '재발급', '외국인', '구비서류', '회원정보'], anchors: ['회원가입안내', '회원가입', '회원증 재발급', '온라인 회원증', '구비서류'] },
-        { id: 'loan', label: '도서대출', cues: ['도서대출', '대출규정', '대출기간', '대출권수'], anchors: ['도서대출안내', '대출규정', '자료의대출', '대출 권수'] },
-        { id: 'return', label: '반납', cues: ['반납', '무인반납함', '미반납'], anchors: ['자료의반납', '반납규정', '무인반납', '반납'] },
+        { id: 'member', label: '회원가입·회원증', cues: ['회원가입', '회원등록', '신규가입', '정회원', '회원증', '도서관카드', '대출증', '이용증', '모바일회원증', '온라인회원증', '재발급', '외국인', '구비서류', '회원정보'], anchors: ['회원가입안내', '회원가입', '회원증 재발급', '온라인 회원증', '구비서류'] },
+        { id: 'loan', label: '도서대출', cues: ['도서대출', '관외대출', '대출규정', '대출기간', '대출권수'], anchors: ['도서대출안내', '대출규정', '자료의대출', '대출 권수'] },
+        { id: 'return', label: '반납', cues: ['반납', '무인반납함', '미반납', '타관반납', '교차반납'], anchors: ['자료의반납', '반납규정', '무인반납', '반납'] },
         { id: 'reservation', label: '도서예약', cues: ['도서예약', '대출예약', '예약자', '예약한책', '예약도서'], anchors: ['대출예약', '예약도서', '예약'] },
-        { id: 'interlibrary', label: '상호대차', cues: ['상호대차', '책두레'], anchors: ['상호대차신청', '상호대차', '신청방법'] },
-        { id: 'delivery', label: '책배달', cues: ['책배달', '기관책배달'], anchors: ['기관책배달서비스', '신청자격', '신청방법'] },
-        { id: 'request-book', label: '희망도서', cues: ['희망도서', '신청도서'], anchors: ['희망도서신청', '신청불가자료', '희망도서'] },
+        { id: 'interlibrary', label: '상호대차', cues: ['상호대차', '책두레', '타관대출', '도서관간대출', '다른도서관책'], anchors: ['상호대차신청', '상호대차', '신청방법'] },
+        { id: 'delivery', label: '책배달', cues: ['책배달', '기관책배달', '택배대출', '택배반납', '책나래', '묶음배송'], anchors: ['기관책배달서비스', '신청자격', '신청방법'] },
+        { id: 'request-book', label: '희망도서', cues: ['희망도서', '신청도서', '구입희망도서', '자료구입신청', '신간신청'], anchors: ['희망도서신청', '신청불가자료', '희망도서'] },
         { id: 'hours', label: '운영시간', cues: ['몇시', '언제열', '언제닫', '운영시간', '이용시간', '개관시간', '폐관시간'], anchors: ['운영시간', '이용시간', '개관시간'] },
-        { id: 'closed', label: '휴관일', cues: ['휴관', '쉬는날', '휴무', '문닫', '쉬나요', '월요일', '일요일', '공휴일', '창립기념일'], anchors: ['정기휴관', '휴관일', '휴관안내'] },
-        { id: 'phone', label: '전화·문의', cues: ['전화', '연락처', '문의번호', '문의하고', '연락하고'], anchors: ['전화번호', '문의전화', '문의', '연락처'] },
-        { id: 'address', label: '주소·교통', cues: ['주소', '위치', '오시는길', '찾아가는길', '교통편', '버스', '어느건물', '몇층'], anchors: ['주소', '교통편', '찾아오시는길'] },
+        { id: 'closed', label: '휴관일', cues: ['휴관', '쉬는날', '문닫는날', '휴무', '쉬나요', '정기휴관', '임시휴관', '월요일', '일요일', '공휴일', '창립기념일', '장서점검'], anchors: ['정기휴관', '휴관일', '휴관안내'] },
+        { id: 'phone', label: '전화·문의', cues: ['전화', '연락처', '문의번호', '대표번호', '내선번호', '문의하고', '연락하고'], anchors: ['전화번호', '문의전화', '문의', '연락처'] },
+        { id: 'address', label: '주소·교통', cues: ['주소', '소재지', '위치', '오시는길', '찾아가는길', '길찾기', '교통편', '버스', '어느건물', '몇층'], anchors: ['주소', '교통편', '찾아오시는길'] },
         { id: 'parking', label: '주차', cues: ['주차', '차가져', '차량', '주차비'], anchors: ['주차요금', '주차', '주차장'] },
-        { id: 'loan-count', label: '대출수량', cues: ['몇권', '권수', '대출권수', '대여수량', '대여개수'], anchors: ['대출권수', '대여수량', '대여개수', '1인'] },
-        { id: 'loan-period', label: '대출기간', cues: ['며칠', '몇일', '대출기간', '대여기간', '언제반납', '연장'], anchors: ['대출기간', '대여기간', '연장', '14일'] },
-        { id: 'overdue', label: '연체', cues: ['연체', '늦게반납', '미반납', '대출정지'], anchors: ['연체규정', '연체', '대출정지'] },
-        { id: 'lost', label: '분실·변상', cues: ['분실', '잃어버', '훼손', '변상'], anchors: ['도서분실', '분실', '변상'] },
+        { id: 'loan-count', label: '대출수량', cues: ['몇권', '몇점', '권수', '수량', '대출권수', '대여수량', '대여개수'], anchors: ['대출권수', '대여수량', '대여개수', '1인'] },
+        { id: 'loan-period', label: '대출기간', cues: ['며칠', '몇일', '대출기간', '대출기한', '반납기한', '반납예정일', '이용기간', '대여기간', '언제반납', '연장', '재대출', '더빌리'], anchors: ['대출기간', '대여기간', '연장', '14일'] },
+        { id: 'overdue', label: '연체', cues: ['연체', '늦게반납', '미반납', '반납지연', '기한초과', '장기연체', '대출정지', '이용정지'], anchors: ['연체규정', '연체', '대출정지'] },
+        { id: 'lost', label: '분실·변상', cues: ['도서분실', '책분실', '잃어버린책', '훼손', '파손', '오손', '변상', '배상'], anchors: ['도서분실', '분실', '변상'] },
+        { id: 'found-item', label: '분실물·습득물', cues: ['분실물', '습득물', '유실물', '주운물건', '놓고간물건', '소지품분실'], anchors: ['습득물처리', '습득물', '분실물'] },
         { id: 'fees', label: '요금', cues: ['얼마', '요금', '비용', '가격', '연회비', '사용료'], anchors: ['요금', '연회비', '사용료', '비용'] },
-        { id: 'print', label: '복사·출력', cues: ['복사', '출력', '프린터', '프린트', '인쇄', '스캔', '팩스'], anchors: ['복사기', '프린터', '출력', '스캔', '팩스', '복사'] },
-        { id: 'facility', label: '시설', cues: ['시설', '좌석', '수유실', '화장실', '노트북', '노트북실', '자료실'], anchors: ['시설현황', '주요시설', '좌석수', '실별'] },
-        { id: 'locker', label: '사물함', cues: ['사물함', '락커'], anchors: ['사물함운영', '사물함'] },
-        { id: 'rental', label: '시설대관', cues: ['대관', '시설사용', '사용허가', '개인모임'], anchors: ['시설대관', '사용허가', '대관'] },
+        { id: 'print', label: '복사·출력', cues: ['복사', '출력', '프린터', '프린트', '인쇄', '복합기', '스캔', '스캐너', '팩스', '원문출력'], anchors: ['복사기', '프린터', '출력', '스캔', '팩스', '복사'] },
+        { id: 'facility', label: '시설', cues: ['시설', '공간', '좌석', '자리', '열람석', '수유실', '화장실', '노트북', '태블릿', '컴퓨터', '노트북실', '열람실', '자료실', '디지털자료실', '전자정보실'], anchors: ['시설현황', '주요시설', '좌석수', '실별'] },
+        { id: 'locker', label: '사물함', cues: ['사물함', '락커', '보관함', '물품보관함'], anchors: ['사물함운영', '사물함'] },
+        { id: 'rental', label: '시설대관', cues: ['대관', '시설대관', '공간대여', '장소대여', '시설사용', '공간사용', '사용허가', '개인모임'], anchors: ['시설대관', '사용허가', '대관'] },
         { id: 'class-guide', label: '강좌 신청 안내', cues: ['통합예약시스템', '본인아이디', '모집마감', '문자메시지', '당일불참', '신청불이익', '수업사진', '결과보고', '도서관홍보'], answerCues: ['신청', '아이디', '모집마감', '문자', '주차', '대중교통', '불참', '불이익', '사정', '변경', '바뀔', '사진', '홍보'], anchors: ['통합예약시스템', '수강생 본인 아이디', '모집마감', '주차장이 혼잡', '당일 불참', '세부 내용이 변경', '수업 진행 사진'] },
-        { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '수강료', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
-        { id: 'donation', label: '기증자료', cues: ['기증', '기증도서'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
-        { id: 'discard', label: '폐기·제적', cues: ['제적', '폐기', '오래된도서'], anchors: ['자료의폐기또는제적', '폐기및제적기준', '제적'] },
-        { id: 'visit', label: '견학', cues: ['견학', '현장학습'], anchors: ['견학신청', '신청방법', '운영대상'] },
-        { id: 'volunteer', label: '자원봉사', cues: ['자원봉사', '봉사활동', '봉사신청', '봉사'], anchors: ['자원봉사', '봉사시간', '신청방법'] },
+        { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '강의', '수업', '특강', '수강료', '참가비', '재료비', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
+        { id: 'donation', label: '기증자료', cues: ['기증', '기증도서', '자료기증', '책기부'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
+        { id: 'discard', label: '폐기·제적', cues: ['제적', '폐기', '장서폐기', '불용처리', '오래된도서'], anchors: ['자료의폐기또는제적', '폐기및제적기준', '제적'] },
+        { id: 'visit', label: '견학', cues: ['견학', '현장학습', '단체방문', '기관방문'], anchors: ['견학신청', '신청방법', '운영대상'] },
+        { id: 'volunteer', label: '자원봉사', cues: ['자원봉사', '봉사활동', '봉사신청', '봉사시간', '봉사확인서', '1365', '봉사'], anchors: ['자원봉사', '봉사시간', '신청방법'] },
         { id: 'toy', label: '장난감도서관', cues: ['장난감도서관', '장난감대여', '장난감'], anchors: ['장난감도서관', '대여수량', '대여기간'] },
         { id: 'makebooks', label: '메이크북스', cues: ['메이크북스', '메이크북', '책만들기', '메이커스페이스'], anchors: ['메이크북스', '운영안내', '이용방법'] },
         { id: 'music', label: '뮤직 라이브러리', cues: ['뮤직라이브러리', '낙소스', '음악특화'], anchors: ['뮤직 라이브러리', '낙소스', '이용'] },
@@ -82,6 +97,8 @@
     const INTENT_TITLE_PATTERNS = {
         member: ['회원가입', '회원증', '가입절차'],
         loan: ['대출 권수', '자료의대출'],
+        'loan-count': ['대출 권수', '대여수량', '대여개수'],
+        'loan-period': ['대출 권수', '대여기간', '대출기간'],
         return: ['반납', '도서관이용안내'],
         reservation: ['대출예약'],
         interlibrary: ['상호대차'],
@@ -94,6 +111,7 @@
         parking: ['도서관이용안내'],
         overdue: ['연체'],
         lost: ['변상', '도서 분실'],
+        'found-item': ['습득물처리', '분실물'],
         print: ['도서관이용안내', '시설현황'],
         facility: ['시설현황'],
         locker: ['사물함운영'],
@@ -116,6 +134,7 @@
         'loan-period': 12,
         overdue: 12,
         lost: 12,
+        'found-item': 12,
         phone: 12,
         address: 12,
         parking: 12,
@@ -172,7 +191,7 @@
 
     function stripKoreanEnding(term) {
         let cleaned = normalize(term);
-        const endings = ['알려주세요', '알려줘', '가능한가요', '가능하나요', '해야하나요', '인가요', '하나요', '되나요', '나요', '어요', '아요', '에서', '으로', '에게', '부터', '까지', '은', '는', '이', '가', '을', '를', '의', '와', '과', '도', '만', '요'];
+        const endings = ['알려주세요', '알려줘', '가능한가요', '가능하나요', '해야하나요', '인가요', '이에요', '예요', '하나요', '되나요', '나요', '어요', '아요', '에서', '으로', '에게', '부터', '까지', '은', '는', '이', '가', '을', '를', '의', '와', '과', '도', '만', '요'];
         const ending = endings.find(item => cleaned.length > normalize(item).length + 1 && cleaned.endsWith(normalize(item)));
         if (ending) cleaned = cleaned.slice(0, -normalize(ending).length);
         return cleaned;
@@ -321,6 +340,55 @@
             const intent = INTENT_RULES.find(item => item.id === id);
             if (intent && !intents.some(item => item.id === id)) intents.push(intent);
         };
+
+        const objects = {
+            book: /(책|도서(?!관)|자료|장서|인쇄자료|비도서|dvd|cd|전자책|이북|오디오북|잡지|신문|정기간행물|딸림자료|부록)/.test(interpretedQuery),
+            toy: /(장난감|놀잇감|교구)/.test(interpretedQuery),
+            facility: /(시설|공간|장소|회의실|강당|대강당|프로그램실)/.test(interpretedQuery),
+            class: /(강좌|강의|수업|프로그램|문화교실|특강|행사|체험)/.test(interpretedQuery),
+            memberCard: /(회원증|도서관카드|대출증|이용증|책이음카드|모바일회원증|온라인회원증)/.test(interpretedQuery),
+            personalItem: /(분실물|습득물|유실물|소지품|주운물건|놓고간물건|개인물건)/.test(interpretedQuery),
+        };
+        const actions = {
+            borrow: /(대출|대여|빌리|빌려|빌릴|반출)/.test(interpretedQuery),
+            return: /(반납|반환|돌려주|가져다주|타관반납|교차반납)/.test(interpretedQuery),
+            renew: /(연장|기간연장|반납일연기|연기|더빌리|재대출)/.test(interpretedQuery),
+            overdue: /(연체|미반납|반납지연|기한(?:을)?(?:넘|초과)|늦게반납|반납(?:이)?늦|장기연체|대출정지|이용정지)/.test(interpretedQuery),
+            lost: /(분실|잃어버|잃어버림)/.test(interpretedQuery),
+            damaged: /(훼손|파손|오손|찢어|젖었|망가)/.test(interpretedQuery),
+        };
+
+        if (actions.borrow) {
+            if (objects.toy) addIntent('toy');
+            else if (objects.facility) addIntent('rental');
+            else if (objects.book) addIntent('loan');
+        }
+        if (actions.return) {
+            if (objects.toy) addIntent('toy');
+            else if (objects.book) addIntent('return');
+        }
+        if (actions.renew) {
+            if (objects.class) addIntent('course');
+            else {
+                addIntent('loan-period');
+                if (objects.toy) addIntent('toy');
+                else addIntent('loan');
+            }
+        }
+        if (actions.overdue) {
+            addIntent('overdue');
+            if (objects.book) addIntent('loan');
+        }
+        if (actions.lost || actions.damaged) {
+            if (objects.memberCard) addIntent('member');
+            else if (objects.personalItem) addIntent('found-item');
+            else addIntent('lost');
+        }
+        if (/(책바다|다른도서관책|도서관간대출)/.test(interpretedQuery)) addIntent('interlibrary');
+        if (/(책나래|택배대출|택배반납|묶음배송)/.test(interpretedQuery)) addIntent('delivery');
+        if (objects.facility && /(예약|신청|빌리|대여|대관|사용허가)/.test(interpretedQuery)) addIntent('rental');
+        if (objects.class && /(접수|등록|신청|모집|마감|선착순|추첨|대기자)/.test(interpretedQuery)) addIntent('class-guide');
+        if (/(문닫|닫는|마감).*(시간|몇시)|(시간|몇시).*(문닫|닫는|마감)/.test(interpretedQuery)) addIntent('hours');
         if (/(회원|가입)/.test(interpretedQuery)) addIntent('member');
         if (/대출/.test(interpretedQuery)) addIntent('loan');
         if (/(책|도서|자료)/.test(interpretedQuery) && /(빌|대출)/.test(interpretedQuery)) addIntent('loan');
@@ -335,6 +403,13 @@
         if (intents.some(intent => intent.id === 'loan-count') && /(책|도서|권수)/.test(interpretedQuery)) addIntent('loan');
         if (intents.some(intent => intent.id === 'member') && /회원증/.test(interpretedQuery)) {
             intents = intents.filter(intent => intent.id !== 'lost');
+        }
+        if (objects.memberCard) intents = intents.filter(intent => intent.id !== 'lost');
+        if (objects.personalItem) intents = intents.filter(intent => intent.id !== 'lost');
+        if (objects.toy && actions.borrow) intents = intents.filter(intent => intent.id !== 'loan');
+        if (objects.facility && actions.borrow) intents = intents.filter(intent => !['loan', 'toy'].includes(intent.id));
+        if (intents.some(intent => intent.id === 'hours') && /(문닫|닫는|마감).*(시간|몇시)|(시간|몇시).*(문닫|닫는|마감)/.test(interpretedQuery)) {
+            intents = intents.filter(intent => intent.id !== 'closed');
         }
         if (intents.some(intent => intent.id === 'member') && /회원정보/.test(interpretedQuery)) {
             intents = intents.filter(intent => !['phone', 'address'].includes(intent.id));
@@ -366,6 +441,8 @@
             libraries: libraryMatches,
             ambiguousLibrary: ambiguousCentralLibrary && libraryMatches.length > 1,
             intents,
+            objects,
+            actions,
             corrections,
             unsupportedReason,
         };
@@ -379,6 +456,16 @@
                 || (normalizedItem.length >= 2 && normalizedTerm.startsWith(normalizedItem));
         }));
         const variants = group ? group.map(normalize) : [normalizedTerm];
+        const activeIntentIds = new Set((analysis?.intents || []).map(intent => intent.id));
+        CONTEXTUAL_SYNONYM_GROUPS.forEach(contextGroup => {
+            if (!contextGroup.intents.some(id => activeIntentIds.has(id))) return;
+            if (!contextGroup.terms.some(item => {
+                const normalizedItem = normalize(item);
+                return normalizedTerm === normalizedItem
+                    || (normalizedItem.length >= 2 && normalizedTerm.startsWith(normalizedItem));
+            })) return;
+            variants.push(...contextGroup.terms.map(normalize));
+        });
         const correction = analysis?.corrections.find(item => item.from === normalizedTerm)?.to;
         if (correction) variants.push(correction);
         return [...new Set(variants)];
@@ -428,6 +515,7 @@
         searchableCorpus = entries.map(entry => entry._searchText).join('');
         const vocabulary = new Set();
         SYNONYM_GROUPS.flat().forEach(term => vocabulary.add(normalize(term)));
+        CONTEXTUAL_SYNONYM_GROUPS.flatMap(group => group.terms).forEach(term => vocabulary.add(normalize(term)));
         INTENT_RULES.flatMap(intent => [...intent.cues, ...intent.anchors]).forEach(term => vocabulary.add(normalize(term)));
         libraryCatalog.forEach(library => library.aliases.forEach(alias => vocabulary.add(alias)));
         sourceEntries.forEach(entry => (entry.keywords || []).forEach(keyword => {
@@ -499,6 +587,12 @@
             if (intent.anchors[0] && entry._fields.title.includes(normalize(intent.anchors[0]))) score += 30;
         });
         if (analysis?.intents.some(intent => intent.id === 'toy') && entry._searchText.includes('장난감')) score += 45;
+        if (analysis?.intents.some(intent => intent.id === 'found-item') && /습득물|분실물/.test(entry._fields.title)) score += 110;
+        if (analysis?.objects?.memberCard && analysis?.actions?.lost && entry._searchText.includes('회원증재발급')) score += 100;
+        if (analysis?.intents.some(intent => intent.id === 'overdue') && /연체|자료의반납및연체/.test(entry._fields.title)) score += 100;
+        if (analysis?.library && !analysis.intents.some(intent => intent.id === 'toy')
+            && analysis.intents.some(intent => ['loan-count', 'loan-period'].includes(intent.id))
+            && entry.sourceType === 'guide' && entry._fields.title.includes('도서관이용안내')) score += 110;
         if (analysis?.intents.some(intent => intent.id === 'return') && /무인/.test(normalize(query)) && entry._searchText.includes('운영시간외')) score += 180;
         if (analysis?.intents.some(intent => intent.id === 'return') && analysis.libraries?.length > 1 && entry._fields.title.includes('자료의반납')) score += 220;
         if (analysis?.intents.some(intent => intent.id === 'loan') && /(부모|가족|대신)/.test(normalize(query)) && entry._searchText.includes('대출카드는본인만')) score += 100;
@@ -511,11 +605,14 @@
         if (analysis?.intents.some(intent => intent.id === 'course') && /(무료|수강료)/.test(normalize(query)) && entry._fields.title.includes('수강료')) score += 100;
         if (analysis?.intents.some(intent => intent.id === 'reservation')) {
             const normalizedTitle = entry._fields.title;
-            if (analysis.intents.some(intent => intent.id === 'loan-count') && normalizedTitle.includes('대출예약')) score += 80;
+            if (analysis.intents.some(intent => intent.id === 'loan-count') && normalizedTitle.includes('대출예약')) score += 180;
             if (analysis.intents.some(intent => intent.id === 'loan-period') && /찾아|수령|보관/.test(normalize(query)) && normalizedTitle.includes('대출예약')) score += 80;
             if (/연장/.test(normalize(query)) && entry._searchText.includes('예약도서연장불가')) score += 80;
             if (/연장/.test(normalize(query)) && normalizedTitle.includes('대출권수')) score += 100;
         }
+        if (analysis?.intents.some(intent => intent.id === 'request-book')
+            && analysis.intents.some(intent => intent.id === 'loan-count')
+            && entry._fields.title.includes('희망도서')) score += 150;
         if (entry.sourceType === 'guide') score += analysis?.library ? 6 : 1;
         if (entry.sourceType === 'regulation' && /규정|조문|제\d+조/.test(query)) score += 12;
 
