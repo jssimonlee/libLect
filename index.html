@@ -1623,26 +1623,16 @@
                 </div>
             </form>
 
-            <div class="rules-quick-topics" aria-label="빠른 주제">
-                <span>빠른 주제</span>
-                <button type="button" data-rules-query="회원가입">회원</button>
-                <button type="button" data-rules-query="대출 반납 연체">대출·반납</button>
-                <button type="button" data-rules-query="휴관 이용시간">휴관·운영시간</button>
-                <button type="button" data-rules-query="도서관 이용시간 휴관 시설 주차 특화서비스">도서관별 안내</button>
-                <button type="button" data-rules-query="문화교실 강좌">문화교실</button>
-                <button type="button" data-rules-query="자료 선정 기증 폐기">자료관리</button>
-                <button type="button" data-rules-query="시설 대관 사물함 분실물">시설관리</button>
-            </div>
         </div>
 
         <div class="rules-content-wrap">
             <div class="rules-toolbar">
                 <div id="rulesResultSummary" class="rules-result-summary">주제를 선택하거나 검색어를 입력해 보세요.</div>
                 <div class="rules-source-filters" role="group" aria-label="자료 출처 필터">
-                    <button type="button" class="active" data-rules-source="all">전체</button>
-                    <button type="button" data-rules-source="guide">최신 이용안내</button>
-                    <button type="button" data-rules-source="regulation">운영규정</button>
-                    <button type="button" data-rules-source="law">관련 법령</button>
+                    <button type="button" class="active" data-rules-source="all">전체 <span data-rules-count="all">0</span></button>
+                    <button type="button" data-rules-source="website">도서관 홈페이지 <span data-rules-count="website">0</span></button>
+                    <button type="button" data-rules-source="regulation">운영규정 <span data-rules-count="regulation">0</span></button>
+                    <button type="button" data-rules-source="other">기타 <span data-rules-count="other">0</span></button>
                 </div>
             </div>
             <div id="rulesSearchResults" class="rules-results" aria-live="polite"></div>
@@ -3895,6 +3885,6 @@
         </div>
     </div>
     <script src="rules-data.js"></script>
-    <script src="rules-search.js?v=11"></script>
+    <script src="rules-search.js?v=12"></script>
 </body>
 </html>

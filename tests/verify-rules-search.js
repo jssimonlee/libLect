@@ -114,6 +114,16 @@ if (!/\uacac\ud559 \uc2e0\uccad/.test(displayTitle({ sourceType: 'guide', title:
     failures.push('\uad6c\uc870\ud654 \uac80\uc0c9: \uacb0\uacfc \uc81c\ubaa9 \uc815\ub9ac \uc2e4\ud328');
 }
 
+if (rankEntries('\ud68c\uc6d0\uac00\uc785', 'website', 1).ranked[0]?.entry.sourceType !== 'guide') {
+    failures.push('\ucd9c\ucc98 \ubd84\ub958: \ub3c4\uc11c\uad00 \ud648\ud398\uc774\uc9c0 \ud544\ud130 \uc2e4\ud328');
+}
+if (rankEntries('\ub300\ucd9c \uae30\uac04', 'regulation', 1).ranked[0]?.entry.sourceType !== 'regulation') {
+    failures.push('\ucd9c\ucc98 \ubd84\ub958: \uc6b4\uc601\uaddc\uc815 \ud544\ud130 \uc2e4\ud328');
+}
+if (rankEntries('\ub3c4\uc11c\uad00\ubc95', 'other', 1).ranked[0]?.entry.sourceType !== 'law') {
+    failures.push('\ucd9c\ucc98 \ubd84\ub958: \uae30\ud0c0 \ud544\ud130 \uc2e4\ud328');
+}
+
 if (failures.length) {
     console.error(`FAIL ${150 - failures.length}/150`);
     failures.forEach(failure => console.error(`- ${failure}`));

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화성시 시립도서관 운영규정</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+        :root { color-scheme: light; font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #eef3f8; color: #172033; }
+        .viewer-header { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #dbe3ec; background: rgba(255,255,255,.94); backdrop-filter: blur(14px); }
+        .viewer-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1080px, calc(100% - 2rem)); min-height: 72px; margin: 0 auto; }
+        .viewer-title { min-width: 0; }
+        .viewer-title strong { display: block; overflow: hidden; color: #0f2942; font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
+        .viewer-title span { display: block; margin-top: .18rem; color: #64748b; font-size: .76rem; }
+        .back-link, .download-link { display: inline-flex; align-items: center; min-height: 38px; padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; color: #0f4c81; font-size: .78rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
+        .viewer-main { width: min(980px, calc(100% - 1.25rem)); margin: 1.1rem auto 3rem; }
+        .page-card { overflow: hidden; border: 1px solid #dbe3ec; border-radius: 16px; background: #fff; box-shadow: 0 20px 45px -34px rgba(15,23,42,.55); }
+        .page-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem .9rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+        .page-badge { padding: .3rem .55rem; border-radius: 999px; background: #dbeafe; color: #1e40af; font-size: .74rem; font-weight: 850; }
+        .zoom-controls { display: flex; align-items: center; gap: .35rem; }
+        .zoom-controls button { width: 34px; height: 34px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #334155; font-size: 1rem; font-weight: 850; cursor: pointer; }
+        .canvas-wrap { min-height: 70vh; padding: 1rem; overflow: auto; text-align: center; }
+        canvas { display: block; max-width: none; margin: 0 auto; background: #fff; box-shadow: 0 4px 20px rgba(15,23,42,.13); }
+        .status { display: grid; min-height: 65vh; place-items: center; padding: 2rem; color: #64748b; line-height: 1.65; text-align: center; }
+        .status[hidden], canvas[hidden] { display: none; }
+        .status strong { display: block; margin-bottom: .35rem; color: #1e293b; }
+        @media (max-width: 640px) {
+            .viewer-header-inner { width: calc(100% - 1rem); min-height: 64px; }
+            .download-link { display: none; }
+            .viewer-main { margin-top: .6rem; }
+            .canvas-wrap { padding: .5rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="viewer-header">
+        <div class="viewer-header-inner">
+            <a class="back-link" href="./#rules">← 검색으로</a>
+            <div class="viewer-title">
+                <strong id="documentTitle">화성시 시립도서관 운영규정</strong>
+                <span>2022. 4. 1. 기준 · 검색된 해당 쪽만 표시</span>
+            </div>
+            <a class="download-link" href="assets/hwaseong-library-operation-rules.pdf" download>원본 저장</a>
+        </div>
+    </header>
+    <main class="viewer-main">
+        <section class="page-card">
+            <div class="page-toolbar">
+                <span id="pageBadge" class="page-badge">PDF 불러오는 중</span>
+                <div class="zoom-controls" aria-label="화면 크기">
+                    <button id="zoomOut" type="button" aria-label="축소">−</button>
+                    <button id="zoomIn" type="button" aria-label="확대">+</button>
+                </div>
+            </div>
+            <div id="canvasWrap" class="canvas-wrap">
+                <div id="status" class="status"><div><strong>운영규정을 불러오고 있습니다</strong>잠시만 기다려 주세요.</div></div>
+                <canvas id="pdfCanvas" hidden></canvas>
+            </div>
+        </section>
+    </main>
+    <script type="module">
+        import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+
+        const params = new URLSearchParams(location.search);
+        const requestedPage = Math.max(1, Number.parseInt(params.get('page') || '1', 10) || 1);
+        const requestedTitle = (params.get('title') || '').trim();
+        const canvas = document.getElementById('pdfCanvas');
+        const wrap = document.getElementById('canvasWrap');
+        const status = document.getElementById('status');
+        const badge = document.getElementById('pageBadge');
+        const context = canvas.getContext('2d');
+        let pageHandle;
+        let zoom = 1;
+
+        if (requestedTitle) {
+            document.getElementById('documentTitle').textContent = requestedTitle;
+            document.title = `${requestedTitle} - 화성시 시립도서관 운영규정`;
+        }
+
+        async function renderPage() {
+            if (!pageHandle) return;
+            const availableWidth = Math.max(280, wrap.clientWidth - 32);
+            const unscaled = pageHandle.getViewport({ scale: 1 });
+            const fitScale = Math.min(1.55, availableWidth / unscaled.width);
+            const viewport = pageHandle.getViewport({ scale: fitScale * zoom });
+            const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.floor(viewport.width * pixelRatio);
+            canvas.height = Math.floor(viewport.height * pixelRatio);
+            canvas.style.width = `${Math.floor(viewport.width)}px`;
+            canvas.style.height = `${Math.floor(viewport.height)}px`;
+            await pageHandle.render({
+                canvasContext: context,
+                viewport,
+                transform: pixelRatio === 1 ? null : [pixelRatio, 0, 0, pixelRatio, 0, 0],
+            }).promise;
+            status.hidden = true;
+            canvas.hidden = false;
+        }
+
+        try {
+            const documentHandle = await pdfjsLib.getDocument('assets/hwaseong-library-operation-rules.pdf').promise;
+            const pageNumber = Math.min(requestedPage, documentHandle.numPages);
+            pageHandle = await documentHandle.getPage(pageNumber);
+            badge.textContent = `운영규정 PDF · ${pageNumber}쪽 / ${documentHandle.numPages}쪽`;
+            await renderPage();
+        } catch (error) {
+            status.innerHTML = '<div><strong>PDF 화면을 표시하지 못했습니다</strong>우측 상단의 원본 저장을 이용해 주세요.</div>';
+            badge.textContent = '운영규정 PDF';
+        }
+
+        document.getElementById('zoomIn').addEventListener('click', async () => {
+            zoom = Math.min(2, zoom + 0.2);
+            await renderPage();
+        });
+        document.getElementById('zoomOut').addEventListener('click', async () => {
+            zoom = Math.max(0.7, zoom - 0.2);
+            await renderPage();
+        });
+    </script>
+</body>
+</html>

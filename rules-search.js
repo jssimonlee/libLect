@@ -2,9 +2,9 @@
     'use strict';
 
     const SOURCE_LABELS = {
-        guide: '최신 이용안내',
+        guide: '도서관 홈페이지',
         regulation: '운영규정',
-        law: '관련 법령',
+        law: '기타',
     };
 
     const SYNONYM_GROUPS = [
@@ -678,8 +678,31 @@
 
     function sourceLink(entry) {
         if (!entry.url) return '';
-        const label = entry.sourceType === 'regulation' ? 'PDF 열기' : '원문 보기';
+        if (entry.sourceType === 'regulation') {
+            const page = Math.max(1, Number(entry.page) || 1);
+            const viewerUrl = `regulation-viewer.html?page=${page}&title=${encodeURIComponent(entry.title || '운영규정')}`;
+            return `<a href="${escapeHtml(viewerUrl)}" target="_blank" rel="noopener noreferrer">해당 쪽 보기 ↗</a>`;
+        }
+        const label = entry.sourceType === 'guide' ? '홈페이지 보기' : '원문 보기';
         return `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`;
+    }
+
+    function sourceCategory(entry) {
+        if (entry.sourceType === 'guide') return 'website';
+        if (entry.sourceType === 'regulation') return 'regulation';
+        return 'other';
+    }
+
+    function updateSourceFilters(counts) {
+        document.querySelectorAll('[data-rules-source]').forEach(button => {
+            const source = button.dataset.rulesSource || 'all';
+            const count = counts[source] || 0;
+            const countNode = button.querySelector('[data-rules-count]');
+            if (countNode) countNode.textContent = `(${count})`;
+            const disabled = source !== 'all' && count === 0;
+            button.disabled = disabled;
+            button.setAttribute('aria-disabled', String(disabled));
+        });
     }
 
     function renderCard(entry, query, analysis) {
@@ -808,7 +831,7 @@
         const analysis = analyzeQuery(query);
         if (analysis.unsupportedReason) return { analysis, ranked: [] };
         const ranked = entries
-            .filter(entry => source === 'all' || entry.sourceType === source)
+            .filter(entry => source === 'all' || sourceCategory(entry) === source)
             .filter(entry => {
                 if (!analysis.library || entry.sourceType !== 'guide') return true;
                 if (entry._libraryIdentity.includes(analysis.library.normalizedName)) return true;
@@ -835,6 +858,7 @@
         if (!resultsNode || !summaryNode) return;
 
         if (!currentQuery) {
+            updateSourceFilters({ all: 0, website: 0, regulation: 0, other: 0 });
             summaryNode.textContent = '주제를 선택하거나 검색어를 입력해 보세요.';
             resultsNode.innerHTML = `
                 <div class="rules-welcome">
@@ -845,17 +869,32 @@
             return;
         }
 
-        const rankedResult = rankEntries(currentQuery, currentSource, 12);
-        const analysis = rankedResult.analysis;
-        let ranked = rankedResult.ranked;
-        if (analysis.library && analysis.intents.length && ranked.length > 1) {
-            const minimumScore = ranked[0].match.score * 0.74;
-            ranked = ranked.filter((item, index) => index === 0 || item.match.score >= minimumScore).slice(0, 8);
-        } else {
-            ranked = ranked.slice(0, 10);
+        const allResult = rankEntries(currentQuery, 'all', entries.length);
+        const analysis = allResult.analysis;
+        let meaningfulRanked = allResult.ranked;
+        if (analysis.library && analysis.intents.length && meaningfulRanked.length > 1) {
+            const minimumScore = meaningfulRanked[0].match.score * 0.74;
+            meaningfulRanked = meaningfulRanked.filter((item, index) => index === 0 || item.match.score >= minimumScore);
         }
+        const counts = meaningfulRanked.reduce((result, item) => {
+            const category = sourceCategory(item.entry);
+            result[category] += 1;
+            result.all += 1;
+            return result;
+        }, { all: 0, website: 0, regulation: 0, other: 0 });
+        updateSourceFilters(counts);
+        if (currentSource !== 'all' && counts[currentSource] === 0) currentSource = 'all';
+        document.querySelectorAll('[data-rules-source]').forEach(button => {
+            button.classList.toggle('active', button.dataset.rulesSource === currentSource);
+        });
+        const ranked = meaningfulRanked
+            .filter(item => currentSource === 'all' || sourceCategory(item.entry) === currentSource)
+            .slice(0, 10);
 
-        summaryNode.textContent = `“${currentQuery}” 검색 결과 ${ranked.length}건`;
+        const selectedCount = currentSource === 'all' ? counts.all : counts[currentSource];
+        summaryNode.textContent = selectedCount > ranked.length
+            ? `“${currentQuery}” 검색 결과 ${selectedCount}건 · 관련도 높은 ${ranked.length}건 표시`
+            : `“${currentQuery}” 검색 결과 ${selectedCount}건`;
         if (!ranked.length) {
             resultsNode.innerHTML = `
                 <div class="rules-empty">
