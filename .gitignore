@@ -1,3 +1,5 @@
 .wrangler/
 node_modules/
 assignees.json
+scripts/__pycache__/
+.library-update.log
