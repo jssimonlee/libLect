@@ -89,6 +89,7 @@
         { id: 'book-sea', label: '책바다', cues: ['책바다', '책 바다', '국가상호대차', '전국상호대차', '타지역도서관책', '다른지역도서관책'], anchors: ['책바다 대상', '전국 상호대차', '5,800원'] },
         { id: 'book-link', label: '책이음', cues: ['책이음', '책 이음', '책이음이용증', '통합이용증', '통합회원증', '전국도서관회원증'], anchors: ['책이음 가입', '통합이용증', '전체 대출한도'] },
         { id: 'book-narae', label: '책나래', cues: ['책나래', '책 나래', '장애인무료택배', '장애인우체국택배', '국가유공상이자', '상이유공자', '장기요양대상자'], anchors: ['책나래 대상', '국립장애인도서관', '우체국 택배'] },
+        { id: 'accessibility', label: '장애인·이용약자 편의시설', cues: ['장애인서비스', '장애인이용', '장애인편의시설', '이용약자편의시설', '장애인화장실', '장애인용화장실', '장애인열람석', '시각장애인', '휠체어', '독서확대기', '음성지원pc', '보청기'], anchors: ['이용약자 편의시설 현황', '장애인용 화장실', '장애인 열람석'] },
         { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '강의', '수업', '특강', '수강료', '참가비', '재료비', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
         { id: 'donation', label: '기증자료', cues: ['기증', '기증도서', '자료기증', '책기부'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
         { id: 'discard', label: '폐기·제적', cues: ['제적', '폐기', '장서폐기', '불용처리', '오래된도서'], anchors: ['자료의폐기또는제적', '폐기및제적기준', '제적'] },
@@ -138,6 +139,7 @@
         'book-sea': ['책바다 대상'],
         'book-link': ['책이음 가입'],
         'book-narae': ['책나래 대상'],
+        accessibility: ['시설현황'],
         course: ['강좌', '수강료', '강사료', '강사준칙'],
         donation: ['기증자료', '도서 기증'],
         discard: ['폐기', '제적'],
@@ -171,6 +173,7 @@
         'book-sea': 15,
         'book-link': 15,
         'book-narae': 15,
+        accessibility: 14,
         reservation: 11,
         interlibrary: 11,
         delivery: 11,
@@ -448,6 +451,12 @@
         if (/책바다|국가상호대차|전국상호대차|(?:타|다른)지역도서관책/.test(interpretedQuery)) addIntent('book-sea');
         if (/책이음|통합이용증|통합회원증|전국도서관회원증|회원증하나로전국/.test(interpretedQuery)) addIntent('book-link');
         if (/책나래|장애인(?:무료|우체국)?(?:도서|책)?(?:택배|배송|배달)|국립장애인도서관.*(?:택배|배송|배달)|국가유공상이자|상이유공자|장기요양대상자/.test(interpretedQuery)) addIntent('book-narae');
+        if (/장애인.*(?:서비스|지원|혜택)|(?:서비스|지원|혜택).*장애인/.test(interpretedQuery)) {
+            addIntent('duruduru');
+            addIntent('book-narae');
+            addIntent('accessibility');
+        }
+        if (/장애인(?:용)?(?:화장실|열람석|좌석|주차)|이용약자편의시설|시각장애인|휠체어|독서확대기|음성(?:지원|안내)pc|보청기/.test(interpretedQuery)) addIntent('accessibility');
         if (/두루두루/.test(interpretedQuery)) intents = intents.filter(intent => intent.id !== 'book-narae');
         if (/책나래/.test(interpretedQuery)) intents = intents.filter(intent => intent.id !== 'duruduru');
         if (objects.facility && /(예약|신청|빌리|대여|대관|사용허가)/.test(interpretedQuery)) addIntent('rental');
@@ -611,7 +620,11 @@
         };
         const allowedFocusedIds = [...new Set((analysis?.intents || [])
             .flatMap(intent => focusedEntryIds[intent.id] || []))];
-        if (allowedFocusedIds.length && !allowedFocusedIds.includes(entry.id)) return null;
+        const hasAccessibilityIntent = analysis?.intents.some(intent => intent.id === 'accessibility');
+        const isAccessibilityEntry = hasAccessibilityIntent
+            && /(이용약자편의시설|장애인용?화장실|장애인열람석|시각장애인용?pc|독서확대기|음성(?:지원|안내)pc|보청기|휠체어)/.test(entry._searchText);
+        if (allowedFocusedIds.length && !allowedFocusedIds.includes(entry.id) && !isAccessibilityEntry) return null;
+        if (hasAccessibilityIntent && !allowedFocusedIds.includes(entry.id) && !isAccessibilityEntry) return null;
 
         let score = 0;
         let matchedTerms = 0;
@@ -949,6 +962,34 @@
         const lines = cleanGuideLines(entry.text);
         const flat = lines.join(' ');
         const intentIds = new Set((analysis?.intents || []).map(intent => intent.id));
+        if (intentIds.has('accessibility')) {
+            const sectionIndex = lines.findIndex(line => normalize(line).includes('이용약자편의시설현황'));
+            const sectionLines = sectionIndex >= 0 ? lines.slice(sectionIndex + 1) : lines;
+            const rows = sectionLines.filter(line =>
+                !/^(?:이용약자 편의시설 현황(?: 안내)?|시설명|위치|수량)$/.test(line));
+            const seatStart = rows.findIndex(line => /장애인\s*열람석|시각장애인용\s*PC/i.test(line));
+            const nursingStart = rows.findIndex(line => /수유실/.test(line));
+            const toiletStart = rows.findIndex(line => /장애인용?\s*화장실/.test(line));
+            const facts = [];
+            const addAccessibilityFact = (label, values) => {
+                const value = values.filter(item => item && item !== '-').join(' · ').replace(/\s+/g, ' ').trim();
+                if (value) facts.push({ label, value });
+            };
+            if (seatStart >= 0) {
+                const candidates = [nursingStart, toiletStart].filter(index => index > seatStart);
+                const seatEnd = candidates.length ? Math.min(...candidates) : rows.length;
+                addAccessibilityFact('열람석·보조기기', rows.slice(seatStart, seatEnd));
+            }
+            if (toiletStart >= 0) {
+                addAccessibilityFact('장애인용 화장실', rows.slice(toiletStart + 1));
+            }
+            if (facts.length) {
+                const asksToilet = /장애인(?:용)?\s*화장실/.test(analysis?.interpretedQuery || '');
+                return asksToilet
+                    ? facts.sort((left, right) => Number(right.label === '장애인용 화장실') - Number(left.label === '장애인용 화장실'))
+                    : facts;
+            }
+        }
         const facts = [];
         const addFact = (label, value) => {
             const cleaned = String(value || '').replace(/\s+/g, ' ').trim().replace(/[\s,;·]+$/, '');

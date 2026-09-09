@@ -355,6 +355,25 @@ if (!disabilityDelivery.analysis.intents.some(item => item.id === 'duruduru')
     || !disabilityIds.has('guide-gyeonggi-duruduru') || !disabilityIds.has('guide-national-book-narae')) {
     failures.push('국립도서관 연계: 일반 장애인 도서택배 검색에서 두루두루·책나래 동시 안내 실패');
 }
+const disabilityServiceQueries = ['장애인 서비스는?', '장애인을 위한 서비스', '장애인 이용 가능한 서비스 알려줘'];
+disabilityServiceQueries.forEach((query, index) => {
+    const result = rankEntries(query, 'all', 10);
+    const ids = new Set(result.ranked.map(item => item.entry.id));
+    const intents = new Set(result.analysis.intents.map(item => item.id));
+    const irrelevant = result.ranked.filter(item => !['guide-gyeonggi-duruduru', 'guide-national-book-narae'].includes(item.entry.id)
+        && !/(이용약자편의시설|장애인용?화장실|장애인열람석|시각장애인용?pc|독서확대기|음성(?:지원|안내)pc|보청기|휠체어)/.test(item.entry._searchText));
+    if (!intents.has('duruduru') || !intents.has('book-narae') || !intents.has('accessibility')
+        || !ids.has('guide-gyeonggi-duruduru') || !ids.has('guide-national-book-narae') || irrelevant.length) {
+        failures.push(`장애인 서비스 ${index + 1}: '${query}'에서 관련 서비스·편의시설 선별 실패`);
+    }
+});
+const moonlightAccessibility = rankEntries('달빛나래 장애인 화장실', 'website', 2);
+const moonlightAccessibilityFacts = getGuideFacts(moonlightAccessibility.ranked[0]?.entry || {}, moonlightAccessibility.analysis);
+if (!/달빛나래어린이도서관.*시설현황/.test(moonlightAccessibility.ranked[0]?.entry.title || '')
+    || moonlightAccessibilityFacts[0]?.label !== '장애인용 화장실'
+    || !moonlightAccessibilityFacts.some(item => item.label === '열람석·보조기기' && /독서확대기/.test(item.value))) {
+    failures.push('장애인 편의시설: 달빛나래 장애인 화장실 관련 부분 표시 실패');
+}
 if (rankEntries('두루두루 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-national-book-narae')
     || rankEntries('책나래 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-gyeonggi-duruduru')) {
     failures.push('국립도서관 연계: 명시한 장애인 택배 서비스 단일 선택 실패');
@@ -367,7 +386,8 @@ if (nationalServiceEntries.length !== 3
 }
 
 const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3
-    + commonProgramCases.length + gyeonggiDeliveryCases.length + 1 + nationalServiceCases.length + 3;
+    + commonProgramCases.length + gyeonggiDeliveryCases.length + 1 + nationalServiceCases.length + 3
+    + disabilityServiceQueries.length + 1;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
