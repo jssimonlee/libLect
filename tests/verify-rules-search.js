@@ -374,6 +374,11 @@ if (!/달빛나래어린이도서관.*시설현황/.test(moonlightAccessibility.
     || !moonlightAccessibilityFacts.some(item => item.label === '열람석·보조기기' && /독서확대기/.test(item.value))) {
     failures.push('장애인 편의시설: 달빛나래 장애인 화장실 관련 부분 표시 실패');
 }
+const interlibraryCountResult = rankEntries('상호대차 몇권?', 'all', 20);
+if (!/제22조.*상호대차/.test(interlibraryCountResult.ranked[0]?.entry.title || '')
+    || interlibraryCountResult.ranked.some(item => /장난감|자원봉사|시설현황/.test(item.entry.title))) {
+    failures.push('문맥 선별: 상호대차 권수 검색에 무관한 홈페이지 결과가 포함됨');
+}
 if (rankEntries('두루두루 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-national-book-narae')
     || rankEntries('책나래 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-gyeonggi-duruduru')) {
     failures.push('국립도서관 연계: 명시한 장애인 택배 서비스 단일 선택 실패');
@@ -387,7 +392,7 @@ if (nationalServiceEntries.length !== 3
 
 const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3
     + commonProgramCases.length + gyeonggiDeliveryCases.length + 1 + nationalServiceCases.length + 3
-    + disabilityServiceQueries.length + 1;
+    + disabilityServiceQueries.length + 2;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));

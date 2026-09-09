@@ -626,6 +626,34 @@
         if (allowedFocusedIds.length && !allowedFocusedIds.includes(entry.id) && !isAccessibilityEntry) return null;
         if (hasAccessibilityIntent && !allowedFocusedIds.includes(entry.id) && !isAccessibilityEntry) return null;
 
+        // A quantity, period, or fee is an answer qualifier, not the subject of a
+        // question. Do not accept a page merely because it contains a generic
+        // word such as "1인" or "수량"; the actual subject must be present.
+        const qualifierIntentIds = new Set(['loan-count', 'loan-period', 'fees']);
+        const subjectIntents = (analysis?.intents || [])
+            .filter(intent => !qualifierIntentIds.has(intent.id))
+            .sort((left, right) => (ANSWER_INTENT_PRIORITY[right.id] || 0) - (ANSWER_INTENT_PRIORITY[left.id] || 0));
+        let primaryIntent = subjectIntents[0];
+        if (analysis?.intents.some(intent => intent.id === 'loan')
+            && (analysis.actions?.renew || /(?:부모|가족|대신).*대출/.test(analysis.interpretedQuery))) {
+            primaryIntent = analysis.intents.find(intent => intent.id === 'loan');
+        }
+        const evidencePositions = values => {
+            const positions = [];
+            [...new Set(values.map(normalize).filter(value => value.length >= 2))].forEach(value => {
+                let at = entry._searchText.indexOf(value);
+                while (at >= 0) {
+                    positions.push(at);
+                    at = entry._searchText.indexOf(value, at + Math.max(1, value.length));
+                }
+            });
+            return positions;
+        };
+        if (primaryIntent && allowedFocusedIds.length <= 1 && !hasAccessibilityIntent) {
+            const subjectPositions = evidencePositions(primaryIntent.cues);
+            if (!subjectPositions.length) return null;
+        }
+
         let score = 0;
         let matchedTerms = 0;
         const fullPhrase = normalize(query);
@@ -684,6 +712,8 @@
         }
         if (analysis?.intents.some(intent => intent.id === 'found-item') && /습득물|분실물/.test(entry._fields.title)) score += 110;
         if (analysis?.objects?.memberCard && analysis?.actions?.lost && entry._searchText.includes('회원증재발급')) score += 100;
+        if (analysis?.objects?.memberCard && /재발급/.test(analysis.interpretedQuery)
+            && entry._searchText.includes('회원증재발급')) score += 160;
         if (analysis?.intents.some(intent => intent.id === 'overdue') && /연체|자료의반납및연체/.test(entry._fields.title)) score += 100;
         if (analysis?.library && !analysis.intents.some(intent => intent.id === 'toy')
             && analysis.intents.some(intent => ['loan-count', 'loan-period'].includes(intent.id))
@@ -1266,9 +1296,12 @@
                 const preferredB = isPreferredLibraryEntry(b.entry, analysis);
                 if (preferredA !== preferredB) return preferredA ? -1 : 1;
                 return 0;
-            })
-            .slice(0, limit);
-        return { analysis, ranked };
+            });
+        const confidenceFloor = ranked.length ? ranked[0].match.score * 0.4 : 0;
+        return {
+            analysis,
+            ranked: ranked.filter((item, index) => index === 0 || item.match.score >= confidenceFloor).slice(0, limit),
+        };
     }
 
     function searchRules(query) {
