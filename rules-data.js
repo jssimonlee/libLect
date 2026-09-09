@@ -398,7 +398,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=961",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-4",
@@ -418,7 +418,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=4",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40037",
@@ -569,7 +569,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/neblib/menu/12519/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-neblib-40241",
@@ -586,7 +586,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/neblib/menu/12445/contents/40241/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-neblib-40233",
@@ -603,7 +603,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/neblib/menu/12377/contents/40233/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-neblib-40234",
@@ -619,7 +619,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/neblib/menu/12378/contents/40234/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-neblib-40235",
@@ -636,7 +636,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/neblib/menu/12381/contents/40235/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-neblib-40239",
@@ -653,7 +653,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/neblib/menu/12439/contents/40239/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-neblib-40237",
@@ -669,7 +669,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/neblib/menu/12383/contents/40237/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-662",
@@ -689,7 +689,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=662",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40260",
@@ -705,7 +705,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/11512/contents/40260/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40276",
@@ -721,7 +721,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/12729/contents/40276/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40157",
@@ -738,7 +738,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/11528/contents/40157/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40149",
@@ -755,7 +755,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/11460/contents/40149/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40150",
@@ -771,7 +771,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/11461/contents/40150/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40151",
@@ -788,7 +788,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/11464/contents/40151/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40155",
@@ -805,7 +805,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/11522/contents/40155/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dwlib-40153",
@@ -821,7 +821,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dwlib/menu/11466/contents/40153/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mlnarae-40266",
@@ -837,7 +837,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mlnarae/menu/13052/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mlnarae-40306",
@@ -854,7 +854,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mlnarae/menu/12990/contents/40306/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mlnarae-40300",
@@ -871,7 +871,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mlnarae/menu/12922/contents/40300/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mlnarae-40301",
@@ -887,7 +887,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mlnarae/menu/12923/contents/40301/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mlnarae-40302",
@@ -904,7 +904,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mlnarae/menu/12926/contents/40302/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mlnarae-40305",
@@ -921,7 +921,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mlnarae/menu/12984/contents/40305/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mlnarae-40304",
@@ -937,7 +937,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mlnarae/menu/12928/contents/40304/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40266",
@@ -953,7 +953,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/12523/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40193",
@@ -970,7 +970,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/11921/contents/40193/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40185",
@@ -987,7 +987,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/11853/contents/40185/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40186",
@@ -1003,7 +1003,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/11854/contents/40186/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40187",
@@ -1020,7 +1020,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/11857/contents/40187/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40299",
@@ -1036,7 +1036,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/12825/contents/40299/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40191",
@@ -1053,7 +1053,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/11915/contents/40191/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dbnarae-40189",
@@ -1069,7 +1069,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/dbnarae/menu/11859/contents/40189/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-djnarae-40266",
@@ -1085,7 +1085,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/djnarae/menu/12524/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-djnarae-40205",
@@ -1102,7 +1102,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/djnarae/menu/12052/contents/40205/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-djnarae-40197",
@@ -1119,7 +1119,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/djnarae/menu/11984/contents/40197/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-djnarae-40198",
@@ -1135,7 +1135,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/djnarae/menu/11985/contents/40198/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-djnarae-40199",
@@ -1152,7 +1152,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/djnarae/menu/11988/contents/40199/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-djnarae-40203",
@@ -1169,7 +1169,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/djnarae/menu/12046/contents/40203/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-djnarae-40201",
@@ -1185,7 +1185,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/djnarae/menu/11990/contents/40201/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-6",
@@ -1205,7 +1205,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=6",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40262",
@@ -1221,7 +1221,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11774/contents/40262/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40181",
@@ -1238,7 +1238,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11790/contents/40181/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40173",
@@ -1255,7 +1255,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11722/contents/40173/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40174",
@@ -1271,7 +1271,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11723/contents/40174/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40175",
@@ -1288,7 +1288,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11726/contents/40175/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40178",
@@ -1304,7 +1304,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11775/contents/40178/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40179",
@@ -1321,7 +1321,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11784/contents/40179/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-mdlib-40177",
@@ -1337,7 +1337,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/mdlib/menu/11728/contents/40177/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40254",
@@ -1353,7 +1353,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/10595/contents/40254/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40266",
@@ -1369,7 +1369,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/12512/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40073",
@@ -1386,7 +1386,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/10611/contents/40073/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40065",
@@ -1403,7 +1403,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/10543/contents/40065/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40066",
@@ -1419,7 +1419,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/10544/contents/40066/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40067",
@@ -1436,7 +1436,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/10547/contents/40067/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40296",
@@ -1453,7 +1453,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/12862/contents/40296/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40071",
@@ -1470,7 +1470,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/10605/contents/40071/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bjlib-40069",
@@ -1486,7 +1486,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bjlib/menu/10549/contents/40069/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40255",
@@ -1502,7 +1502,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/10726/contents/40255/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40266",
@@ -1518,7 +1518,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/12513/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40085",
@@ -1535,7 +1535,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/10742/contents/40085/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40077",
@@ -1552,7 +1552,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/10674/contents/40077/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40078",
@@ -1568,7 +1568,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/10675/contents/40078/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40079",
@@ -1585,7 +1585,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/10678/contents/40079/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40296",
@@ -1602,7 +1602,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/12866/contents/40296/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40083",
@@ -1619,7 +1619,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/10736/contents/40083/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bdlib-40081",
@@ -1635,7 +1635,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bdlib/menu/10680/contents/40081/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bwlib-40266",
@@ -1651,7 +1651,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bwlib/menu/13533/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bwlib-40329",
@@ -1668,7 +1668,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bwlib/menu/13526/contents/40329/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bwlib-40323",
@@ -1685,7 +1685,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bwlib/menu/13452/contents/40323/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bwlib-40324",
@@ -1701,7 +1701,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bwlib/menu/13453/contents/40324/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bwlib-40325",
@@ -1718,7 +1718,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bwlib/menu/13456/contents/40325/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bwlib-40328",
@@ -1735,7 +1735,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bwlib/menu/13523/contents/40328/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-bwlib-40326",
@@ -1751,7 +1751,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/bwlib/menu/13458/contents/40326/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-7",
@@ -1771,7 +1771,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=7",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-2",
@@ -1791,7 +1791,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=2",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40253",
@@ -1807,7 +1807,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/10464/contents/40253/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40266",
@@ -1823,7 +1823,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/12511/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40061",
@@ -1840,7 +1840,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/10480/contents/40061/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40053",
@@ -1857,7 +1857,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/10412/contents/40053/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40054",
@@ -1873,7 +1873,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/10413/contents/40054/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40055",
@@ -1890,7 +1890,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/10416/contents/40055/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40059",
@@ -1907,7 +1907,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/10474/contents/40059/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sglib-40057",
@@ -1923,7 +1923,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sglib/menu/10418/contents/40057/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-1",
@@ -1943,7 +1943,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=1",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-902",
@@ -1963,7 +1963,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=902",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40274",
@@ -1979,7 +1979,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12298/contents/40274/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40273",
@@ -1995,7 +1995,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12717/contents/40273/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40229",
@@ -2012,7 +2012,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12314/contents/40229/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40221",
@@ -2029,7 +2029,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12246/contents/40221/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40222",
@@ -2045,7 +2045,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12247/contents/40222/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40223",
@@ -2062,7 +2062,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12250/contents/40223/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40227",
@@ -2079,7 +2079,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12308/contents/40227/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sylib-40225",
@@ -2095,7 +2095,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sylib/menu/12252/contents/40225/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40261",
@@ -2111,7 +2111,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/11643/contents/40261/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40266",
@@ -2127,7 +2127,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/12521/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40169",
@@ -2144,7 +2144,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/11659/contents/40169/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40161",
@@ -2161,7 +2161,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/11591/contents/40161/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40162",
@@ -2177,7 +2177,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/11592/contents/40162/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40163",
@@ -2194,7 +2194,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/11595/contents/40163/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40167",
@@ -2211,7 +2211,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/11653/contents/40167/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-srlib-40165",
@@ -2227,7 +2227,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/srlib/menu/11597/contents/40165/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40257",
@@ -2243,7 +2243,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/10988/contents/40257/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40266",
@@ -2259,7 +2259,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/12515/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40109",
@@ -2276,7 +2276,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/11004/contents/40109/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40101",
@@ -2293,7 +2293,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/10936/contents/40101/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40102",
@@ -2309,7 +2309,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/10937/contents/40102/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40103",
@@ -2326,7 +2326,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/10940/contents/40103/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40107",
@@ -2343,7 +2343,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/10998/contents/40107/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-sslib-40105",
@@ -2359,7 +2359,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/sslib/menu/10942/contents/40105/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-3",
@@ -2379,7 +2379,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=3",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-wblib-40266",
@@ -2395,7 +2395,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/wblib/menu/12518/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-wblib-40217",
@@ -2412,7 +2412,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/wblib/menu/12183/contents/40217/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-wblib-40209",
@@ -2429,7 +2429,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/wblib/menu/12115/contents/40209/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-wblib-40210",
@@ -2445,7 +2445,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/wblib/menu/12116/contents/40210/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-wblib-40211",
@@ -2462,7 +2462,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/wblib/menu/12119/contents/40211/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-wblib-40215",
@@ -2479,7 +2479,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/wblib/menu/12177/contents/40215/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-wblib-40213",
@@ -2495,7 +2495,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/wblib/menu/12121/contents/40213/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40266",
@@ -2511,7 +2511,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/12516/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40121",
@@ -2528,7 +2528,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/11135/contents/40121/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40113",
@@ -2545,7 +2545,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/11067/contents/40113/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40114",
@@ -2561,7 +2561,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/11068/contents/40114/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40115",
@@ -2578,7 +2578,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/11071/contents/40115/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40296",
@@ -2595,7 +2595,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/12878/contents/40296/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40119",
@@ -2612,7 +2612,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/11129/contents/40119/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jnlib-40117",
@@ -2628,7 +2628,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jnlib/menu/11073/contents/40117/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40259",
@@ -2644,7 +2644,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/11381/contents/40259/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40266",
@@ -2660,7 +2660,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/12520/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40145",
@@ -2677,7 +2677,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/11397/contents/40145/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40137",
@@ -2694,7 +2694,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/11329/contents/40137/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40138",
@@ -2710,7 +2710,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/11330/contents/40138/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40139",
@@ -2727,7 +2727,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/11333/contents/40139/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40143",
@@ -2744,7 +2744,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/11391/contents/40143/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-iutlib-40141",
@@ -2760,7 +2760,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/iutlib/menu/11335/contents/40141/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40258",
@@ -2776,7 +2776,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/11250/contents/40258/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40266",
@@ -2792,7 +2792,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/12517/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40133",
@@ -2809,7 +2809,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/11266/contents/40133/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40125",
@@ -2826,7 +2826,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/11198/contents/40125/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40126",
@@ -2842,7 +2842,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/11199/contents/40126/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40127",
@@ -2859,7 +2859,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/11202/contents/40127/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40131",
@@ -2876,7 +2876,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/11260/contents/40131/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-jalib-40129",
@@ -2892,7 +2892,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/jalib/menu/11204/contents/40129/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40252",
@@ -2908,7 +2908,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10333/contents/40252/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40266",
@@ -2924,7 +2924,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/12510/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40049",
@@ -2941,7 +2941,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10349/contents/40049/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40041",
@@ -2958,7 +2958,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10281/contents/40041/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40042",
@@ -2974,7 +2974,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10282/contents/40042/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40043",
@@ -2991,7 +2991,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10285/contents/40043/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40047",
@@ -3008,7 +3008,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10343/contents/40047/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40050",
@@ -3026,7 +3026,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10353/contents/40050/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40309",
@@ -3043,7 +3043,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/13077/contents/40309/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-talib-40045",
@@ -3059,7 +3059,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/talib/menu/10287/contents/40045/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-5",
@@ -3079,7 +3079,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=5",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-hnlib-40266",
@@ -3095,7 +3095,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/hnlib/menu/13179/contents/40266/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-hnlib-40317",
@@ -3112,7 +3112,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/hnlib/menu/13172/contents/40317/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-hnlib-40312",
@@ -3129,7 +3129,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/hnlib/menu/13107/contents/40312/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-hnlib-40313",
@@ -3145,7 +3145,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/hnlib/menu/13108/contents/40313/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-hnlib-40314",
@@ -3162,7 +3162,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/hnlib/menu/13111/contents/40314/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-hnlib-40316",
@@ -3179,7 +3179,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/hnlib/menu/13169/contents/40316/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-hnlib-40315",
@@ -3195,7 +3195,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/hnlib/menu/13113/contents/40315/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-small-library-661",
@@ -3215,7 +3215,7 @@ window.LIBRARY_KNOWLEDGE = [
       "교통"
     ],
     "url": "https://www.hscitylib.or.kr/small/program/publicSmallLibDetail.do?smallLibIdx=661",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-dtlib-40333",
