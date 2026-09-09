@@ -41,6 +41,9 @@
         ['책읽는50플러스', '책읽는 50플러스', '책 읽는 50플러스', '오십플러스', '신중년독서'],
         ['두루두루', '두루 두루', '장애인도서택배', '장애인책배달'],
         ['내생애첫도서관', '내 생애 첫 도서관', '내첫도', '생애첫도서관', '임신부도서택배', '임산부도서택배', '영유아도서택배'],
+        ['책바다', '책 바다', '국가상호대차', '전국상호대차', '타지역도서관책', '다른지역도서관책'],
+        ['책이음', '책 이음', '통합이용증', '통합회원증', '전국도서관회원증'],
+        ['책나래', '책 나래', '장애인무료택배', '장애인우체국택배', '국가유공상이자', '장기요양대상자'],
         ['메이크북스', '메이크북', '메이커스페이스', '책만들기', '독립출판', '제본', '제작실'],
         ['원문db', '원문검색', '학술db', '논문검색', '국회전자도서관', '국립중앙도서관'],
     ];
@@ -83,6 +86,9 @@
         { id: 'reading-50plus', label: '책 읽는 50+', cues: ['책읽는50+', '책읽는 50+', '책 읽는 50+', '책읽는50플러스', '책 읽는 50플러스', '오십플러스', '신중년독서'], anchors: ['책 읽는 50+', '50세 이상', '독서 챌린지'] },
         { id: 'duruduru', label: '두루두루', cues: ['두루두루', '두루 두루', '장애인도서택배', '장애인책배달'], anchors: ['두루두루 대상', '등록장애인', '월 5회'] },
         { id: 'first-library', label: '내 생애 첫 도서관', cues: ['내생애첫도서관', '내 생애 첫 도서관', '내첫도', '생애첫도서관', '임신부도서택배', '임산부도서택배', '영유아도서택배'], anchors: ['내 생애 첫 도서관 대상', '12개월 이하', '월 2회'] },
+        { id: 'book-sea', label: '책바다', cues: ['책바다', '책 바다', '국가상호대차', '전국상호대차', '타지역도서관책', '다른지역도서관책'], anchors: ['책바다 대상', '전국 상호대차', '5,800원'] },
+        { id: 'book-link', label: '책이음', cues: ['책이음', '책 이음', '책이음이용증', '통합이용증', '통합회원증', '전국도서관회원증'], anchors: ['책이음 가입', '통합이용증', '전체 대출한도'] },
+        { id: 'book-narae', label: '책나래', cues: ['책나래', '책 나래', '장애인무료택배', '장애인우체국택배', '국가유공상이자', '상이유공자', '장기요양대상자'], anchors: ['책나래 대상', '국립장애인도서관', '우체국 택배'] },
         { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '강의', '수업', '특강', '수강료', '참가비', '재료비', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
         { id: 'donation', label: '기증자료', cues: ['기증', '기증도서', '자료기증', '책기부'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
         { id: 'discard', label: '폐기·제적', cues: ['제적', '폐기', '장서폐기', '불용처리', '오래된도서'], anchors: ['자료의폐기또는제적', '폐기및제적기준', '제적'] },
@@ -129,6 +135,9 @@
         'reading-50plus': ['책 읽는 50+ 대상'],
         duruduru: ['두루두루 대상'],
         'first-library': ['내 생애 첫 도서관 대상'],
+        'book-sea': ['책바다 대상'],
+        'book-link': ['책이음 가입'],
+        'book-narae': ['책나래 대상'],
         course: ['강좌', '수강료', '강사료', '강사준칙'],
         donation: ['기증자료', '도서 기증'],
         discard: ['폐기', '제적'],
@@ -159,6 +168,9 @@
         'reading-50plus': 13,
         duruduru: 14,
         'first-library': 14,
+        'book-sea': 15,
+        'book-link': 15,
+        'book-narae': 15,
         reservation: 11,
         interlibrary: 11,
         delivery: 11,
@@ -433,6 +445,11 @@
             || /50\s*\+/.test(String(query || ''))) addIntent('reading-50plus');
         if (/두루두루|장애인(?:도서|책)?(?:택배|배송|배달)/.test(interpretedQuery)) addIntent('duruduru');
         if (/내생애첫도서관|내첫도|생애첫도서관|(?:임신부|임산부|산모|영유아|12개월이하|돌전).*(?:도서|책).*(?:택배|배송|배달)/.test(interpretedQuery)) addIntent('first-library');
+        if (/책바다|국가상호대차|전국상호대차|(?:타|다른)지역도서관책/.test(interpretedQuery)) addIntent('book-sea');
+        if (/책이음|통합이용증|통합회원증|전국도서관회원증|회원증하나로전국/.test(interpretedQuery)) addIntent('book-link');
+        if (/책나래|장애인(?:무료|우체국)?(?:도서|책)?(?:택배|배송|배달)|국립장애인도서관.*(?:택배|배송|배달)|국가유공상이자|상이유공자|장기요양대상자/.test(interpretedQuery)) addIntent('book-narae');
+        if (/두루두루/.test(interpretedQuery)) intents = intents.filter(intent => intent.id !== 'book-narae');
+        if (/책나래/.test(interpretedQuery)) intents = intents.filter(intent => intent.id !== 'duruduru');
         if (objects.facility && /(예약|신청|빌리|대여|대관|사용허가)/.test(interpretedQuery)) addIntent('rental');
         if (objects.class && /(접수|등록|신청|모집|마감|선착순|추첨|대기자)/.test(interpretedQuery)) addIntent('class-guide');
         if (/(문닫|닫는|마감).*(시간|몇시)|(시간|몇시).*(문닫|닫는|마감)/.test(interpretedQuery)) addIntent('hours');
@@ -583,10 +600,18 @@
     function scoreEntry(entry, query, analysis) {
         const terms = getQueryTerms(query, analysis);
         if (!terms.length) return null;
-        if (analysis?.intents.some(intent => intent.id === 'bookstart') && !String(entry.id || '').startsWith('guide-bookstart-')) return null;
-        if (analysis?.intents.some(intent => intent.id === 'reading-50plus') && entry.id !== 'guide-reading-50plus') return null;
-        if (analysis?.intents.some(intent => intent.id === 'duruduru') && entry.id !== 'guide-gyeonggi-duruduru') return null;
-        if (analysis?.intents.some(intent => intent.id === 'first-library') && entry.id !== 'guide-gyeonggi-first-library') return null;
+        const focusedEntryIds = {
+            bookstart: ['guide-bookstart-package', 'guide-bookstart-delivery', 'guide-bookstart-programs'],
+            'reading-50plus': ['guide-reading-50plus'],
+            duruduru: ['guide-gyeonggi-duruduru'],
+            'first-library': ['guide-gyeonggi-first-library'],
+            'book-sea': ['guide-national-book-sea'],
+            'book-link': ['guide-national-book-link'],
+            'book-narae': ['guide-national-book-narae'],
+        };
+        const allowedFocusedIds = [...new Set((analysis?.intents || [])
+            .flatMap(intent => focusedEntryIds[intent.id] || []))];
+        if (allowedFocusedIds.length && !allowedFocusedIds.includes(entry.id)) return null;
 
         let score = 0;
         let matchedTerms = 0;
@@ -897,6 +922,30 @@
                 { label: '신청', value: '경기도서관에서 신청 → 소속도서관 확인·승인 → 온라인 도서신청' },
             ];
         }
+        if (entry.id === 'guide-national-book-sea') {
+            return [
+                { label: '서비스', value: '가까운 도서관에 없는 전국 협약도서관 자료를 소속도서관에서 대출·반납' },
+                { label: '이용', value: '최대 3권 · 도착일부터 14일 · 1회 7일 연장' },
+                { label: '비용', value: '기본 5,800원 · 지역별 지원금에 따라 달라질 수 있음' },
+                { label: '신청', value: '회원승인 → 온라인 자료신청 → 제공도서관 확정 → 48시간 내 결제' },
+            ];
+        }
+        if (entry.id === 'guide-national-book-link') {
+            return [
+                { label: '대상', value: '모든 국민과 국내 거주 외국인' },
+                { label: '이용', value: '책이음 이용증 하나로 전국 참여도서관 이용' },
+                { label: '대출한도', value: '전체 최대 30권 · 도서관별 권수·기간은 각 도서관 규정 적용' },
+                { label: '처음 방문', value: '안내데스크에 이용증 제시 → 회원정보 반입 후 이용' },
+            ];
+        }
+        if (entry.id === 'guide-national-book-narae') {
+            return [
+                { label: '대상', value: '등록장애인 · 국가유공상이자 · 장기요양대상자' },
+                { label: '배송', value: '우체국 택배로 무료 대출·반납' },
+                { label: '권수·기간', value: '자료를 제공하는 도서관의 관외대출 규정 적용' },
+                { label: '신청', value: '거주지역 도서관 가입 → 책나래 가입·나의 도서관 등록 → 승인 후 온라인 신청' },
+            ];
+        }
         const lines = cleanGuideLines(entry.text);
         const flat = lines.join(' ');
         const intentIds = new Set((analysis?.intents || []).map(intent => intent.id));
@@ -1006,6 +1055,8 @@
         }
         const label = String(entry.id || '').startsWith('guide-gyeonggi-')
             ? '경기도서관 신청 안내'
+            : String(entry.id || '').startsWith('guide-national-')
+                ? '국립도서관 서비스 안내'
             : entry.sourceType === 'guide' ? '홈페이지 보기' : '원문 보기';
         return `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`;
     }

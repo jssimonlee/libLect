@@ -290,7 +290,7 @@ commonProgramCases.forEach(([query, intent, titlePattern, factLabel, factPattern
 
 const gyeonggiDeliveryCases = [
     ['두루두루가 뭐예요', 'duruduru', /두루두루 대상/, '대상', /경기도 거주 등록장애인/],
-    ['장애인 도서 택배 신청', 'duruduru', /두루두루 대상/, '확인서류', /장애인복지카드.*장애인 확인서/],
+    ['두루두루 신청 서류', 'duruduru', /두루두루 대상/, '확인서류', /장애인복지카드.*장애인 확인서/],
     ['두루두루 몇 권 며칠', 'duruduru', /두루두루 대상/, '이용', /월 5회.*최대 5권.*14일/],
     ['내 생애 첫 도서관 신청', 'first-library', /내 생애 첫 도서관 대상/, '대상', /임신부.*12개월 이하/],
     ['내첫도 서류', 'first-library', /내 생애 첫 도서관 대상/, '확인서류', /임신확인서.*산모수첩.*등본.*가족관계증명서/],
@@ -320,8 +320,54 @@ if (gyeonggiServiceEntries.length !== 2
     failures.push('경기도 도서택배: 공식 안내 링크 또는 홈페이지 출처 분류 오류');
 }
 
+const nationalServiceCases = [
+    ['책바다가 뭐예요', 'book-sea', /책바다 대상/, '서비스', /전국 협약도서관.*소속도서관/],
+    ['다른 지역 도서관 책 빌리기', 'book-sea', /책바다 대상/, '신청', /회원승인.*온라인.*48시간/],
+    ['책바다 비용과 기간', 'book-sea', /책바다 대상/, '비용', /5,800원.*지원금/],
+    ['책바다 몇 권 며칠', 'book-sea', /책바다 대상/, '이용', /3권.*14일.*7일 연장/],
+    ['책이음 이용증 발급', 'book-link', /책이음 가입/, '대상', /모든 국민.*국내 거주 외국인/],
+    ['회원증 하나로 전국 도서관', 'book-link', /책이음 가입/, '이용', /이용증 하나.*전국 참여도서관/],
+    ['책이음 몇 권까지 빌려요', 'book-link', /책이음 가입/, '대출한도', /전체 최대 30권.*각 도서관 규정/],
+    ['책나래 신청 대상', 'book-narae', /책나래 대상/, '대상', /등록장애인.*국가유공상이자.*장기요양대상자/],
+    ['국가유공상이자 무료 책배달', 'book-narae', /책나래 대상/, '배송', /우체국 택배.*무료/],
+    ['장기요양대상자 도서 택배', 'book-narae', /책나래 대상/, '권수·기간', /제공하는 도서관.*규정/],
+];
+nationalServiceCases.forEach(([query, intent, titlePattern, factLabel, factPattern], index) => {
+    const { analysis, ranked } = rankEntries(query, 'all', 4);
+    const first = ranked[0]?.entry;
+    if (!analysis.intents.some(item => item.id === intent)) {
+        failures.push(`국립도서관 연계 ${index + 1}: '${query}'에서 ${intent} 의도 누락`);
+    }
+    if (!first || !titlePattern.test(first.title)) {
+        failures.push(`국립도서관 연계 ${index + 1}: '${query}' 첫 결과 오류 (${first?.title || '없음'})`);
+        return;
+    }
+    const fact = getGuideFacts(first, analysis).find(item => item.label === factLabel);
+    if (!fact || !factPattern.test(fact.value)) {
+        failures.push(`국립도서관 연계 ${index + 1}: '${query}' 핵심 정보 정리 실패`);
+    }
+});
+
+const disabilityDelivery = rankEntries('장애인 도서 택배', 'website', 4);
+const disabilityIds = new Set(disabilityDelivery.ranked.map(item => item.entry.id));
+if (!disabilityDelivery.analysis.intents.some(item => item.id === 'duruduru')
+    || !disabilityDelivery.analysis.intents.some(item => item.id === 'book-narae')
+    || !disabilityIds.has('guide-gyeonggi-duruduru') || !disabilityIds.has('guide-national-book-narae')) {
+    failures.push('국립도서관 연계: 일반 장애인 도서택배 검색에서 두루두루·책나래 동시 안내 실패');
+}
+if (rankEntries('두루두루 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-national-book-narae')
+    || rankEntries('책나래 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-gyeonggi-duruduru')) {
+    failures.push('국립도서관 연계: 명시한 장애인 택배 서비스 단일 선택 실패');
+}
+const nationalServiceEntries = window.LIBRARY_KNOWLEDGE.filter(entry => String(entry.id || '').startsWith('guide-national-'));
+if (nationalServiceEntries.length !== 3
+    || nationalServiceEntries.some(entry => entry.sourceType !== 'guide'
+        || !/^https:\/\/(?:books\.nl\.go\.kr|cn\.nld\.go\.kr)\//.test(entry.url))) {
+    failures.push('국립도서관 연계: 공식 안내 링크 또는 홈페이지 출처 분류 오류');
+}
+
 const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3
-    + commonProgramCases.length + gyeonggiDeliveryCases.length + 1;
+    + commonProgramCases.length + gyeonggiDeliveryCases.length + 1 + nationalServiceCases.length + 3;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
