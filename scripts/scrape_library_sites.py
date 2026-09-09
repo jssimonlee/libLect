@@ -315,16 +315,80 @@ def refresh_one_library(code: str, name: str, checked_on: str, workers: int, del
     return records
 
 
+def merge_refreshed_library(
+    existing: list[dict], code: str, name: str, checked_on: str, workers: int, delay: float
+) -> tuple[list[dict], int, int]:
+    previous = [record for record in existing if belongs_to_library(record, code)]
+    refreshed = refresh_one_library(code, name, checked_on, workers, delay)
+    if not refreshed:
+        raise RuntimeError(f"No records extracted for {name}; existing data was preserved")
+    if previous:
+        ratio = len(refreshed) / len(previous)
+        if ratio < 0.6 or ratio > 1.7:
+            raise RuntimeError(
+                f"Unsafe record-count change for {name}: {len(previous)} -> {len(refreshed)}; existing data was preserved"
+            )
+
+    previous_by_id = {record["id"]: record for record in previous}
+    refreshed_by_id = {record["id"]: record for record in refreshed}
+    for record_id in previous_by_id.keys() & refreshed_by_id.keys():
+        old_length = max(1, len(previous_by_id[record_id].get("text", "")))
+        new_length = len(refreshed_by_id[record_id].get("text", ""))
+        length_ratio = new_length / old_length
+        if length_ratio < 0.5 or length_ratio > 2.0:
+            raise RuntimeError(
+                f"Unsafe content-size change in {record_id}: {old_length} -> {new_length}; existing data was preserved"
+            )
+
+    # A temporarily missing menu or failed detail page must not silently delete
+    # searchable guidance. New pages are added automatically; missing old pages
+    # remain at their previous version for later review.
+    preserved_missing = [record for record in previous if record["id"] not in refreshed_by_id]
+    merged = [record for record in existing if not belongs_to_library(record, code)] + refreshed + preserved_missing
+    merged.sort(key=lambda record: (record["keywords"][0], record["section"], record["id"]))
+    validate(merged)
+    return merged, len(previous), len(refreshed)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
     parser.add_argument("--workers", type=int, default=6)
-    parser.add_argument("--library-code", choices=[code for code, _ in LIBRARIES])
-    parser.add_argument("--one", action="store_true", help="Refresh only the least recently checked library site")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--library-code", choices=[code for code, _ in LIBRARIES])
+    selection.add_argument("--one", action="store_true", help="Refresh only the least recently checked library site")
+    selection.add_argument(
+        "--all-sequential",
+        action="store_true",
+        help="Refresh every library site in order and write only after every site succeeds",
+    )
     parser.add_argument("--state", type=Path, default=STATE_PATH)
     parser.add_argument("--delay", type=float, default=0.0, help="Seconds between page requests in single-worker mode")
     args = parser.parse_args()
     checked_on = dt.date.today().strftime("%Y. %-m. %-d.") if __import__("os").name != "nt" else f"{dt.date.today().year}. {dt.date.today().month}. {dt.date.today().day}."
+
+    if args.all_sequential:
+        if not args.output.exists():
+            raise FileNotFoundError(f"Sequential update requires existing {args.output}")
+        records = json.loads(args.output.read_text(encoding="utf-8"))
+        state = json.loads(args.state.read_text(encoding="utf-8")) if args.state.exists() else {}
+        completed: list[tuple[str, int, int]] = []
+        for index, (code, name) in enumerate(LIBRARIES):
+            if index and args.delay:
+                time.sleep(args.delay)
+            print(f"[{index + 1}/{len(LIBRARIES)}] Refreshing {name}...", flush=True)
+            records, previous_count, refreshed_count = merge_refreshed_library(
+                records, code, name, checked_on, args.workers, args.delay
+            )
+            state[code] = dt.date.today().isoformat()
+            completed.append((name, previous_count, refreshed_count))
+
+        # The live files are replaced atomically only after every site passes.
+        write_json_atomic(args.output, records)
+        write_json_atomic(args.state, state)
+        for name, previous_count, refreshed_count in completed:
+            print(f"Refreshed {name}: {previous_count} -> {refreshed_count} entries")
+        return
 
     if args.one or args.library_code:
         if not args.output.exists():
@@ -333,38 +397,14 @@ def main() -> None:
             item for item in LIBRARIES if item[0] == args.library_code
         )
         existing = json.loads(args.output.read_text(encoding="utf-8"))
-        previous = [record for record in existing if belongs_to_library(record, code)]
-        refreshed = refresh_one_library(code, name, checked_on, args.workers, args.delay)
-        if not refreshed:
-            raise RuntimeError(f"No records extracted for {name}; existing data was preserved")
-        if previous:
-            ratio = len(refreshed) / len(previous)
-            if ratio < 0.6 or ratio > 1.7:
-                raise RuntimeError(
-                    f"Unsafe record-count change for {name}: {len(previous)} -> {len(refreshed)}; existing data was preserved"
-                )
-        previous_by_id = {record["id"]: record for record in previous}
-        refreshed_by_id = {record["id"]: record for record in refreshed}
-        for record_id in previous_by_id.keys() & refreshed_by_id.keys():
-            old_length = max(1, len(previous_by_id[record_id].get("text", "")))
-            length_ratio = len(refreshed_by_id[record_id].get("text", "")) / old_length
-            if length_ratio < 0.5 or length_ratio > 2.0:
-                raise RuntimeError(
-                    f"Unsafe content-size change in {record_id}: {old_length} -> "
-                    f"{len(refreshed_by_id[record_id].get('text', ''))}; existing data was preserved"
-                )
-        # A temporarily missing menu or failed detail page must not silently
-        # delete searchable guidance. New pages are added automatically; missing
-        # old pages remain at their previous version for later review.
-        preserved_missing = [record for record in previous if record["id"] not in refreshed_by_id]
-        records = [record for record in existing if not belongs_to_library(record, code)] + refreshed + preserved_missing
-        records.sort(key=lambda record: (record["keywords"][0], record["section"], record["id"]))
-        validate(records)
+        records, previous_count, refreshed_count = merge_refreshed_library(
+            existing, code, name, checked_on, args.workers, args.delay
+        )
         state = json.loads(args.state.read_text(encoding="utf-8")) if args.state.exists() else {}
         state[code] = dt.date.today().isoformat()
         write_json_atomic(args.output, records)
         write_json_atomic(args.state, state)
-        print(f"Refreshed {name}: {len(previous)} -> {len(refreshed)} entries")
+        print(f"Refreshed {name}: {previous_count} -> {refreshed_count} entries")
         return
 
     discovered: list[dict] = []

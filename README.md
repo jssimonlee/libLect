@@ -34,27 +34,13 @@ python scripts/scrape_library_sites.py
 python scripts/build_rules_data.py
 ```
 
-### 홈페이지 안내 자동 순차 갱신
+### 홈페이지 안내 전체 순차 갱신
 
-Windows 예약 작업은 매일 03:30(한국시간)에 숨김 상태로 실행되며, 마지막 확인일이 가장 오래된 도서관 사이트 한 곳만 갱신합니다. 22개 사이트 그룹을 약 22일에 한 번씩 순환하므로 한꺼번에 공식 홈페이지를 요청하지 않습니다. PC가 꺼져 있거나 로그아웃 상태였다면 다음 로그인 후 보충 실행합니다. 이 작업은 로컬 Python만 사용하며 Codex나 유료 AI API를 호출하지 않습니다.
+업데이트할 날에 저장소 루트의 `update-all-library-sites.cmd`를 더블클릭하면 22개 사이트 그룹을 한 곳씩 순서대로 갱신합니다. 매일 PC를 켜 둘 필요가 없으며 Windows 예약 작업도 사용하지 않습니다. 이 작업은 로컬 Python만 사용하며 Codex나 유료 AI API를 호출하지 않습니다.
 
-갱신 작업은 기존 항목의 ID와 데이터 형식을 유지하고, 사라진 페이지는 자동 삭제하지 않습니다. 페이지 수 또는 본문 크기가 급격히 바뀌거나 전체 검색 테스트가 실패하면 커밋과 배포를 중단합니다. 저장소에 사용자가 수정 중인 파일이 있어도 그날 작업을 건너뜁니다. 정상적으로 검증된 경우에만 `library-sites-data.json`, `library-update-state.json`, `rules-data.js`를 `main`에 커밋하고 푸시합니다.
+각 사이트 사이와 페이지 요청 사이에 간격을 두고 순차 접속합니다. 기존 항목의 ID와 데이터 형식을 유지하고, 사라진 페이지는 자동 삭제하지 않습니다. 페이지 수 또는 본문 크기가 급격히 바뀌거나 한 사이트라도 실패하면 실제 데이터 파일을 교체하지 않습니다. 모든 사이트 수집과 검색 테스트가 통과한 경우에만 `library-sites-data.json`, `library-update-state.json`, `rules-data.js`를 `main`에 커밋하고 푸시합니다.
 
-예약 작업을 설치하거나 설정을 다시 적용하려면 PowerShell에서 다음을 실행합니다.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/install_library_update_task.ps1
-```
-
-실행 결과와 실패 이유는 저장소 루트의 `.library-update.log`에 기록됩니다. GitHub 호스팅 서버에서는 공식 홈페이지 연결이 시간 초과되어, 실제 접속이 가능한 이 PC에서 실행하도록 구성했습니다.
-
-로컬에서 다음 갱신 대상 한 곳만 시험하려면:
-
-```bash
-python scripts/scrape_library_sites.py --one --workers 1 --delay 1.2
-python scripts/build_rules_data.py --reuse-existing-regulations --preserve-curated-versions
-npm test
-```
+실행 중인 코드 변경과 충돌하지 않도록 저장소에 수정 중인 추적 파일이 있으면 시작 전에 중단합니다. 실행 결과와 실패 이유는 저장소 루트의 `.library-update.log`에 기록됩니다.
 
 ---
 
