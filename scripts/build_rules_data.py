@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = ROOT / "rules-data.js"
 LIBRARY_SITES_DATA_PATH = ROOT / "library-sites-data.json"
 GUIDE_URL = "https://www.hscitylib.or.kr/intro/menu/12714/contents/40271/contents.do"
+SMART_LIBRARY_URL = "https://www.hscitylib.or.kr/intro/menu/10004/contents/40001/contents.do"
+LIBROPIA_URL = "https://www.hscitylib.or.kr/intro/menu/10042/contents/40010/contents.do"
 BOOKSTART_URL = "https://www.hscitylib.or.kr/intro/menu/12645/contents/40009/contents.do"
 READING_50_PLUS_URL = "https://www.hscitylib.or.kr/nylib/menu/13270/contents/40267/contents.do"
 DURUDURU_URL = "https://www.library.kr/ggl/custom/duruduru"
@@ -115,6 +117,47 @@ def guide_entries(checked_on: str) -> list[dict]:
             "title": "도서 분실 시 변상",
             "keywords": ["분실", "훼손", "변상", "절판", "품절", "대체도서"],
             "text": "도서를 분실하면 동일한 도서를 구입하여 반납해야 합니다. 품절 또는 절판된 경우에는 도서관이 지정한 도서로 대체 변상합니다.",
+        },
+        {
+            "sourceType": "guide",
+            "sourceTitle": "화성시립도서관 스마트도서관 안내",
+            "url": SMART_LIBRARY_URL,
+            "version": f"{checked_on} 확인",
+            "id": "guide-smart-library",
+            "section": "화성시립도서관 공통 서비스 · 무인도서관",
+            "title": "스마트도서관 위치·시간·대출 안내",
+            "keywords": [
+                "스마트도서관", "무인도서관", "무인 대출반납", "동탄SRT역", "병점역",
+                "3권", "14일", "운영시간", "도서검색", "회원증", "1544-6502",
+            ],
+            "text": (
+                "스마트도서관은 도서관 방문이 어려운 이용자가 접근성이 높은 전철역에서 편리하게 책을 대출·반납하는 무인 시스템입니다.\n"
+                "동탄SRT역 스마트도서관은 지하 4층에서 05:00~01:10 운영하고, 병점역 스마트도서관은 1호선 병점역 2층에서 05:00~00:10 운영합니다. "
+                "역 운영시간에 따른 안내이므로 현장 사정에 따라 달라질 수 있습니다.\n"
+                "화성시 시립도서관 회원이 1인 3권을 14일간 이용할 수 있습니다. "
+                "기기에서 대출 버튼, 도서검색, 도서선택, 회원증 인식, 비밀번호 입력 순서로 대출하며 반납도 스마트도서관 기기에서 처리합니다.\n"
+                "기기 장애 문의는 1544-6502, 기타 문의는 SRT동탄역 031-378-7344, 병점역 031-223-4764입니다."
+            ),
+        },
+        {
+            "sourceType": "guide",
+            "sourceTitle": "화성시립도서관 리브로피아(모바일) 안내",
+            "url": LIBROPIA_URL,
+            "version": f"{checked_on} 확인",
+            "id": "guide-libropia",
+            "section": "화성시립도서관 공통 서비스 · 모바일 앱",
+            "title": "리브로피아 설치·기능·문의 안내",
+            "keywords": [
+                "리브로피아", "리브로피아2.0", "모바일 도서관", "도서관 앱", "모바일회원증",
+                "도서검색", "도서예약", "대출현황", "열람실 좌석현황", "전자책", "구글 플레이", "앱스토어",
+            ],
+            "text": (
+                "리브로피아는 스마트폰에서 화성시립도서관 서비스를 이용할 수 있는 모바일 도서관 앱입니다. "
+                "도서검색, 도서예약, 대출현황 조회, 열람실 좌석현황, 전자책 연계, 모바일회원증 기능을 제공합니다.\n"
+                "안드로이드는 구글 플레이, 아이폰은 앱스토어에서 리브로피아를 설치합니다. "
+                "상세 이용법은 공식 페이지의 리브로피아 2.0 매뉴얼에서 확인할 수 있습니다.\n"
+                "이용 문의는 리브로피아 고객센터 02-2024-9999 내선 2번, 기타 문의는 각 도서관 사무실로 하면 됩니다."
+            ),
         },
         {
             "sourceType": "guide",

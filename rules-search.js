@@ -46,6 +46,8 @@
         ['책바다', '책 바다', '국가상호대차', '전국상호대차', '타지역도서관책', '다른지역도서관책'],
         ['책이음', '책 이음', '통합이용증', '통합회원증', '전국도서관회원증'],
         ['책나래', '책 나래', '장애인무료택배', '장애인우체국택배', '국가유공상이자', '장기요양대상자'],
+        ['스마트도서관', '무인도서관', '무인도서대출반납'],
+        ['리브로피아', '리브로피아2.0', '모바일도서관앱', '도서관앱', '모바일회원증앱'],
         ['메이크북스', '메이크북', '메이커스페이스', '책만들기', '독립출판', '제본', '제작실'],
         ['원문db', '원문검색', '학술db', '논문검색', '국회전자도서관', '국립중앙도서관'],
     ];
@@ -92,6 +94,8 @@
         { id: 'book-link', label: '책이음', cues: ['책이음', '책 이음', '책이음이용증', '통합이용증', '통합회원증', '전국도서관회원증'], anchors: ['책이음 가입', '통합이용증', '전체 대출한도'] },
         { id: 'book-narae', label: '책나래', cues: ['책나래', '책 나래', '장애인무료택배', '장애인우체국택배', '국가유공상이자', '상이유공자', '장기요양대상자'], anchors: ['책나래 대상', '국립장애인도서관', '우체국 택배'] },
         { id: 'accessibility', label: '장애인·이용약자 편의시설', cues: ['장애인서비스', '장애인이용', '장애인편의시설', '이용약자편의시설', '장애인화장실', '장애인용화장실', '장애인열람석', '시각장애인', '휠체어', '독서확대기', '음성지원pc', '보청기'], anchors: ['이용약자 편의시설 현황', '장애인용 화장실', '장애인 열람석'] },
+        { id: 'smart-library', label: '스마트도서관', cues: ['스마트도서관', '무인도서관', '무인도서대출반납', '동탄srt역도서관', '병점역도서관'], anchors: ['스마트도서관', '동탄SRT역', '병점역'] },
+        { id: 'libropia', label: '리브로피아', cues: ['리브로피아', '리브로피아2.0', '모바일도서관앱', '도서관앱', '모바일회원증앱'], anchors: ['리브로피아', '모바일 도서관', '모바일회원증'] },
         { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '강의', '수업', '특강', '수강료', '참가비', '재료비', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
         { id: 'donation', label: '기증자료', cues: ['기증', '기증도서', '자료기증', '책기부'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
         { id: 'discard', label: '폐기·제적', cues: ['제적', '폐기', '장서폐기', '불용처리', '오래된도서'], anchors: ['자료의폐기또는제적', '폐기및제적기준', '제적'] },
@@ -142,6 +146,8 @@
         'book-link': ['책이음 가입'],
         'book-narae': ['책나래 대상'],
         accessibility: ['시설현황'],
+        'smart-library': ['스마트도서관'],
+        libropia: ['리브로피아'],
         course: ['강좌', '수강료', '강사료', '강사준칙'],
         donation: ['기증자료', '도서 기증'],
         discard: ['폐기', '제적'],
@@ -176,6 +182,8 @@
         'book-link': 15,
         'book-narae': 15,
         accessibility: 14,
+        'smart-library': 15,
+        libropia: 15,
         reservation: 11,
         interlibrary: 11,
         delivery: 11,
@@ -459,6 +467,8 @@
             addIntent('accessibility');
         }
         if (/장애인(?:용)?(?:화장실|열람석|좌석|주차)|이용약자편의시설|시각장애인|휠체어|독서확대기|음성(?:지원|안내)pc|보청기/.test(interpretedQuery)) addIntent('accessibility');
+        if (/스마트도서관|무인도서관|무인도서대출반납|(?:동탄srt|병점)역도서관/.test(interpretedQuery)) addIntent('smart-library');
+        if (/리브로피아|모바일도서관앱|도서관앱|모바일회원증앱/.test(interpretedQuery)) addIntent('libropia');
         if (/두루두루/.test(interpretedQuery)) intents = intents.filter(intent => intent.id !== 'book-narae');
         if (/책나래/.test(interpretedQuery)) intents = intents.filter(intent => intent.id !== 'duruduru');
         if (objects.facility && /(예약|신청|빌리|대여|대관|사용허가)/.test(interpretedQuery)) addIntent('rental');
@@ -990,6 +1000,34 @@
                 { label: '권수·기간', value: '자료를 제공하는 도서관의 관외대출 규정 적용' },
                 { label: '신청', value: '거주지역 도서관 가입 → 책나래 가입·나의 도서관 등록 → 승인 후 온라인 신청' },
             ];
+        }
+        if (entry.id === 'guide-smart-library') {
+            const facts = [
+                { label: '대출', value: '1인 3권 · 14일' },
+                { label: '동탄SRT역', value: '지하 4층 · 05:00~01:10' },
+                { label: '병점역', value: '2층 · 05:00~00:10' },
+                { label: '문의', value: '장애 1544-6502 · 동탄 031-378-7344 · 병점 031-223-4764' },
+            ];
+            const query = analysis?.interpretedQuery || '';
+            const preferredLabel = /동탄srt/.test(query) ? '동탄SRT역'
+                : /병점역/.test(query) ? '병점역'
+                    : /문의|전화|연락|장애/.test(query) ? '문의'
+                        : '대출';
+            return facts.sort((left, right) => Number(right.label === preferredLabel) - Number(left.label === preferredLabel));
+        }
+        if (entry.id === 'guide-libropia') {
+            const facts = [
+                { label: '주요 기능', value: '도서검색·예약 · 대출현황 · 열람실 좌석 · 전자책 · 모바일회원증' },
+                { label: '설치', value: '구글 플레이 또는 앱스토어에서 리브로피아 설치' },
+                { label: '이용법', value: '공식 페이지의 리브로피아 2.0 매뉴얼 확인' },
+                { label: '문의', value: '02-2024-9999 내선 2번 · 기타 문의는 각 도서관 사무실' },
+            ];
+            const query = analysis?.interpretedQuery || '';
+            const preferredLabel = /설치|다운로드|구글플레이|앱스토어/.test(query) ? '설치'
+                : /문의|전화|연락/.test(query) ? '문의'
+                    : /방법|이용법|매뉴얼/.test(query) ? '이용법'
+                        : '주요 기능';
+            return facts.sort((left, right) => Number(right.label === preferredLabel) - Number(left.label === preferredLabel));
         }
         const lines = cleanGuideLines(entry.text);
         const flat = lines.join(' ');

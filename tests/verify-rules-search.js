@@ -390,6 +390,28 @@ closedSynonymQueries.forEach((query, index) => {
         failures.push(`휴관 유사어 ${index + 1}: '${query}'를 휴관일로 처리하지 못함`);
     }
 });
+const commonWebsiteServiceCases = [
+    ['스마트도서관', 'smart-library', 'guide-smart-library', '대출', /3권.*14일/],
+    ['동탄SRT역 스마트도서관 운영시간', 'smart-library', 'guide-smart-library', '동탄SRT역', /지하 4층.*05:00~01:10/],
+    ['병점역 스마트도서관 어디 있어?', 'smart-library', 'guide-smart-library', '병점역', /2층.*05:00~00:10/],
+    ['무인도서관 몇 권 빌려요?', 'smart-library', 'guide-smart-library', '대출', /3권.*14일/],
+    ['리브로피아가 뭐예요?', 'libropia', 'guide-libropia', '주요 기능', /도서검색.*모바일회원증/],
+    ['모바일 회원증 앱', 'libropia', 'guide-libropia', '주요 기능', /전자책.*모바일회원증/],
+];
+commonWebsiteServiceCases.forEach(([query, intentId, entryId, factLabel, factPattern], index) => {
+    const result = rankEntries(query, 'all', 5);
+    const facts = getGuideFacts(result.ranked[0]?.entry || {}, result.analysis);
+    if (!result.analysis.intents.some(intent => intent.id === intentId)
+        || result.ranked[0]?.entry.id !== entryId
+        || facts[0]?.label !== factLabel
+        || !factPattern.test(facts[0]?.value || '')) {
+        failures.push(`공통 홈페이지 서비스 ${index + 1}: '${query}' 검색 또는 정보 정리 실패`);
+    }
+});
+const indexHtml = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+if (!indexHtml.includes('placeholder="책바다, 내 생애 첫도서관, 책을 분실하면 어떻게 해?"')) {
+    failures.push('검색창 placeholder 문구 변경 실패');
+}
 if (rankEntries('두루두루 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-national-book-narae')
     || rankEntries('책나래 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-gyeonggi-duruduru')) {
     failures.push('국립도서관 연계: 명시한 장애인 택배 서비스 단일 선택 실패');
@@ -403,7 +425,7 @@ if (nationalServiceEntries.length !== 3
 
 const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3
     + commonProgramCases.length + gyeonggiDeliveryCases.length + 1 + nationalServiceCases.length + 3
-    + disabilityServiceQueries.length + closedSynonymQueries.length + 2;
+    + disabilityServiceQueries.length + closedSynonymQueries.length + commonWebsiteServiceCases.length + 3;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
