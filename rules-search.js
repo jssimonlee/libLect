@@ -37,6 +37,8 @@
         ['견학', '도서관견학', '현장학습', '단체방문', '기관방문'],
         ['자원봉사', '봉사활동', '봉사신청', '봉사시간', '1365', '봉사확인서'],
         ['장난감도서관', '장난감대여', '놀잇감', '장난감'],
+        ['북스타트', '북 스타트', '아기책꾸러미', '영유아책꾸러미', '그림책꾸러미'],
+        ['책읽는50플러스', '책읽는 50플러스', '책 읽는 50플러스', '오십플러스', '신중년독서'],
         ['메이크북스', '메이크북', '메이커스페이스', '책만들기', '독립출판', '제본', '제작실'],
         ['원문db', '원문검색', '학술db', '논문검색', '국회전자도서관', '국립중앙도서관'],
     ];
@@ -75,6 +77,8 @@
         { id: 'locker', label: '사물함', cues: ['사물함', '락커', '보관함', '물품보관함'], anchors: ['사물함운영', '사물함'] },
         { id: 'rental', label: '시설대관', cues: ['대관', '시설대관', '공간대여', '장소대여', '시설사용', '공간사용', '사용허가', '개인모임'], anchors: ['시설대관', '사용허가', '대관'] },
         { id: 'class-guide', label: '강좌 신청 안내', cues: ['통합예약시스템', '본인아이디', '모집마감', '문자메시지', '당일불참', '신청불이익', '수업사진', '결과보고', '도서관홍보'], answerCues: ['신청', '아이디', '모집마감', '문자', '주차', '대중교통', '불참', '불이익', '사정', '변경', '바뀔', '사진', '홍보'], anchors: ['통합예약시스템', '수강생 본인 아이디', '모집마감', '주차장이 혼잡', '당일 불참', '세부 내용이 변경', '수업 진행 사진'] },
+        { id: 'bookstart', label: '북스타트', cues: ['북스타트', '북 스타트', '아기책꾸러미', '영유아책꾸러미', '그림책꾸러미'], anchors: ['북스타트 대상', '북스타트 1단계', '책꾸러미', '영유아'] },
+        { id: 'reading-50plus', label: '책 읽는 50+', cues: ['책읽는50+', '책읽는 50+', '책 읽는 50+', '책읽는50플러스', '책 읽는 50플러스', '오십플러스', '신중년독서'], anchors: ['책 읽는 50+', '50세 이상', '독서 챌린지'] },
         { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '강의', '수업', '특강', '수강료', '참가비', '재료비', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
         { id: 'donation', label: '기증자료', cues: ['기증', '기증도서', '자료기증', '책기부'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
         { id: 'discard', label: '폐기·제적', cues: ['제적', '폐기', '장서폐기', '불용처리', '오래된도서'], anchors: ['자료의폐기또는제적', '폐기및제적기준', '제적'] },
@@ -117,6 +121,8 @@
         locker: ['사물함운영'],
         rental: ['시설대관'],
         'class-guide': ['도서관 강좌 신청 방법'],
+        bookstart: ['북스타트 대상', '북스타트 1단계', '북스타트 후속'],
+        'reading-50plus': ['책 읽는 50+ 대상'],
         course: ['강좌', '수강료', '강사료', '강사준칙'],
         donation: ['기증자료', '도서 기증'],
         discard: ['폐기', '제적'],
@@ -143,6 +149,8 @@
         locker: 11,
         rental: 11,
         'class-guide': 13,
+        bookstart: 13,
+        'reading-50plus': 13,
         reservation: 11,
         interlibrary: 11,
         delivery: 11,
@@ -412,6 +420,9 @@
         }
         if (/(책바다|다른도서관책|도서관간대출)/.test(interpretedQuery)) addIntent('interlibrary');
         if (/(책나래|택배대출|택배반납|묶음배송)/.test(interpretedQuery)) addIntent('delivery');
+        if (/북스타트|(?:아기|영유아|그림책).*책꾸러미/.test(interpretedQuery)) addIntent('bookstart');
+        if (/책읽는50|50플러스|오십플러스|신중년독서/.test(interpretedQuery)
+            || /50\s*\+/.test(String(query || ''))) addIntent('reading-50plus');
         if (objects.facility && /(예약|신청|빌리|대여|대관|사용허가)/.test(interpretedQuery)) addIntent('rental');
         if (objects.class && /(접수|등록|신청|모집|마감|선착순|추첨|대기자)/.test(interpretedQuery)) addIntent('class-guide');
         if (/(문닫|닫는|마감).*(시간|몇시)|(시간|몇시).*(문닫|닫는|마감)/.test(interpretedQuery)) addIntent('hours');
@@ -614,6 +625,11 @@
             if (intent.anchors[0] && entry._fields.title.includes(normalize(intent.anchors[0]))) score += 30;
         });
         if (analysis?.intents.some(intent => intent.id === 'toy') && entry._searchText.includes('장난감')) score += 45;
+        if (analysis?.intents.some(intent => intent.id === 'bookstart')) {
+            const normalizedQuestion = normalize(query);
+            if (/(택배|배송|배달)/.test(normalizedQuestion) && entry.id === 'guide-bookstart-delivery') score += 180;
+            if (/(후속|프로그램|수업|책놀이|부모교육)/.test(normalizedQuestion) && entry.id === 'guide-bookstart-programs') score += 180;
+        }
         if (analysis?.intents.some(intent => intent.id === 'found-item') && /습득물|분실물/.test(entry._fields.title)) score += 110;
         if (analysis?.objects?.memberCard && analysis?.actions?.lost && entry._searchText.includes('회원증재발급')) score += 100;
         if (analysis?.intents.some(intent => intent.id === 'overdue') && /연체|자료의반납및연체/.test(entry._fields.title)) score += 100;
@@ -819,6 +835,38 @@
 
     function getGuideFacts(entry, analysis) {
         if (entry.sourceType !== 'guide') return [];
+        if (entry.id === 'guide-bookstart-package') {
+            return [
+                { label: '대상', value: '화성시 거주 취학 전 영유아' },
+                { label: '신청', value: '연중 · 소진 시까지 선착순' },
+                { label: '구성', value: '단계별 그림책 2권 · 가방 · 가이드북 · 아이성장보드' },
+                { label: '수령', value: '21개관 어린이자료실 · 아이 1명당 단계별 1회' },
+            ];
+        }
+        if (entry.id === 'guide-bookstart-delivery') {
+            return [
+                { label: '대상', value: '1단계(0~18개월) 화성시 거주 영유아' },
+                { label: '2차 신청', value: '2026. 8. 31. 10:00부터 소진 시까지' },
+                { label: '서류', value: '발급 3개월 이내 주민등록등본 첨부' },
+                { label: '발송', value: '월 1회 순차 발송' },
+            ];
+        }
+        if (entry.id === 'guide-bookstart-programs') {
+            return [
+                { label: '내용', value: '영유아·보호자 책놀이·독서·육아 프로그램' },
+                { label: '2026년 1기', value: '5~7월 · 11개관' },
+                { label: '2026년 2기', value: '9~11월 · 10개관' },
+                { label: '신청', value: '도서관별 문화행사·강좌 공지 확인' },
+            ];
+        }
+        if (entry.id === 'guide-reading-50plus') {
+            return [
+                { label: '안내 기준', value: '공식 페이지의 2025년 사업 내용' },
+                { label: '대상', value: '화성시 거주 50세 이상(1975. 12. 31. 이전 출생) · 기존 수령자 제외' },
+                { label: '구성', value: '책 1권 · 추천목록/독서집게 · 접이식 가방' },
+                { label: '신청', value: '대출회원증·3개월 이내 등본 지참 후 추천글 제출' },
+            ];
+        }
         const lines = cleanGuideLines(entry.text);
         const flat = lines.join(' ');
         const intentIds = new Set((analysis?.intents || []).map(intent => intent.id));

@@ -49,8 +49,9 @@ LIBRARIES = [
     ("small", "화성시 공립작은도서관"),
 ]
 
-# These pages are shared system-wide and are already represented by the common
-# guide or regulation corpus. A library-specific copy would only add duplicates.
+# These pages are shared system-wide and are represented by curated common
+# entries in build_rules_data.py or by the regulation corpus. A library-specific
+# copy would only add the same content under every library name.
 COMMON_CONTENT_IDS = {
     "40002",  # 희망도서
     "40003",  # 책이음

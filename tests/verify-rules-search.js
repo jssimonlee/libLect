@@ -262,7 +262,33 @@ if (!taeanSeatFacts.some(item => item.label === '열람실 좌석' && item.value
     failures.push('공간별 좌석: 태안도서관 층수 오인 방지 실패');
 }
 
-const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3;
+const commonProgramCases = [
+    ['북스타트가 뭐예요', 'bookstart', /북스타트 대상/, '대상', /취학 전 영유아/],
+    ['아기 책꾸러미 어디서 받아요', 'bookstart', /북스타트 대상/, '수령', /21개관 어린이자료실/],
+    ['태안 북스타트 택배 신청', 'bookstart', /북스타트 1단계.*택배/, '2차 신청', /2026\. 8\. 31/],
+    ['북스타트 프로그램은 언제 해요', 'bookstart', /북스타트 후속 프로그램/, '2026년 2기', /9~11월/],
+    ['책 읽는 50+가 뭐예요', 'reading-50plus', /책 읽는 50\+ 대상/, '안내 기준', /2025년/],
+    ['50플러스 책꾸러미 신청 서류', 'reading-50plus', /책 읽는 50\+ 대상/, '신청', /대출회원증.*등본.*추천글/],
+    ['50+ 책꾸러미는 누가 받아요', 'reading-50plus', /책 읽는 50\+ 대상/, '대상', /50세 이상/],
+    ['남양도서관 책 읽는 50+', 'reading-50plus', /책 읽는 50\+ 대상/, '대상', /50세 이상/],
+];
+commonProgramCases.forEach(([query, intent, titlePattern, factLabel, factPattern], index) => {
+    const { analysis, ranked } = rankEntries(query, 'all', 3);
+    const first = ranked[0]?.entry;
+    if (!analysis.intents.some(item => item.id === intent)) {
+        failures.push(`공통 독서사업 ${index + 1}: '${query}'에서 ${intent} 의도 누락`);
+    }
+    if (!first || !titlePattern.test(first.title)) {
+        failures.push(`공통 독서사업 ${index + 1}: '${query}' 첫 결과 오류 (${first?.title || '없음'})`);
+        return;
+    }
+    const fact = getGuideFacts(first, analysis).find(item => item.label === factLabel);
+    if (!fact || !factPattern.test(fact.value)) {
+        failures.push(`공통 독서사업 ${index + 1}: '${query}' 핵심 정보 정리 실패`);
+    }
+});
+
+const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3 + commonProgramCases.length;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
