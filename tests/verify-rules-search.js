@@ -379,6 +379,17 @@ if (!/제22조.*상호대차/.test(interlibraryCountResult.ranked[0]?.entry.titl
     || interlibraryCountResult.ranked.some(item => /장난감|자원봉사|시설현황/.test(item.entry.title))) {
     failures.push('문맥 선별: 상호대차 권수 검색에 무관한 홈페이지 결과가 포함됨');
 }
+const closedSynonymQueries = [
+    '휴일', '휴관일', '공휴일', '법정공휴일', '대체공휴일', '쉬는 날', '문 닫는 날',
+    '휴무일', '정기 휴무일', '임시 휴관일', '국경일', '빨간날', '도서관 안 여는 날',
+];
+closedSynonymQueries.forEach((query, index) => {
+    const result = rankEntries(query, 'all', 5);
+    if (!result.analysis.intents.some(intent => intent.id === 'closed')
+        || !/휴관|이용안내/.test(result.ranked[0]?.entry.title || '')) {
+        failures.push(`휴관 유사어 ${index + 1}: '${query}'를 휴관일로 처리하지 못함`);
+    }
+});
 if (rankEntries('두루두루 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-national-book-narae')
     || rankEntries('책나래 장애인 도서택배', 'all', 3).ranked.some(item => item.entry.id === 'guide-gyeonggi-duruduru')) {
     failures.push('국립도서관 연계: 명시한 장애인 택배 서비스 단일 선택 실패');
@@ -392,7 +403,7 @@ if (nationalServiceEntries.length !== 3
 
 const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3
     + commonProgramCases.length + gyeonggiDeliveryCases.length + 1 + nationalServiceCases.length + 3
-    + disabilityServiceQueries.length + 2;
+    + disabilityServiceQueries.length + closedSynonymQueries.length + 2;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
