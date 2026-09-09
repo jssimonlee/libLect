@@ -77,7 +77,7 @@
         { id: 'locker', label: '사물함', cues: ['사물함', '락커', '보관함', '물품보관함'], anchors: ['사물함운영', '사물함'] },
         { id: 'rental', label: '시설대관', cues: ['대관', '시설대관', '공간대여', '장소대여', '시설사용', '공간사용', '사용허가', '개인모임'], anchors: ['시설대관', '사용허가', '대관'] },
         { id: 'class-guide', label: '강좌 신청 안내', cues: ['통합예약시스템', '본인아이디', '모집마감', '문자메시지', '당일불참', '신청불이익', '수업사진', '결과보고', '도서관홍보'], answerCues: ['신청', '아이디', '모집마감', '문자', '주차', '대중교통', '불참', '불이익', '사정', '변경', '바뀔', '사진', '홍보'], anchors: ['통합예약시스템', '수강생 본인 아이디', '모집마감', '주차장이 혼잡', '당일 불참', '세부 내용이 변경', '수업 진행 사진'] },
-        { id: 'bookstart', label: '북스타트', cues: ['북스타트', '북 스타트', '아기책꾸러미', '영유아책꾸러미', '그림책꾸러미'], anchors: ['북스타트 대상', '북스타트 1단계', '책꾸러미', '영유아'] },
+        { id: 'bookstart', label: '북스타트', cues: ['북스타트', '북 스타트', '아기책꾸러미', '영유아책꾸러미', '그림책꾸러미'], anchors: ['북스타트 대상', '북스타트 1단계', '북스타트 후속'] },
         { id: 'reading-50plus', label: '책 읽는 50+', cues: ['책읽는50+', '책읽는 50+', '책 읽는 50+', '책읽는50플러스', '책 읽는 50플러스', '오십플러스', '신중년독서'], anchors: ['책 읽는 50+', '50세 이상', '독서 챌린지'] },
         { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '강의', '수업', '특강', '수강료', '참가비', '재료비', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
         { id: 'donation', label: '기증자료', cues: ['기증', '기증도서', '자료기증', '책기부'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
@@ -573,6 +573,8 @@
     function scoreEntry(entry, query, analysis) {
         const terms = getQueryTerms(query, analysis);
         if (!terms.length) return null;
+        if (analysis?.intents.some(intent => intent.id === 'bookstart') && !String(entry.id || '').startsWith('guide-bookstart-')) return null;
+        if (analysis?.intents.some(intent => intent.id === 'reading-50plus') && entry.id !== 'guide-reading-50plus') return null;
 
         let score = 0;
         let matchedTerms = 0;
