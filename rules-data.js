@@ -435,7 +435,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/10218/contents/40037/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40029",
@@ -452,7 +452,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/10150/contents/40029/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40030",
@@ -468,7 +468,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/10151/contents/40030/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40031",
@@ -485,7 +485,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/10154/contents/40031/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40038",
@@ -503,7 +503,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/10222/contents/40038/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40308",
@@ -520,7 +520,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/13073/contents/40308/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40033",
@@ -536,7 +536,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/10156/contents/40033/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-nylib-40035",
@@ -553,7 +553,7 @@ window.LIBRARY_KNOWLEDGE = [
       ""
     ],
     "url": "https://www.hscitylib.or.kr/nylib/menu/10212/contents/40035/contents.do",
-    "version": "2026. 9. 4. 확인"
+    "version": "2026. 9. 9. 확인"
   },
   {
     "id": "site-neblib-40266",
