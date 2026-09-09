@@ -22,6 +22,7 @@ from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = ROOT / "library-sites-data.json"
+STATE_PATH = ROOT / "library-update-state.json"
 BASE_URL = "https://www.hscitylib.or.kr"
 
 LIBRARIES = [
@@ -134,6 +135,12 @@ def clean_text(value: str) -> str:
     }
     lines = [line for line in value.splitlines() if line.strip() not in boilerplate]
     return "\n".join(lines).strip()
+
+
+def write_json_atomic(path: Path, value: object) -> None:
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
 def content_id(url: str) -> str:
@@ -256,8 +263,16 @@ def extract_small_libraries(checked_on: str) -> list[dict]:
 
 
 def validate(records: list[dict]) -> None:
+    required_fields = {"id", "sourceType", "sourceTitle", "section", "title", "text", "keywords", "url", "version"}
+    malformed = [record.get("id", "<missing id>") for record in records if not required_fields.issubset(record)]
+    if malformed:
+        raise RuntimeError("Malformed search records: " + ", ".join(malformed[:10]))
     covered = {record["keywords"][0] for record in records}
-    missing = [name for _, name in LIBRARIES if name not in covered]
+    missing = [
+        name for code, name in LIBRARIES
+        if not (code == "small" and any(record["id"].startswith("site-small-library-") for record in records))
+        and name not in covered
+    ]
     if missing:
         raise RuntimeError("No searchable guidance extracted for: " + ", ".join(missing))
     duplicate_ids = [item for item, count in __import__("collections").Counter(r["id"] for r in records).items() if count > 1]
@@ -265,12 +280,92 @@ def validate(records: list[dict]) -> None:
         raise RuntimeError("Duplicate record IDs: " + ", ".join(duplicate_ids))
 
 
+def belongs_to_library(record: dict, code: str) -> bool:
+    if code == "small":
+        return record.get("id", "").startswith("site-small-library-")
+    return record.get("id", "").startswith(f"site-{code}-")
+
+
+def choose_oldest_library(state_path: Path) -> tuple[str, str]:
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+    order = {code: index for index, (code, _) in enumerate(LIBRARIES)}
+    return min(LIBRARIES, key=lambda item: (state.get(item[0], ""), order[item[0]]))
+
+
+def refresh_one_library(code: str, name: str, checked_on: str, workers: int, delay: float) -> list[dict]:
+    if code == "small":
+        return extract_small_libraries(checked_on)
+
+    discovered = discover_pages(code, name)
+    records = []
+    if workers <= 1:
+        for index, page in enumerate(discovered):
+            if index and delay:
+                time.sleep(delay)
+            record = extract_page(page, checked_on)
+            if record:
+                records.append(record)
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+            jobs = [pool.submit(extract_page, page, checked_on) for page in discovered]
+            for job in concurrent.futures.as_completed(jobs):
+                record = job.result()
+                if record:
+                    records.append(record)
+    return records
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
     parser.add_argument("--workers", type=int, default=6)
+    parser.add_argument("--library-code", choices=[code for code, _ in LIBRARIES])
+    parser.add_argument("--one", action="store_true", help="Refresh only the least recently checked library site")
+    parser.add_argument("--state", type=Path, default=STATE_PATH)
+    parser.add_argument("--delay", type=float, default=0.0, help="Seconds between page requests in single-worker mode")
     args = parser.parse_args()
     checked_on = dt.date.today().strftime("%Y. %-m. %-d.") if __import__("os").name != "nt" else f"{dt.date.today().year}. {dt.date.today().month}. {dt.date.today().day}."
+
+    if args.one or args.library_code:
+        if not args.output.exists():
+            raise FileNotFoundError(f"Incremental update requires existing {args.output}")
+        code, name = choose_oldest_library(args.state) if args.one else next(
+            item for item in LIBRARIES if item[0] == args.library_code
+        )
+        existing = json.loads(args.output.read_text(encoding="utf-8"))
+        previous = [record for record in existing if belongs_to_library(record, code)]
+        refreshed = refresh_one_library(code, name, checked_on, args.workers, args.delay)
+        if not refreshed:
+            raise RuntimeError(f"No records extracted for {name}; existing data was preserved")
+        if previous:
+            ratio = len(refreshed) / len(previous)
+            if ratio < 0.6 or ratio > 1.7:
+                raise RuntimeError(
+                    f"Unsafe record-count change for {name}: {len(previous)} -> {len(refreshed)}; existing data was preserved"
+                )
+        previous_by_id = {record["id"]: record for record in previous}
+        refreshed_by_id = {record["id"]: record for record in refreshed}
+        for record_id in previous_by_id.keys() & refreshed_by_id.keys():
+            old_length = max(1, len(previous_by_id[record_id].get("text", "")))
+            length_ratio = len(refreshed_by_id[record_id].get("text", "")) / old_length
+            if length_ratio < 0.5 or length_ratio > 2.0:
+                raise RuntimeError(
+                    f"Unsafe content-size change in {record_id}: {old_length} -> "
+                    f"{len(refreshed_by_id[record_id].get('text', ''))}; existing data was preserved"
+                )
+        # A temporarily missing menu or failed detail page must not silently
+        # delete searchable guidance. New pages are added automatically; missing
+        # old pages remain at their previous version for later review.
+        preserved_missing = [record for record in previous if record["id"] not in refreshed_by_id]
+        records = [record for record in existing if not belongs_to_library(record, code)] + refreshed + preserved_missing
+        records.sort(key=lambda record: (record["keywords"][0], record["section"], record["id"]))
+        validate(records)
+        state = json.loads(args.state.read_text(encoding="utf-8")) if args.state.exists() else {}
+        state[code] = dt.date.today().isoformat()
+        write_json_atomic(args.output, records)
+        write_json_atomic(args.state, state)
+        print(f"Refreshed {name}: {len(previous)} -> {len(refreshed)} entries")
+        return
 
     discovered: list[dict] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
@@ -290,7 +385,7 @@ def main() -> None:
 
     records.sort(key=lambda record: (record["keywords"][0], record["section"], record["id"]))
     validate(records)
-    args.output.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_json_atomic(args.output, records)
 
     per_library = defaultdict(int)
     for record in records:

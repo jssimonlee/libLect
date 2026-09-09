@@ -34,6 +34,20 @@ python scripts/scrape_library_sites.py
 python scripts/build_rules_data.py
 ```
 
+### 홈페이지 안내 자동 순차 갱신
+
+`.github/workflows/refresh-library-sites.yml`은 매일 03:30(한국시간)에 실행되며, 마지막 확인일이 가장 오래된 도서관 사이트 한 곳만 갱신합니다. 22개 사이트 그룹을 약 22일에 한 번씩 순환하므로 한꺼번에 공식 홈페이지를 요청하지 않습니다. 이 작업은 Python과 GitHub Actions만 사용하며 Codex나 유료 AI API를 호출하지 않습니다.
+
+갱신 작업은 기존 항목의 ID와 데이터 형식을 유지하고, 사라진 페이지는 자동 삭제하지 않습니다. 페이지 수 또는 본문 크기가 급격히 바뀌거나 전체 검색 테스트가 실패하면 커밋과 배포를 중단합니다. 정상적으로 검증된 경우에만 `library-sites-data.json`, `library-update-state.json`, `rules-data.js`를 `main`에 커밋합니다.
+
+로컬에서 다음 갱신 대상 한 곳만 시험하려면:
+
+```bash
+python scripts/scrape_library_sites.py --one --workers 1 --delay 1.2
+python scripts/build_rules_data.py --reuse-existing-regulations --preserve-curated-versions
+npm test
+```
+
 ---
 
 ## ✨ 최근 업데이트 사항 (AI 협업 개선)
