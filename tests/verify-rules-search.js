@@ -227,7 +227,42 @@ if (!/태안도서관.*이용안내/.test(explicitLibraryResult.ranked[0]?.entry
 }
 delete window.localStorage;
 
-const totalRegressionCases = 150 + synonymCases.length + 3;
+const roomGuideEntries = window.LIBRARY_KNOWLEDGE.filter(entry =>
+    entry.sourceType === 'guide' && /도서관이용안내/.test(entry.title) && /열람실/.test(entry.text));
+roomGuideEntries.forEach(entry => {
+    const libraryName = entry.keywords?.[0] || entry.title.split(' ')[0];
+    const analysis = analyzeQuery(`${libraryName} 열람실 이용시간`);
+    const facts = getGuideFacts(entry, analysis);
+    const roomHours = facts.find(item => /열람실 이용시간/.test(item.label));
+    if (!roomHours || !/\d{1,2}:\d{2}\s*[~\-–]\s*\d{1,2}:\d{2}/.test(roomHours.value)) {
+        failures.push(`공간별 시간: ${libraryName} 열람실 이용시간 추출 실패`);
+    }
+    if (facts.some(item => item.label.includes('좌석') && /층$/.test(item.value))) {
+        failures.push(`공간별 시간: ${libraryName} 층수를 좌석수로 잘못 추출`);
+    }
+});
+
+const taeanRoomResult = rankEntries('태안도서관 열람실 이용시간 알려줘', 'all', 1);
+const taeanRoomFacts = getGuideFacts(taeanRoomResult.ranked[0]?.entry || {}, taeanRoomResult.analysis);
+if (!/태안도서관.*이용안내/.test(taeanRoomResult.ranked[0]?.entry.title || '')
+    || !taeanRoomFacts.some(item => item.label === '열람실 이용시간' && item.value === '평일/주말 08:00~24:00')) {
+    failures.push('공간별 시간: 태안도서관 열람실 빠른 답변 실패');
+}
+
+const roomTypoResult = rankEntries('태안도서관 열람싫 이용시간 알려줘', 'all', 1);
+if (!roomTypoResult.analysis.corrections.some(item => item.from === '열람싫' && item.to === '열람실')
+    || !/태안도서관.*이용안내/.test(roomTypoResult.ranked[0]?.entry.title || '')) {
+    failures.push('공간별 시간: 열람실 오타 보정 실패');
+}
+
+const taeanSeatResult = rankEntries('태안도서관 열람실 좌석', 'all', 1);
+const taeanSeatFacts = getGuideFacts(taeanSeatResult.ranked[0]?.entry || {}, taeanSeatResult.analysis);
+if (!taeanSeatFacts.some(item => item.label === '열람실 좌석' && item.value === '85석')
+    || taeanSeatFacts.some(item => item.value === '1층')) {
+    failures.push('공간별 좌석: 태안도서관 층수 오인 방지 실패');
+}
+
+const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));

@@ -233,6 +233,10 @@
 
     function findCorrection(term) {
         if (!term || term.length < 3 || searchableCorpus.includes(term) || /^[ㄱ-ㅎ]+$/.test(term)) return '';
+        const commonCorrections = {
+            열람싫: '열람실',
+        };
+        if (commonCorrections[term]) return commonCorrections[term];
         if (correctionCache.has(term)) return correctionCache.get(term);
         let best = '';
         const distanceLimit = term.length >= 6 ? 2 : 1;
@@ -621,6 +625,10 @@
         if (analysis?.intents.some(intent => intent.id === 'loan') && /(부모|가족|대신)/.test(normalize(query)) && entry._searchText.includes('대출카드는본인만')) score += 100;
         if (analysis?.intents.some(intent => intent.id === 'closed') && !analysis.library && entry._fields.title.includes('도서관별정기휴관일')) score += 80;
         if (analysis?.intents.some(intent => intent.id === 'hours') && !analysis.library && entry._fields.title.includes('이용시간')) score += 100;
+        if (analysis?.intents.some(intent => intent.id === 'hours')
+            && analysis.library
+            && /(열람실|노트북실|자료실|장난감도서관|뮤직스테이)/.test(analysis.interpretedQuery)
+            && entry.sourceType === 'guide' && entry._fields.title.includes('도서관이용안내')) score += 120;
         if (analysis?.intents.some(intent => intent.id === 'course') && /강좌|수강료|강사료|강사준칙/.test(entry._fields.title)) score += 45;
         if (analysis?.intents.some(intent => intent.id === 'toy') && analysis.intents.some(intent => intent.id === 'member') && entry._fields.title.includes('장난감회원')) score += 70;
         if (analysis?.intents.some(intent => intent.id === 'cancel-class') && entry._fields.title.includes('폐강')) score += 70;
@@ -739,8 +747,74 @@
 
     function extractHours(lines) {
         const flat = lines.join(' ');
-        const matches = [...flat.matchAll(/(\ud3c9\uc77c|\uc8fc\ub9d0|\ud1a0\s*~\s*\uc77c|\uc6d4\s*~\s*\uae08|\ud654\s*~\s*\ud1a0)\s*:?\s*(\d{1,2}:\d{2}\s*[~\-–]\s*\d{1,2}:\d{2})/g)];
+        const matches = [...flat.matchAll(/(\ud3c9\uc77c(?:\s*[\/·]\s*|\s+)\uc8fc\ub9d0|\ud3c9\uc77c|\uc8fc\ub9d0|\ud1a0\s*~\s*\uc77c|\uc6d4\s*~\s*\uae08|\ud654\s*~\s*\uae08|\ud654\s*~\s*\ud1a0|\ud1a0)\s*:?\s*(\d{1,2}:\d{2}\s*[~\-–]\s*\d{1,2}:\d{2})/g)];
+        matches.forEach(match => {
+            if (/^평일\s*(?:[\/·]\s*|\s+)주말$/.test(match[1])) match[1] = '평일/주말';
+        });
         return [...new Set(matches.map(match => `${match[1].replace(/\s/g, '')} ${match[2].replace(/\s/g, '')}`))].slice(0, 3).join(' · ');
+    }
+
+    const ROOM_DEFINITIONS = [
+        { label: '노트북실', query: /노트북(?:열람)?실|노트북공간/, line: /노트북(?:열람)?실/ },
+        { label: '장난감도서관', query: /장난감도서관|장난감실/, line: /장난감도서관/ },
+        { label: '어린이자료실', query: /어린이자료실|아동자료실|유아어린이자료실/, line: /어린이자료실|아동자료실|유아어린이자료실/ },
+        { label: '유아자료실', query: /유아자료실/, line: /유아자료실/ },
+        { label: '전자정보자료실', query: /전자정보자료실|전자정보실|디지털자료실|미디어존/, line: /전자정보자료실|전자정보실|디지털자료실|미디어존/ },
+        { label: '종합자료실', query: /종합자료실/, line: /종합자료실/ },
+        { label: '일반자료실', query: /일반자료실/, line: /일반자료실/ },
+        { label: '통합자료실', query: /통합자료실/, line: /통합자료실/ },
+        { label: '열람실', query: /열람실|자율학습실/, line: /일반열람실|열람실|자율학습실/ },
+        { label: '뮤직스테이', query: /뮤직스테이/, line: /뮤직스테이/ },
+    ];
+
+    function getRequestedRoom(analysis) {
+        const query = analysis?.interpretedQuery || analysis?.normalizedQuery || '';
+        return ROOM_DEFINITIONS.find(room => room.query.test(query)) || null;
+    }
+
+    function extractRoomHours(lines, room) {
+        if (!room) return '';
+        const sectionEnd = lines.findIndex(line => /휴관안내|회원가입안내/.test(normalize(line)));
+        const end = sectionEnd >= 0 ? sectionEnd : lines.length;
+        const matches = [];
+        for (let index = 0; index < end; index += 1) {
+            if (room.line.test(normalize(lines[index]))) matches.push(index);
+        }
+        for (const index of matches) {
+            let nextRoom = end;
+            for (let next = index + 1; next < end; next += 1) {
+                const normalizedLine = normalize(lines[next]);
+                if (!room.line.test(normalizedLine)
+                    && ROOM_DEFINITIONS.some(definition => definition.line.test(normalizedLine))) {
+                    nextRoom = next;
+                    break;
+                }
+            }
+            const segment = lines.slice(index + 1, nextRoom);
+            let forward = extractHours(segment);
+            const normalizedSegment = segment.map(normalize);
+            const hasWeekdayAndWeekend = normalizedSegment.includes('평일') && normalizedSegment.includes('주말');
+            if (forward && !forward.includes('·') && hasWeekdayAndWeekend) {
+                forward = forward.replace(/^(?:평일|주말)\s+/, '평일/주말 ');
+            }
+            if (forward) return forward;
+            const backward = extractHours(lines.slice(Math.max(0, index - 5), index));
+            if (backward) return backward;
+        }
+        return '';
+    }
+
+    function extractRoomSeat(lines, room) {
+        if (!room) return '';
+        const sectionStart = lines.findIndex(line => normalize(line) === '실별안내');
+        for (let index = Math.max(0, sectionStart + 1); index < lines.length; index += 1) {
+            if (!room.line.test(normalize(lines[index]))) continue;
+            for (let offset = 1; offset <= 12 && index + offset < lines.length; offset += 1) {
+                const candidate = lines[index + offset].trim();
+                if (/^\d[\d,]*(?:\.\d+)?석$/.test(candidate)) return candidate;
+            }
+        }
+        return '';
     }
 
     function getGuideFacts(entry, analysis) {
@@ -759,6 +833,8 @@
         const hours = extractHours(lines) || findLabeledValue(lines, ['\uc774\uc6a9\uc2dc\uac04', '\uc6b4\uc601\uc2dc\uac04'], value => /\d{1,2}:\d{2}/.test(value));
         const closed = findLabeledValue(lines, ['\uc815\uae30\ud734\uad00', '\ud734\uad00\uc77c'], value => value.length >= 4 && !/^(?:\uad6c\ubd84|\ub0b4\uc6a9)$/.test(value));
         const buses = extractBusRoutes(lines);
+        const requestedRoom = getRequestedRoom(analysis);
+        const roomHours = extractRoomHours(lines, requestedRoom);
 
         if (intentIds.has('phone')) {
             addFact('\uc804\ud654', phoneMatch?.[1]);
@@ -771,7 +847,7 @@
             addFact('\uc804\ud654', phoneMatch?.[1]);
         }
         if (intentIds.has('hours')) {
-            addFact('\uc774\uc6a9\uc2dc\uac04', hours);
+            addFact(requestedRoom && roomHours ? requestedRoom.label + ' 이용시간' : '\uc774\uc6a9\uc2dc\uac04', roomHours || hours);
             addFact('\ud734\uad00', closed);
         }
         if (intentIds.has('closed')) {
@@ -780,7 +856,9 @@
         }
         if (intentIds.has('facility')) {
             addFact('\uc8fc\uc694\uc2dc\uc124', findLabeledValue(lines, ['\uc8fc\uc694\uc2dc\uc124'], value => value.length >= 3));
-            addFact('\uc88c\uc11d', findLabeledValue(lines, ['\uc88c\uc11d\uc218'], value => /\d/.test(value)));
+            addFact(requestedRoom ? requestedRoom.label + ' 좌석' : '\uc88c\uc11d', requestedRoom
+                ? extractRoomSeat(lines, requestedRoom)
+                : findLabeledValue(lines, ['\uc88c\uc11d\uc218'], value => /^\d[\d,]*(?:\.\d+)?석$/.test(value)));
         }
         if (intentIds.has('interlibrary')) addFact('\uc0c1\ud638\ub300\ucc28', findLabeledValue(lines, ['\uc0c1\ud638\ub300\ucc28'], value => value.length >= 3));
         return facts.slice(0, 4);
