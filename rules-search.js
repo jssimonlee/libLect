@@ -39,6 +39,8 @@
         ['장난감도서관', '장난감대여', '놀잇감', '장난감'],
         ['북스타트', '북 스타트', '아기책꾸러미', '영유아책꾸러미', '그림책꾸러미'],
         ['책읽는50플러스', '책읽는 50플러스', '책 읽는 50플러스', '오십플러스', '신중년독서'],
+        ['두루두루', '두루 두루', '장애인도서택배', '장애인책배달'],
+        ['내생애첫도서관', '내 생애 첫 도서관', '내첫도', '생애첫도서관', '임신부도서택배', '임산부도서택배', '영유아도서택배'],
         ['메이크북스', '메이크북', '메이커스페이스', '책만들기', '독립출판', '제본', '제작실'],
         ['원문db', '원문검색', '학술db', '논문검색', '국회전자도서관', '국립중앙도서관'],
     ];
@@ -79,6 +81,8 @@
         { id: 'class-guide', label: '강좌 신청 안내', cues: ['통합예약시스템', '본인아이디', '모집마감', '문자메시지', '당일불참', '신청불이익', '수업사진', '결과보고', '도서관홍보'], answerCues: ['신청', '아이디', '모집마감', '문자', '주차', '대중교통', '불참', '불이익', '사정', '변경', '바뀔', '사진', '홍보'], anchors: ['통합예약시스템', '수강생 본인 아이디', '모집마감', '주차장이 혼잡', '당일 불참', '세부 내용이 변경', '수업 진행 사진'] },
         { id: 'bookstart', label: '북스타트', cues: ['북스타트', '북 스타트', '아기책꾸러미', '영유아책꾸러미', '그림책꾸러미'], anchors: ['북스타트 대상', '북스타트 1단계', '북스타트 후속'] },
         { id: 'reading-50plus', label: '책 읽는 50+', cues: ['책읽는50+', '책읽는 50+', '책 읽는 50+', '책읽는50플러스', '책 읽는 50플러스', '오십플러스', '신중년독서'], anchors: ['책 읽는 50+', '50세 이상', '독서 챌린지'] },
+        { id: 'duruduru', label: '두루두루', cues: ['두루두루', '두루 두루', '장애인도서택배', '장애인책배달'], anchors: ['두루두루 대상', '등록장애인', '월 5회'] },
+        { id: 'first-library', label: '내 생애 첫 도서관', cues: ['내생애첫도서관', '내 생애 첫 도서관', '내첫도', '생애첫도서관', '임신부도서택배', '임산부도서택배', '영유아도서택배'], anchors: ['내 생애 첫 도서관 대상', '12개월 이하', '월 2회'] },
         { id: 'course', label: '문화강좌', cues: ['문화강좌', '문화교실', '강의', '수업', '특강', '수강료', '참가비', '재료비', '강사료', '강사가', '강좌신청', '강좌취소'], anchors: ['강좌개설', '수강료', '강사료', '강사준칙', '문화교실'] },
         { id: 'donation', label: '기증자료', cues: ['기증', '기증도서', '자료기증', '책기부'], anchors: ['기증자료처리기준', '기증자료', '도서 기증'] },
         { id: 'discard', label: '폐기·제적', cues: ['제적', '폐기', '장서폐기', '불용처리', '오래된도서'], anchors: ['자료의폐기또는제적', '폐기및제적기준', '제적'] },
@@ -123,6 +127,8 @@
         'class-guide': ['도서관 강좌 신청 방법'],
         bookstart: ['북스타트 대상', '북스타트 1단계', '북스타트 후속'],
         'reading-50plus': ['책 읽는 50+ 대상'],
+        duruduru: ['두루두루 대상'],
+        'first-library': ['내 생애 첫 도서관 대상'],
         course: ['강좌', '수강료', '강사료', '강사준칙'],
         donation: ['기증자료', '도서 기증'],
         discard: ['폐기', '제적'],
@@ -151,6 +157,8 @@
         'class-guide': 13,
         bookstart: 13,
         'reading-50plus': 13,
+        duruduru: 14,
+        'first-library': 14,
         reservation: 11,
         interlibrary: 11,
         delivery: 11,
@@ -423,6 +431,8 @@
         if (/북스타트|(?:아기|영유아|그림책).*책꾸러미/.test(interpretedQuery)) addIntent('bookstart');
         if (/책읽는50|50플러스|오십플러스|신중년독서/.test(interpretedQuery)
             || /50\s*\+/.test(String(query || ''))) addIntent('reading-50plus');
+        if (/두루두루|장애인(?:도서|책)?(?:택배|배송|배달)/.test(interpretedQuery)) addIntent('duruduru');
+        if (/내생애첫도서관|내첫도|생애첫도서관|(?:임신부|임산부|산모|영유아|12개월이하|돌전).*(?:도서|책).*(?:택배|배송|배달)/.test(interpretedQuery)) addIntent('first-library');
         if (objects.facility && /(예약|신청|빌리|대여|대관|사용허가)/.test(interpretedQuery)) addIntent('rental');
         if (objects.class && /(접수|등록|신청|모집|마감|선착순|추첨|대기자)/.test(interpretedQuery)) addIntent('class-guide');
         if (/(문닫|닫는|마감).*(시간|몇시)|(시간|몇시).*(문닫|닫는|마감)/.test(interpretedQuery)) addIntent('hours');
@@ -575,6 +585,8 @@
         if (!terms.length) return null;
         if (analysis?.intents.some(intent => intent.id === 'bookstart') && !String(entry.id || '').startsWith('guide-bookstart-')) return null;
         if (analysis?.intents.some(intent => intent.id === 'reading-50plus') && entry.id !== 'guide-reading-50plus') return null;
+        if (analysis?.intents.some(intent => intent.id === 'duruduru') && entry.id !== 'guide-gyeonggi-duruduru') return null;
+        if (analysis?.intents.some(intent => intent.id === 'first-library') && entry.id !== 'guide-gyeonggi-first-library') return null;
 
         let score = 0;
         let matchedTerms = 0;
@@ -869,6 +881,22 @@
                 { label: '신청', value: '대출회원증·3개월 이내 등본 지참 후 추천글 제출' },
             ];
         }
+        if (entry.id === 'guide-gyeonggi-duruduru') {
+            return [
+                { label: '대상', value: '경기도 거주 등록장애인 · 거주 시·군 공공도서관 관외대출회원' },
+                { label: '확인서류', value: '장애인복지카드 또는 장애인 확인서' },
+                { label: '이용', value: '월 5회 · 동시에 최대 5권 · 도착 후 14일' },
+                { label: '신청', value: '경기도서관에서 신청 → 소속도서관 확인·승인 → 온라인 도서신청' },
+            ];
+        }
+        if (entry.id === 'guide-gyeonggi-first-library') {
+            return [
+                { label: '대상', value: '임신부(개월 수 제한 없음) 또는 12개월 이하 아이를 둔 경기도민 가족 1명' },
+                { label: '확인서류', value: '임신확인서·산모수첩 또는 등본·가족관계증명서' },
+                { label: '이용', value: '월 2회 · 동시에 최대 5권 · 도착 후 14일' },
+                { label: '신청', value: '경기도서관에서 신청 → 소속도서관 확인·승인 → 온라인 도서신청' },
+            ];
+        }
         const lines = cleanGuideLines(entry.text);
         const flat = lines.join(' ');
         const intentIds = new Set((analysis?.intents || []).map(intent => intent.id));
@@ -976,7 +1004,9 @@
             const viewerUrl = `regulation-viewer.html?page=${page}&title=${encodeURIComponent(entry.title || '운영규정')}`;
             return `<a href="${escapeHtml(viewerUrl)}" target="_blank" rel="noopener noreferrer">해당 쪽 보기 ↗</a>`;
         }
-        const label = entry.sourceType === 'guide' ? '홈페이지 보기' : '원문 보기';
+        const label = String(entry.id || '').startsWith('guide-gyeonggi-')
+            ? '경기도서관 신청 안내'
+            : entry.sourceType === 'guide' ? '홈페이지 보기' : '원문 보기';
         return `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`;
     }
 

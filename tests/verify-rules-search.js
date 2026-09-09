@@ -288,7 +288,40 @@ commonProgramCases.forEach(([query, intent, titlePattern, factLabel, factPattern
     }
 });
 
-const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3 + commonProgramCases.length;
+const gyeonggiDeliveryCases = [
+    ['두루두루가 뭐예요', 'duruduru', /두루두루 대상/, '대상', /경기도 거주 등록장애인/],
+    ['장애인 도서 택배 신청', 'duruduru', /두루두루 대상/, '확인서류', /장애인복지카드.*장애인 확인서/],
+    ['두루두루 몇 권 며칠', 'duruduru', /두루두루 대상/, '이용', /월 5회.*최대 5권.*14일/],
+    ['내 생애 첫 도서관 신청', 'first-library', /내 생애 첫 도서관 대상/, '대상', /임신부.*12개월 이하/],
+    ['내첫도 서류', 'first-library', /내 생애 첫 도서관 대상/, '확인서류', /임신확인서.*산모수첩.*등본.*가족관계증명서/],
+    ['임산부 책배달', 'first-library', /내 생애 첫 도서관 대상/, '이용', /월 2회.*최대 5권.*14일/],
+    ['영유아 도서 택배 몇 권', 'first-library', /내 생애 첫 도서관 대상/, '신청', /경기도서관.*소속도서관.*온라인/],
+];
+gyeonggiDeliveryCases.forEach(([query, intent, titlePattern, factLabel, factPattern], index) => {
+    const { analysis, ranked } = rankEntries(query, 'all', 3);
+    const first = ranked[0]?.entry;
+    if (!analysis.intents.some(item => item.id === intent)) {
+        failures.push(`경기도 도서택배 ${index + 1}: '${query}'에서 ${intent} 의도 누락`);
+    }
+    if (!first || !titlePattern.test(first.title)) {
+        failures.push(`경기도 도서택배 ${index + 1}: '${query}' 첫 결과 오류 (${first?.title || '없음'})`);
+        return;
+    }
+    const fact = getGuideFacts(first, analysis).find(item => item.label === factLabel);
+    if (!fact || !factPattern.test(fact.value)) {
+        failures.push(`경기도 도서택배 ${index + 1}: '${query}' 핵심 정보 정리 실패`);
+    }
+});
+
+const gyeonggiServiceEntries = window.LIBRARY_KNOWLEDGE.filter(entry =>
+    ['guide-gyeonggi-duruduru', 'guide-gyeonggi-first-library'].includes(entry.id));
+if (gyeonggiServiceEntries.length !== 2
+    || gyeonggiServiceEntries.some(entry => entry.sourceType !== 'guide' || !/^https:\/\/www\.library\.kr\/ggl\/custom\//.test(entry.url))) {
+    failures.push('경기도 도서택배: 공식 안내 링크 또는 홈페이지 출처 분류 오류');
+}
+
+const totalRegressionCases = 150 + synonymCases.length + 3 + roomGuideEntries.length + 3
+    + commonProgramCases.length + gyeonggiDeliveryCases.length + 1;
 if (failures.length) {
     console.error(`FAIL ${totalRegressionCases - failures.length}/${totalRegressionCases}`);
     failures.forEach(failure => console.error(`- ${failure}`));
