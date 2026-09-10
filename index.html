@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>화성시 도서관 강좌 검색</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="rules-search.css?v=5">
+    <link rel="stylesheet" href="rules-search.css?v=6">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
@@ -1585,6 +1585,7 @@
                 <button class="filter-btn ended" data-filter="강좌종료" onclick="setFilter('강좌종료', this)">강좌종료(0)</button>
                 <button class="filter-btn canceled" data-filter="폐강" onclick="setFilter('폐강', this)">폐강(0)</button>
             </div>
+            <p class="anonymous-search-note">서비스 개선을 위해 검색어와 결과 수가 익명으로 기록됩니다. 전화번호·이메일 등은 가림 처리되며, 검색창에는 개인정보를 입력하지 마세요.</p>
         </div>
     </div>
 
@@ -1622,6 +1623,7 @@
             <p class="rules-freshness-note" role="note">
                 안내 내용은 공식 자료를 바탕으로 정리했지만, 홈페이지 변경이나 수집 시점에 따라 실제 최신 정보와 다를 수 있습니다. 중요한 업무는 원문 또는 담당 부서에서 한 번 더 확인해 주세요.
             </p>
+            <p class="anonymous-search-note">서비스 개선을 위해 검색어와 결과 수가 익명으로 기록됩니다. 전화번호·이메일 등은 가림 처리되며, 검색창에는 개인정보를 입력하지 마세요.</p>
 
         </div>
 
@@ -1657,7 +1659,24 @@
         const ASSIGNEE_API = WORKER_BASE
             ? WORKER_BASE.replace(/\/$/, '') + '/api/assignee'
             : '/api/assignee';
+
+        const SEARCH_LOG_API = WORKER_BASE
+            ? WORKER_BASE.replace(/\/$/, '') + '/api/search-log'
+            : '/api/search-log';
         // ────────────────────────────────────────────────────────────
+
+        function recordAnonymousSearch(searchType, query, resultCount) {
+            const cleanQuery = String(query || '').trim();
+            if (!cleanQuery) return;
+            fetch(SEARCH_LOG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ searchType, query: cleanQuery, resultCount }),
+                keepalive: true,
+            }).catch(() => {
+                // 통계 저장 실패가 실제 검색을 방해하지 않도록 조용히 무시합니다.
+            });
+        }
 
         const CARDS_PER_PAGE = 12;   // 화면에 보여주는 카드 수
 
@@ -2213,7 +2232,7 @@
             searchInput.value = '';
             currentKeyword = '';
             
-            doSearch();
+            doSearch(false);
         });
 
         const keyToChosung = {
@@ -3044,7 +3063,7 @@
         }
 
         // ── 검색 시작 ──
-        async function doSearch() {
+        async function doSearch(trackSearch = true) {
             const keyword = searchInput.value.trim();
             if (isLoading) return;
 
@@ -3073,6 +3092,9 @@
             document.getElementById('searchBtn').disabled = false;
 
             updateFilterButtons(getFilterCounts(allData));
+            if (trackSearch && keyword) {
+                recordAnonymousSearch('lecture', keyword, allData.length);
+            }
 
             if (allData.length === 0) {
                 const contentEl = document.getElementById('content');
@@ -3563,7 +3585,7 @@
 
                 await ensureLibraryDataLoaded();
                 if (institutionSelect.value) {
-                    doSearch();
+                    doSearch(false);
                 } else {
                     allData = getSearchBaseData();
                     updateFilterButtons(getFilterCounts(allData));
@@ -3715,7 +3737,7 @@
             // 저장과 동시에 즐겨찾기 조회 탭으로 바로 이동하여 즉각 피드백 제공
             institutionSelect.value = 'favorite';
             localStorage.setItem('selectedInstitution', 'favorite');
-            doSearch();
+            doSearch(false);
 
             closeFavoriteModal();
             alert('도서관 즐겨찾기가 정상적으로 저장되었습니다!');
@@ -3749,7 +3771,7 @@
             if (institutionSelect.value === 'favorite') {
                 institutionSelect.value = '';
                 localStorage.setItem('selectedInstitution', '');
-                doSearch();
+                doSearch(false);
             }
 
             closeFavoriteModal();
@@ -3885,6 +3907,6 @@
         </div>
     </div>
     <script src="rules-data.js"></script>
-    <script src="rules-search.js?v=15"></script>
+    <script src="rules-search.js?v=16"></script>
 </body>
 </html>

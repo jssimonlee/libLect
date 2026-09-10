@@ -1352,7 +1352,7 @@
         };
     }
 
-    function searchRules(query) {
+    function searchRules(query, trackSearch = false) {
         currentQuery = String(query || '').trim();
         const resultsNode = document.getElementById('rulesSearchResults');
         const summaryNode = document.getElementById('rulesResultSummary');
@@ -1383,6 +1383,9 @@
             result.all += 1;
             return result;
         }, { all: 0, website: 0, regulation: 0, other: 0 });
+        if (trackSearch && typeof window !== 'undefined' && typeof window.recordAnonymousSearch === 'function') {
+            window.recordAnonymousSearch('rules', currentQuery, counts.all);
+        }
         updateSourceFilters(counts);
         if (currentSource !== 'all' && counts[currentSource] === 0) currentSource = 'all';
         document.querySelectorAll('[data-rules-source]').forEach(button => {
@@ -1452,7 +1455,7 @@
 
         document.getElementById('rulesSearchForm')?.addEventListener('submit', event => {
             event.preventDefault();
-            searchRules(document.getElementById('rulesSearchInput')?.value || '');
+            searchRules(document.getElementById('rulesSearchInput')?.value || '', true);
         });
 
         document.querySelectorAll('[data-rules-query]').forEach(button => {

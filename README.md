@@ -42,6 +42,12 @@ python scripts/build_rules_data.py
 
 실행 중인 코드 변경과 충돌하지 않도록 저장소에 수정 중인 추적 파일이 있으면 시작 전에 중단합니다. 실행 결과와 실패 이유는 저장소 루트의 `.library-update.log`에 기록됩니다.
 
+### 익명 검색어 통계
+
+강좌 및 규정 검색 폼을 제출하면 검색어, 검색 구분, 결과 수, 검색 시각만 Cloudflare D1의 `search_logs` 테이블에 저장합니다. IP 주소, 쿠키, 회원정보, 기기정보는 D1에 저장하지 않으며 전화번호·이메일·주민등록번호 형식은 Worker에서 가림 처리합니다. 기록은 180일이 지나면 자동 삭제됩니다.
+
+통계는 Cloudflare Dashboard에서 `D1` → `liblect-db` → `Console`로 이동한 뒤 `scripts/search-analytics.sql`의 조회문을 실행해 확인합니다. 검색 기록을 외부로 조회하는 공개 API는 제공하지 않습니다.
+
 ---
 
 ## ✨ 최근 업데이트 사항 (AI 협업 개선)

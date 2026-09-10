@@ -6,6 +6,9 @@
  *
  * /api/*
  *   기존 화성시 OpenAPI XML 프록시를 유지합니다.
+ *
+ * /api/search-log
+ *   이용자 식별정보 없이 검색어와 결과 수만 D1에 익명 저장합니다.
  */
 
 const TARGET_ORIGIN = 'https://yeyak.hscity.go.kr';
@@ -22,6 +25,9 @@ const CORS_HEADERS = {
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
 };
+
+const SEARCH_LOG_RETENTION_DAYS = 180;
+const SEARCH_LOG_ORIGIN = 'https://jssimonlee.github.io';
 
 export default {
     async fetch(request, env, ctx) {
@@ -55,6 +61,13 @@ export default {
             }
         }
 
+        if (url.pathname === '/api/search-log') {
+            if (request.method !== 'POST') {
+                return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+            }
+            return handleSearchLog(request, env);
+        }
+
         if (url.pathname.startsWith('/api/')) {
             if (request.method !== 'GET') {
                 return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
@@ -69,6 +82,76 @@ export default {
         ctx.waitUntil(triggerScheduledSync(env));
     }
 };
+
+async function handleSearchLog(request, env) {
+    try {
+        if (!env.DB) {
+            throw new Error("D1 Database binding 'DB' is not set.");
+        }
+
+        const origin = request.headers.get('Origin');
+        if (origin !== SEARCH_LOG_ORIGIN) {
+            return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+        }
+
+        const declaredLength = Number(request.headers.get('Content-Length') || 0);
+        if (declaredLength > 2048) {
+            return new Response('Payload Too Large', { status: 413, headers: CORS_HEADERS });
+        }
+
+        const body = await request.json();
+        const searchType = body?.searchType === 'lecture' || body?.searchType === 'rules'
+            ? body.searchType
+            : null;
+        const query = sanitizeSearchQuery(body?.query);
+        const numericResultCount = Number(body?.resultCount);
+        const resultCount = Number.isFinite(numericResultCount)
+            ? Math.max(0, Math.min(100000, Math.trunc(numericResultCount)))
+            : 0;
+
+        if (!searchType || !query) {
+            return jsonResponse({ error: 'Invalid search log' }, { 'Cache-Control': 'no-store' }, 400);
+        }
+
+        await env.DB.batch([
+            env.DB.prepare(
+                'INSERT INTO search_logs (query, search_type, result_count) VALUES (?, ?, ?)'
+            ).bind(query, searchType, resultCount),
+            env.DB.prepare(
+                `DELETE FROM search_logs WHERE searched_at < datetime('now', '-${SEARCH_LOG_RETENTION_DAYS} days')`
+            ),
+        ]);
+
+        return new Response(null, {
+            status: 204,
+            headers: {
+                ...CORS_HEADERS,
+                'Cache-Control': 'no-store',
+            },
+        });
+    } catch (err) {
+        console.error('Anonymous search log failed:', err);
+        return jsonResponse(
+            { error: 'Unable to save search log' },
+            { 'Cache-Control': 'no-store' },
+            500
+        );
+    }
+}
+
+function sanitizeSearchQuery(value) {
+    let query = String(value || '')
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    query = query
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[이메일]')
+        .replace(/(?:\+?82[- .]?)?0?1[016789][- .]?\d{3,4}[- .]?\d{4}/g, '[전화번호]')
+        .replace(/\b\d{6}[- ]?[1-4]\d{6}\b/g, '[식별번호]');
+
+    return Array.from(query).slice(0, 100).join('').trim();
+}
 
 async function handleGetAssignees(env) {
     try {
@@ -162,8 +245,9 @@ async function handleDeleteAssignee(request, env) {
     }
 }
 
-function jsonResponse(data, headers = {}) {
+function jsonResponse(data, headers = {}, status = 200) {
     return new Response(JSON.stringify(data), {
+        status,
         headers: {
             ...CORS_HEADERS,
             'Content-Type': 'application/json; charset=utf-8',
@@ -606,5 +690,3 @@ function parseDayCodes(dayStr) {
         .map(v => koreanMap[v] || v)
         .filter(v => /^[1-7]$/.test(v));
 }
-
-
