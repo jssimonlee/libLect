@@ -208,14 +208,6 @@
     background: #0b3d68;
 }
 
-.anonymous-search-note {
-    margin: 0.65rem 0 0;
-    color: #64748b;
-    font-size: 0.7rem;
-    line-height: 1.45;
-    text-align: right;
-}
-
 .rules-freshness-note {
     position: relative;
     margin: 1rem 0 0;
