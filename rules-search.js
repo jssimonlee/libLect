@@ -1302,6 +1302,14 @@
             </aside>`;
     }
 
+    function renderResultCaution() {
+        return `
+            <aside class="rules-result-caution" role="note">
+                <strong>검색 결과 안내</strong>
+                빠른 확인을 위한 참고 자료이며, 정보가 변경되었을 수 있습니다. 업무에 적용하기 전 연결된 홈페이지나 원문에서 최신 내용을 확인해 주세요.
+            </aside>`;
+    }
+
     function renderSearchSuggestions(analysis) {
         const prefix = analysis.library?.name || '';
         const intentSuggestions = analysis.intents.map(intent => `${prefix} ${intent.label}`.trim());
@@ -1401,7 +1409,7 @@
         const cardItems = quickAnswer ? ranked.slice(1) : ranked;
         const cards = cardItems.map(item => renderCard(item.entry, currentQuery, analysis)).join('');
         const hasRegulationResult = ranked.some(item => item.entry.sourceType === 'regulation');
-        resultsNode.innerHTML = quickAnswer + cards + (hasRegulationResult ? renderRegulationNotice() : '');
+        resultsNode.innerHTML = quickAnswer + cards + renderResultCaution() + (hasRegulationResult ? renderRegulationNotice() : '');
     }
 
     function switchMode(mode, updateHash) {
