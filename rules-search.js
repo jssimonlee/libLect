@@ -1108,7 +1108,7 @@
         if (!intentIds.has('return') || !normalize(entry.title).includes('자료의반납및연체')) return [];
         return [
             { label: '일반자료 반납', value: '모든 화성시 시립도서관에서 가능' },
-            { label: '책배달 자료', value: '대출한 해당 사립작은도서관에 반납' },
+            { label: '작은도서관 책배달 자료', value: '대출한 해당 사립작은도서관에 반납' },
             { label: '연체', value: '연체일수만큼 관외대출 정지 (반납 다음 날부터 계산)' },
             { label: '90일 초과 연체', value: '반납일로부터 6개월간 관외대출 정지' },
         ];
