@@ -104,6 +104,16 @@ python scripts/build_rules_data.py
 - **Backend/Tooling**: Node.js, Express (개발용 경량 서버)
 - **API**: 화성시 통합예약시스템 OpenAPI
 
+### 코드 구성과 보안 경계
+
+- `index.html`: 강좌·규정 탭과 공통 화면 구조
+- `lecture-app.js` / `lecture-app.css`: 강좌 검색 로직과 스타일
+- `rules-search.js` / `rules-search.css`: 규정·이용안내 검색 로직과 스타일
+- `rules-data.js`: 관리 스크립트로 생성하는 검색 데이터이며 직접 편집하지 않음
+- `worker.js`: 강좌 API 캐시, 담당자 정보, 익명 검색 통계 API
+
+담당자 전체 이름은 공개 API 응답에 포함하지 않고 브라우저에는 해시만 전달합니다. 담당자 쓰기와 검색 통계 요청은 운영 사이트 출처, 입력 크기·형식, 허용 색상을 검사하며 접속 지점당 60초에 30회로 제한합니다. 개발 서버는 `127.0.0.1`에만 바인딩합니다.
+
 ---
 
 ## 🚀 시작하기

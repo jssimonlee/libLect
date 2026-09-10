@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/verify-rules-search.js"
+    "test": "node --check lecture-app.js && node --check server.js && node tests/verify-rules-search.js"
   },
   "keywords": [],
   "author": "",

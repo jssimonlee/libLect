@@ -27,7 +27,9 @@ const CORS_HEADERS = {
 };
 
 const SEARCH_LOG_RETENTION_DAYS = 180;
-const SEARCH_LOG_ORIGIN = 'https://jssimonlee.github.io';
+const WRITE_ORIGIN = 'https://jssimonlee.github.io';
+const MAX_JSON_BYTES = 2048;
+const ASSIGNEE_COLORS = new Set(['#ef4444', '#3b82f6', '#10b981', '#eab308', '#a7f3d0', '#1f2937', '#8b5a2b']);
 
 export default {
     async fetch(request, env, ctx) {
@@ -89,17 +91,9 @@ async function handleSearchLog(request, env) {
             throw new Error("D1 Database binding 'DB' is not set.");
         }
 
-        const origin = request.headers.get('Origin');
-        if (origin !== SEARCH_LOG_ORIGIN) {
-            return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
-        }
-
-        const declaredLength = Number(request.headers.get('Content-Length') || 0);
-        if (declaredLength > 2048) {
-            return new Response('Payload Too Large', { status: 413, headers: CORS_HEADERS });
-        }
-
-        const body = await request.json();
+        const rejected = await rejectUnsafeWrite(request, env);
+        if (rejected) return rejected;
+        const body = await readLimitedJson(request);
         const searchType = body?.searchType === 'lecture' || body?.searchType === 'rules'
             ? body.searchType
             : null;
@@ -131,12 +125,67 @@ async function handleSearchLog(request, env) {
         });
     } catch (err) {
         console.error('Anonymous search log failed:', err);
-        return jsonResponse(
-            { error: 'Unable to save search log' },
-            { 'Cache-Control': 'no-store' },
-            500
-        );
+        return safeWriteError(err, 'Unable to save search log');
     }
+}
+
+function safeWriteError(err, fallbackMessage) {
+    const status = err instanceof RangeError ? 413 : err instanceof SyntaxError ? 400 : 500;
+    const message = status === 413 ? 'Payload too large' : status === 400 ? 'Invalid JSON body' : fallbackMessage;
+    return jsonResponse({ error: message }, { 'Cache-Control': 'no-store' }, status);
+}
+
+async function rejectUnsafeWrite(request, env) {
+    if (request.headers.get('Origin') !== WRITE_ORIGIN) {
+        return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+    }
+    if (env.API_RATE_LIMITER) {
+        const key = request.headers.get('CF-Connecting-IP') || 'unknown';
+        const { success } = await env.API_RATE_LIMITER.limit({ key });
+        if (!success) {
+            return new Response('Too Many Requests', {
+                status: 429,
+                headers: {
+                    ...CORS_HEADERS,
+                    'Retry-After': '60',
+                    'Cache-Control': 'no-store',
+                },
+            });
+        }
+    }
+    return null;
+}
+
+async function readLimitedJson(request) {
+    const declaredLength = Number(request.headers.get('Content-Length') || 0);
+    if (declaredLength > MAX_JSON_BYTES) {
+        throw new RangeError('Payload too large');
+    }
+    const text = await request.text();
+    if (new TextEncoder().encode(text).byteLength > MAX_JSON_BYTES) {
+        throw new RangeError('Payload too large');
+    }
+    return JSON.parse(text);
+}
+
+async function hashAssigneeName(value) {
+    const normalized = String(value || '').trim().normalize('NFC');
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized));
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function generateAllowedMasks(name) {
+    const chars = Array.from(name);
+    if (chars.length < 2) return [];
+    const stars = count => '*'.repeat(count);
+    if (chars.length === 2) return [`${chars[0]}*`, `*${chars[1]}`];
+    if (chars.length === 3) return [`${chars[0]}**`, `*${chars[1]}*`, `**${chars[2]}`];
+    const middle = Math.floor(chars.length / 2);
+    return [
+        `${chars[0]}${stars(chars.length - 1)}`,
+        `${stars(middle)}${chars[middle]}${stars(chars.length - middle - 1)}`,
+        `${stars(chars.length - 1)}${chars[chars.length - 1]}`,
+    ];
 }
 
 function sanitizeSearchQuery(value) {
@@ -161,24 +210,19 @@ async function handleGetAssignees(env) {
         const { results } = await env.DB.prepare("SELECT * FROM assignees").all();
         const mapping = {};
         if (results) {
-            results.forEach(row => {
+            await Promise.all(results.map(async row => {
                 mapping[row.lecture_key] = {
-                    name: row.name,
+                    nameHash: await hashAssigneeName(row.name),
                     masked: row.masked,
-                    color: row.color || '#8b5a2b',
+                    color: ASSIGNEE_COLORS.has(row.color) ? row.color : '#ef4444',
                     updated_at: row.updated_at
                 };
-            });
+            }));
         }
         return jsonResponse(mapping);
     } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), {
-            status: 500,
-            headers: {
-                ...CORS_HEADERS,
-                'Content-Type': 'application/json; charset=utf-8',
-            },
-        });
+        console.error('Assignee list failed:', err);
+        return jsonResponse({ error: 'Unable to load assignees' }, { 'Cache-Control': 'no-store' }, 500);
     }
 }
 
@@ -187,9 +231,18 @@ async function handlePostAssignee(request, env) {
         if (!env.DB) {
             throw new Error("D1 Database binding 'DB' is not set.");
         }
-        const body = await request.json();
-        const { lectureKey, name, masked, color } = body;
-        if (!lectureKey || !name || !masked) {
+        const rejected = await rejectUnsafeWrite(request, env);
+        if (rejected) return rejected;
+        const body = await readLimitedJson(request);
+        const lectureKey = String(body?.lectureKey || '').trim();
+        const name = String(body?.name || '').trim().normalize('NFC');
+        const masked = String(body?.masked || '').trim();
+        const color = String(body?.color || '');
+        const nameLength = Array.from(name).length;
+        const validKey = lectureKey.length > 0 && lectureKey.length <= 300 && !/[\u0000-\u001f\u007f<>"']/.test(lectureKey);
+        const validName = nameLength >= 2 && nameLength <= 10 && !/[\u0000-\u001f\u007f<>"']/.test(name);
+        const validMask = generateAllowedMasks(name).includes(masked);
+        if (!validKey || !validName || !validMask || !ASSIGNEE_COLORS.has(color)) {
             return new Response(JSON.stringify({ error: 'Missing parameters' }), {
                 status: 400,
                 headers: {
@@ -198,20 +251,14 @@ async function handlePostAssignee(request, env) {
                 },
             });
         }
-        const resolvedColor = color || '#8b5a2b';
         await env.DB.prepare(
             "INSERT INTO assignees (lecture_key, name, masked, color, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(lecture_key) DO UPDATE SET name=excluded.name, masked=excluded.masked, color=excluded.color, updated_at=excluded.updated_at"
-        ).bind(lectureKey, name, masked, resolvedColor, Date.now()).run();
+        ).bind(lectureKey, name, masked, color, Date.now()).run();
 
         return jsonResponse({ success: true });
     } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), {
-            status: 500,
-            headers: {
-                ...CORS_HEADERS,
-                'Content-Type': 'application/json; charset=utf-8',
-            },
-        });
+        console.error('Assignee save failed:', err);
+        return safeWriteError(err, 'Unable to save assignee');
     }
 }
 
@@ -220,9 +267,11 @@ async function handleDeleteAssignee(request, env) {
         if (!env.DB) {
             throw new Error("D1 Database binding 'DB' is not set.");
         }
-        const body = await request.json();
-        const { lectureKey } = body;
-        if (!lectureKey) {
+        const rejected = await rejectUnsafeWrite(request, env);
+        if (rejected) return rejected;
+        const body = await readLimitedJson(request);
+        const lectureKey = String(body?.lectureKey || '').trim();
+        if (!lectureKey || lectureKey.length > 300 || /[\u0000-\u001f\u007f<>"']/.test(lectureKey)) {
             return new Response(JSON.stringify({ error: 'Missing lectureKey' }), {
                 status: 400,
                 headers: {
@@ -235,13 +284,8 @@ async function handleDeleteAssignee(request, env) {
 
         return jsonResponse({ success: true });
     } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), {
-            status: 500,
-            headers: {
-                ...CORS_HEADERS,
-                'Content-Type': 'application/json; charset=utf-8',
-            },
-        });
+        console.error('Assignee delete failed:', err);
+        return safeWriteError(err, 'Unable to delete assignee');
     }
 }
 

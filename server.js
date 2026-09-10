@@ -2,9 +2,8 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const url = require('url');
 
-const PORT = 3000;
+const PORT = Number(process.env.LIBLECT_PORT) || 3000;
 
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -39,7 +38,7 @@ function writeAssignees(data) {
 }
 
 const server = http.createServer((req, res) => {
-    const parsed = url.parse(req.url, true);
+    const parsed = new URL(req.url, 'http://127.0.0.1');
 
     // CORS OPTIONS 처리
     if (req.method === 'OPTIONS') {
@@ -126,7 +125,8 @@ const server = http.createServer((req, res) => {
 
     // API 프록시: /api/libraryLectures (로컬 캐시 및 최적화 구현체)
     if (parsed.pathname === '/api/libraryLectures') {
-        const limit = parsed.query.limit ? parseInt(parsed.query.limit, 10) : null;
+        const limitValue = parsed.searchParams.get('limit');
+        const limit = limitValue ? parseInt(limitValue, 10) : null;
         buildLibraryLectureDataset(limit)
             .then(result => {
                 res.writeHead(200, {
@@ -144,7 +144,7 @@ const server = http.createServer((req, res) => {
 
     // API 프록시: /api/* -> yeyak.hscity.go.kr/api/*
     if (parsed.pathname.startsWith('/api/')) {
-        const targetUrl = `https://yeyak.hscity.go.kr${parsed.path}`;
+        const targetUrl = `https://yeyak.hscity.go.kr${parsed.pathname}${parsed.search}`;
 
         https.get(targetUrl, (proxyRes) => {
             let data = '';
@@ -164,8 +164,21 @@ const server = http.createServer((req, res) => {
     }
 
     // 정적 파일 서빙
-    let filePath = parsed.pathname === '/' ? '/index.html' : parsed.pathname;
-    filePath = path.join(__dirname, filePath);
+    let relativePath;
+    try {
+        relativePath = decodeURIComponent(parsed.pathname === '/' ? 'index.html' : parsed.pathname.replace(/^[/\\]+/, ''));
+    } catch (_) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Bad Request');
+        return;
+    }
+    const rootPath = path.resolve(__dirname);
+    const filePath = path.resolve(rootPath, relativePath);
+    if (filePath !== rootPath && !filePath.startsWith(rootPath + path.sep)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Forbidden');
+        return;
+    }
 
     const ext = path.extname(filePath);
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
@@ -433,7 +446,7 @@ function parseDayCodes(dayStr) {
         .filter(v => /^[1-7]$/.test(v));
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, '127.0.0.1', () => {
     console.log(`\n  화성시 도서관 강좌 검색 서버 실행 중`);
     console.log(`  http://localhost:${PORT}\n`);
 });

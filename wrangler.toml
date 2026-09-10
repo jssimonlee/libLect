@@ -12,3 +12,8 @@ crons = ["*/30 * * * *"]
 binding = "DB"
 database_name = "liblect-db"
 database_id = "52be7822-3f83-4ef5-9b7e-9a6c7442146c"
+
+[[ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
