@@ -975,10 +975,9 @@ function updateFreshnessBar() {
     }
 
     if (ts > 0) {
-        textEl.innerHTML = `<span class="freshness-time">${getRelativeTimeText(ts)}</span>`;
-        bar.classList.add('visible');
+        textEl.textContent = getRelativeTimeText(ts);
     } else {
-        bar.classList.remove('visible');
+        textEl.textContent = '업데이트 시간 확인 중';
     }
 }
 
@@ -1131,7 +1130,7 @@ async function forceRefreshData() {
     if (btn.disabled) return;
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="refresh-spin">🔄</span> 불러오는 중...';
+    btn.innerHTML = '<span class="refresh-spin" aria-hidden="true">↻</span><span>불러오는 중...</span>';
 
     showSyncBadge('🔄 최신 데이터를 서버에서 직접 불러오는 중...', 'loading');
 
@@ -1181,7 +1180,7 @@ async function forceRefreshData() {
         showSyncBadge('⚠️ 최신 데이터 불러오기 실패', 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '🔄 최신 데이터 불러오기';
+        btn.innerHTML = '<span class="refresh-icon" aria-hidden="true">↻</span><span>최신 데이터 불러오기</span>';
         updateFreshnessBar();
     }
 }
@@ -1597,10 +1596,6 @@ function renderResults() {
                     <span class="count-divider"></span>
                     <span class="count-segment keyword">🔍 "${escapeHtml(currentKeyword)}"</span>
                 ` : ''}
-            </div>
-            <div class="data-freshness-bar" id="dataFreshnessBar">
-                <span>📊 <span id="freshnessText">데이터 확인 중...</span></span>
-                <button class="freshness-refresh-btn" id="freshnessRefreshBtn" onclick="forceRefreshData()" title="최신 데이터를 서버에서 새로 불러옵니다">🔄 최신 데이터 불러오기</button>
             </div>
         </div>
         <div class="card-grid">`;

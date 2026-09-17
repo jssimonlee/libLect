@@ -6,7 +6,7 @@
     <title>화성시 도서관 강좌 검색</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="rules-search.css?v=6">
-    <link rel="stylesheet" href="lecture-app.css?v=1">
+    <link rel="stylesheet" href="lecture-app.css?v=2">
 </head>
 <body>
     <div id="syncBadge" class="sync-badge">
@@ -32,15 +32,17 @@
     <div class="hero-combined-container">
         <header>
             <h1>화성시 도서관 강좌 검색</h1>
-            <div class="header-badges">
-                <span class="header-badge-light">
-                    <span class="badge-dot"></span>
-                    실시간 연동
-                </span>
-                <span class="header-badge-light secondary">
-                    <span class="badge-dot"></span>
-                    최근 6개월 데이터
-                </span>
+            <div class="header-data-tools" id="dataFreshnessBar">
+                <div class="data-range-label">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span>최근 6개월 데이터</span>
+                    <span class="data-range-divider" aria-hidden="true"></span>
+                    <span id="freshnessText" class="header-freshness-time" aria-live="polite">업데이트 시간 확인 중</span>
+                </div>
+                <button class="freshness-refresh-btn" id="freshnessRefreshBtn" type="button" onclick="forceRefreshData()" title="최신 데이터를 서버에서 새로 불러옵니다">
+                    <span class="refresh-icon" aria-hidden="true">↻</span>
+                    <span>최신 데이터 불러오기</span>
+                </button>
             </div>
         </header>
 
@@ -139,7 +141,7 @@
         </div>
     </section>
 
-    <script src="lecture-app.js?v=2"></script>
+    <script src="lecture-app.js?v=3"></script>
 
 
     <!-- 도서관 즐겨찾기 설정 모달 -->
