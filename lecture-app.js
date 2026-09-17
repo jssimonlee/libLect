@@ -1052,7 +1052,7 @@ async function silentBackgroundSync() {
         if (!res.ok) return;
 
         const payload = await res.json();
-        const remoteGenerated = payload.meta && payload.meta.generatedA
+        const remoteGenerated = payload.meta && payload.meta.generatedAt
             ? (isNaN(payload.meta.generatedAt) ? Date.parse(payload.meta.generatedAt) : Number(payload.meta.generatedAt))
             : 0;
 
@@ -1257,7 +1257,7 @@ async function ensureLibraryDataLoaded() {
     // 캐시가 없는 최초 진입일 때는 화면 차단 로딩바와 멋진 스켈레톤 카드 사용
     if (!hasCache) {
         const savedInst = localStorage.getItem('selectedInstitution') || '';
-        const loadingText = savedIns
+        const loadingText = savedInst
             ? `🏛️ <strong>${escapeHtml(savedInst)}</strong> 강좌 목록을 신속하게 불러오는 중입니다...`
             : '🏛️ 최근 화성시 도서관 강좌 목록을 가져오는 중입니다...';
 
