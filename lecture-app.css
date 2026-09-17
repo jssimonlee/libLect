@@ -330,16 +330,16 @@ header p.header-desc strong {
     transform: scale(1.2);
 }
 
-/* Active states - Warm and vibrant tones matching brown theme */
-.filter-btn.all.active { background: #d97706; color: white; border-color: #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35); }
-.filter-btn.today.active { background: #84cc16; color: white; border-color: #84cc16; box-shadow: 0 4px 12px rgba(132, 204, 22, 0.35); }
-.filter-btn.tomorrow.active { background: #f59e0b; color: white; border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35); }
-.filter-btn.date-select.active { background: #06b6d4; color: white; border-color: #06b6d4; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35); }
-.filter-btn.open.active { background: #10b981; color: white; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); }
-.filter-btn.upcoming.active { background: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35); }
-.filter-btn.closed.active { background: #ef4444; color: white; border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); }
-.filter-btn.ended.active { background: #78716c; color: white; border-color: #78716c; box-shadow: 0 4px 12px rgba(120, 113, 108, 0.35); }
-.filter-btn.canceled.active { background: #991b1b; color: white; border-color: #991b1b; box-shadow: 0 4px 12px rgba(153, 27, 27, 0.35); }
+/* Active states: brand, actionable, and inactive palettes only */
+.filter-btn.all.active,
+.filter-btn.today.active,
+.filter-btn.tomorrow.active,
+.filter-btn.date-select.active { background: #5c4033; color: white; border-color: #5c4033; box-shadow: 0 4px 10px rgba(92, 64, 51, 0.22); }
+.filter-btn.open.active { background: #2f855a; color: white; border-color: #2f855a; box-shadow: 0 4px 10px rgba(47, 133, 90, 0.22); }
+.filter-btn.upcoming.active { background: #3b6ea8; color: white; border-color: #3b6ea8; box-shadow: 0 4px 10px rgba(59, 110, 168, 0.22); }
+.filter-btn.closed.active,
+.filter-btn.ended.active,
+.filter-btn.canceled.active { background: #64748b; color: white; border-color: #64748b; box-shadow: 0 4px 10px rgba(100, 116, 139, 0.2); }
 
 .filter-btn.active {
     transform: translateY(-1px);
@@ -368,17 +368,14 @@ header p.header-desc strong {
     color: #ffffff !important;
 }
 
-.filter-btn.all { background: #f5f3ff; border-color: #e0e7ff; color: #4f46e5; }
-.filter-btn.all:hover { background: #eeeafb; border-color: #c7d2fe; }
-
-.filter-btn.today { background: #f0fdf4; border-color: #dcfce7; color: #10b981; }
-.filter-btn.today:hover { background: #e6fbe8; border-color: #bbf7d0; }
-
-.filter-btn.tomorrow { background: #fffbeb; border-color: #fef3c7; color: #d97706; }
-.filter-btn.tomorrow:hover { background: #fff3d6; border-color: #fde68a; }
-
-.filter-btn.date-select { background: #ecfeff; border-color: #cffafe; color: #0891b2; }
-.filter-btn.date-select:hover { background: #d2fbfe; border-color: #a5f3fc; }
+.filter-btn.all,
+.filter-btn.today,
+.filter-btn.tomorrow,
+.filter-btn.date-select { background: #faf7f2; border-color: #e7ded4; color: #6b5140; }
+.filter-btn.all:hover,
+.filter-btn.today:hover,
+.filter-btn.tomorrow:hover,
+.filter-btn.date-select:hover { background: #f2ebe4; border-color: #d8c6b5; }
 
 .filter-btn.open { background: #f0fdf4; border-color: #dcfce7; color: #10b981; }
 .filter-btn.open:hover { background: #e6fbe8; border-color: #bbf7d0; }
@@ -386,13 +383,12 @@ header p.header-desc strong {
 .filter-btn.upcoming { background: #eff6ff; border-color: #dbeafe; color: #2563eb; }
 .filter-btn.upcoming:hover { background: #e0ecff; border-color: #bfdbfe; }
 
-.filter-btn.closed { background: #fef2f2; border-color: #fee2e2; color: #dc2626; }
-.filter-btn.closed:hover { background: #ffe4e4; border-color: #fecaca; }
-
-.filter-btn.ended { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
-.filter-btn.ended:hover { background: #f1f5f9; border-color: #cbd5e1; }
-.filter-btn.canceled { background: #fef2f2; border-color: #fee2e2; color: #991b1b; }
-.filter-btn.canceled:hover { background: #ffe4e4; border-color: #fecaca; }
+.filter-btn.closed,
+.filter-btn.ended,
+.filter-btn.canceled { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+.filter-btn.closed:hover,
+.filter-btn.ended:hover,
+.filter-btn.canceled:hover { background: #f1f5f9; border-color: #cbd5e1; }
 
 .main-content {
     max-width: 1100px;
@@ -617,37 +613,26 @@ header p.header-desc strong {
 }
 
 .card:hover {
-    border-color: #bee3f8;
+    border-color: #d8c6b5;
     transform: translateY(-2px);
 }
 
 .card.status-open { border-left: 4px solid #9ae6b4; }
 .card.status-upcoming { border-left: 4px solid #90cdf4; }
-.card.status-closed { border-left: 4px solid #feb2b2; }
-.card.status-ended { border-left: 4px solid #cbd5e0; }
-
-@keyframes todayGlowPulse {
-    0% {
-        box-shadow: 0 0 0 1px rgba(190,242,100,0.55), 0 0 14px rgba(190,242,100,0.35);
-    }
-    50% {
-        box-shadow: 0 0 0 3px rgba(190,242,100,0.7), 0 0 28px rgba(190,242,100,0.55);
-    }
-    100% {
-        box-shadow: 0 0 0 1px rgba(190,242,100,0.55), 0 0 14px rgba(190,242,100,0.35);
-    }
-}
+.card.status-closed,
+.card.status-ended,
+.card.status-canceled { border-left: 4px solid #cbd5e0; }
 
 .card.today-card {
-    border-color: #c6f970;
-    border-left-color: #b8f26a;
-    animation: todayGlowPulse 2.5s infinite ease-in-out;
+    border-color: #d8c6b5;
+    border-left-color: #a78268;
+    box-shadow: 0 3px 12px rgba(92, 64, 51, 0.08);
 }
 
 .card.tomorrow-card {
-    border-color: #fcd34d;
-    border-left-color: #fbbf24;
-    box-shadow: 0 0 0 1px rgba(251,191,36,0.3), 0 4px 16px rgba(251,191,36,0.15);
+    border-color: #e7ded4;
+    border-left-color: #c4aa96;
+    box-shadow: 0 3px 12px rgba(92, 64, 51, 0.06);
 }
 
 .card-status {
@@ -662,14 +647,15 @@ header p.header-desc strong {
 
 .card-status.open { background: #c6f6d5; color: #22543d; }
 .card-status.upcoming { background: #bee3f8; color: #2a4365; }
-.card-status.closed { background: #fed7d7; color: #742a2a; }
-.card-status.ended { background: #e2e8f0; color: #4a5568; }
-.card-status.canceled { background: #fee2e2; color: #991b1b; border-left: 1px solid rgba(239,68,68,0.2); border-bottom: 1px solid rgba(239,68,68,0.2); }
+.card-status.closed,
+.card-status.ended,
+.card-status.canceled { background: #e2e8f0; color: #4a5568; }
 
 .card.canceled-card {
-    border: 1px dashed rgba(153, 27, 27, 0.35) !important;
-    background: rgba(254, 242, 242, 0.3) !important;
-    opacity: 0.8 !important;
+    border: 1px dashed #cbd5e0 !important;
+    border-left: 4px solid #cbd5e0 !important;
+    background: #f8fafc !important;
+    opacity: 0.82 !important;
     box-shadow: none !important;
 }
 .card.canceled-card .card-title {
@@ -688,10 +674,9 @@ header p.header-desc strong {
 .today-badge {
     padding: 0.24rem 0.62rem;
     border-radius: 999px;
-    background: #dfff8f;
-    color: #22543d;
-    border: 1px solid #b8f26a;
-    box-shadow: 0 0 16px rgba(190,242,100,0.8);
+    background: #f2ebe4;
+    color: #5c4033;
+    border: 1px solid #d8c6b5;
     font-size: 0.74rem;
     font-weight: 700;
 }
@@ -707,19 +692,15 @@ header p.header-desc strong {
 }
 
 .today-sub-badge.ongoing {
-    background: #dc2626;
+    background: #5c4033;
     color: #ffffff;
-    border: 1px solid #b91c1c;
-    box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
-    animation: pulse-glow 1.8s infinite ease-in-out;
+    border: 1px solid #5c4033;
 }
 
 .today-sub-badge.upcoming {
-    background: #3b82f6;
-    color: #ffffff;
-    border: 1px solid #1d4ed8;
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
-    animation: gentle-breathe 2.4s infinite ease-in-out;
+    background: #f8fafc;
+    color: #5c4033;
+    border: 1px solid #d8c6b5;
 }
 
 .today-sub-badge.completed {
@@ -728,35 +709,13 @@ header p.header-desc strong {
     border: 1px solid #d1d5db;
 }
 
-@keyframes pulse-glow {
-    0% {
-        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
-        transform: scale(1);
-    }
-    50% {
-        box-shadow: 0 0 14px 6px rgba(220, 38, 38, 0.25);
-        transform: scale(1.04);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
-        transform: scale(1);
-    }
-}
-
-@keyframes gentle-breathe {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
-    100% { transform: scale(1); }
-}
-
 .tomorrow-badge {
     align-self: flex-start;
     padding: 0.24rem 0.62rem;
     border-radius: 999px;
-    background: #fffbeb;
-    color: #92400e;
-    border: 1px solid #fcd34d;
-    box-shadow: 0 0 12px rgba(251,191,36,0.25);
+    background: #faf7f2;
+    color: #6b5140;
+    border: 1px solid #e7ded4;
     font-size: 0.74rem;
     font-weight: 700;
     margin-bottom: 0.45rem;
@@ -846,10 +805,14 @@ header p.header-desc strong {
     font-weight: 500;
 }
 
-.tag-target { background: #ebf4ff; color: #2b6cb0; }
-.tag-free { background: #f0fff4; color: #276749; }
-.tag-paid { background: #fffaf0; color: #c05621; }
-.tag-class { background: #faf5ff; color: #6b46c1; }
+.tag-target,
+.tag-free,
+.tag-paid,
+.tag-class {
+    background: #f5f2ee;
+    color: #5c4033;
+    border: 1px solid #e7ded4;
+}
 
 .card-footer {
     display: flex;
@@ -1114,13 +1077,6 @@ header p.header-desc strong {
     }
 }
 
-/* ── 실시간 강좌 카드 상태별 마이크로 강조 애니메이션 ── */
-@keyframes dynamicHighlight {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-2px); }
-    100% { transform: translateY(0); }
-}
-
 .today-card .info-time,
 .today-card .info-place,
 .tomorrow-card .info-time,
@@ -1128,22 +1084,19 @@ header p.header-desc strong {
     display: inline-block;
     font-weight: 800 !important;
     color: #0f172a;
-    animation: dynamicHighlight 2.2s infinite ease-in-out;
 }
 
 .status-upcoming .info-apply {
     display: inline-block;
     font-weight: 800 !important;
-    color: #2563eb; /* 접수예정: 신뢰감 있는 인디고 블루 */
-    animation: dynamicHighlight 2.2s infinite ease-in-out;
+    color: #3b6ea8;
 }
 
 .status-closed .apply-count,
 .status-closed .wait-count {
     display: inline-block;
     font-weight: 800 !important;
-    color: #ef4444; /* 접수마감: 선명한 레드 */
-    animation: dynamicHighlight 2.2s infinite ease-in-out;
+    color: #64748b;
 }
 
 .status-open .info-apply,
@@ -1151,8 +1104,7 @@ header p.header-desc strong {
 .status-open .wait-count {
     display: inline-block;
     font-weight: 800 !important;
-    color: #16a34a; /* 접수중: 싱그러운 초록색 */
-    animation: dynamicHighlight 2.2s infinite ease-in-out;
+    color: #2f855a;
 }
 
 /* ── 담당자 등록 버튼 & 팝오버 ── */
