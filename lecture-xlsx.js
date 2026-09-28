@@ -139,16 +139,18 @@ function createLectureWorkbook(libraryName, month, rows) {
         rowNumber++;
         const eventRows = Math.max(1, ...dates.map(day => day?.events.length || 0));
         for (let slot = 0; slot < eventRows; slot++) {
+            const eventStyleOffset = slot > 0 && slot < eventRows - 1 ? 11 : slot > 0 ? 8 : slot < eventRows - 1 ? 5 : 0;
+            const emptyStyleOffset = slot > 0 && slot < eventRows - 1 ? 15 : slot > 0 ? 13 : slot < eventRows - 1 ? 11 : 0;
             let rowHeight = 90;
             const cells = dates.map((day, weekday) => {
                 const address = `${String.fromCharCode(65 + weekday)}${rowNumber}`;
-                if (!day) return lectureTextCell(address, '', '12');
+                if (!day) return lectureTextCell(address, '', 12 + emptyStyleOffset);
                 const event = day.events[slot];
-                if (!event) return lectureTextCell(address, '', '13');
+                if (!event) return lectureTextCell(address, '', 13 + emptyStyleOffset);
                 const time = [event.beginTime, event.endTime].filter(Boolean).join('–') || '시간 미정';
-                const status = event.assignee ? `${event.status} · 담당: ${event.assignee}` : event.status;
-                const summary = [time, event.name || '이름 없는 강좌', `대상 ${event.target || '미정'}`,
-                    `장소 ${event.place || '미정'}`, status || '상태 미정'].join('\n');
+                const status = event.assignee ? `${event.status || '미정'} · 담당: ${event.assignee}` : (event.status || '미정');
+                const summary = [`시간: ${time}`, event.name || '이름 없는 강좌', `대상: ${event.target || '미정'}`,
+                    `장소: ${event.place || '미정'}`, `상태: ${status}`].join('\n');
                 rowHeight = Math.max(rowHeight, lectureEventRowHeight(summary));
                 if (event.url) {
                     const id = `rId${relationships.length + 1}`;
@@ -156,10 +158,7 @@ function createLectureWorkbook(libraryName, month, rows) {
                     relationships.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${lectureXml(event.url)}" TargetMode="External"/>`);
                 }
                 const baseStyle = event.status === '접수중' ? 10 : event.status === '접수예정' ? 11 : 9;
-                const hasPrevious = slot > 0;
-                const hasNext = slot < day.events.length - 1;
-                const style = baseStyle + (hasPrevious && hasNext ? 11 : hasPrevious ? 8 : hasNext ? 5 : 0);
-                return lectureTextCell(address, summary, style);
+                return lectureTextCell(address, summary, baseStyle + eventStyleOffset);
             });
             sheetRows.push(`<row r="${rowNumber}" ht="${rowHeight}" customHeight="1">${cells.join('')}</row>`);
             rowNumber++;
@@ -179,15 +178,15 @@ ${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
     const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <numFmts count="1"><numFmt numFmtId="164" formatCode="d"/></numFmts>
-<fonts count="6"><font><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="18"/><name val="Aptos"/></font><font><b/><color rgb="FF5C4033"/><sz val="12"/><name val="Aptos"/></font><font><b/><color rgb="FF5C4033"/><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FFB42332"/><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FF2563A6"/><sz val="10"/><name val="Aptos"/></font></fonts>
+<fonts count="6"><font><sz val="10"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="18"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FF5C4033"/><sz val="12"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FF5C4033"/><sz val="10"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FFB42332"/><sz val="10"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FF2563A6"/><sz val="10"/><name val="Apple SD Gothic Neo"/></font></fonts>
 <fills count="12"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5C4033"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF6EFE7"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2ECE5"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE9EB"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF2FC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFAF7F3"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF5F5F4"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF9F1"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF5FF"/></patternFill></fill></fills>
 <borders count="5"><border><left/><right/><top/><bottom/><diagonal/></border>
-<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="thin"><color rgb="FFDED6CD"/></top><bottom style="thin"><color rgb="FFDED6CD"/></bottom><diagonal/></border>
-<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="thin"><color rgb="FFDED6CD"/></top><bottom style="dotted"><color rgb="FFB8A89A"/></bottom><diagonal/></border>
-<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="dotted"><color rgb="FFB8A89A"/></top><bottom style="thin"><color rgb="FFDED6CD"/></bottom><diagonal/></border>
-<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="dotted"><color rgb="FFB8A89A"/></top><bottom style="dotted"><color rgb="FFB8A89A"/></bottom><diagonal/></border></borders>
+<border><left style="medium"><color rgb="FFC5B7AA"/></left><right style="medium"><color rgb="FFC5B7AA"/></right><top style="medium"><color rgb="FFC5B7AA"/></top><bottom style="medium"><color rgb="FFC5B7AA"/></bottom><diagonal/></border>
+<border><left style="medium"><color rgb="FFC5B7AA"/></left><right style="medium"><color rgb="FFC5B7AA"/></right><top style="medium"><color rgb="FFC5B7AA"/></top><bottom style="dotted"><color rgb="FF9E8B7D"/></bottom><diagonal/></border>
+<border><left style="medium"><color rgb="FFC5B7AA"/></left><right style="medium"><color rgb="FFC5B7AA"/></right><top style="dotted"><color rgb="FF9E8B7D"/></top><bottom style="medium"><color rgb="FFC5B7AA"/></bottom><diagonal/></border>
+<border><left style="medium"><color rgb="FFC5B7AA"/></left><right style="medium"><color rgb="FFC5B7AA"/></right><top style="dotted"><color rgb="FF9E8B7D"/></top><bottom style="dotted"><color rgb="FF9E8B7D"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="23"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<cellXfs count="29"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
@@ -209,7 +208,13 @@ ${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
 <xf numFmtId="0" fontId="0" fillId="11" borderId="3" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="8" borderId="4" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="10" borderId="4" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="0" fillId="11" borderId="4" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs>
+<xf numFmtId="0" fontId="0" fillId="11" borderId="4" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="9" borderId="2" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="2" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="9" borderId="3" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="3" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="9" borderId="4" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="4" xfId="0" applyFill="1" applyBorder="1"/></cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
     const safeSheetTitle = `${libraryName.replace(/[\[\]:*?/\\]/g, '').slice(0, 20) || '도서관'} ${monthLabel}`;

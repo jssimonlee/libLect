@@ -103,6 +103,10 @@ assert.match(sheet, /<mergeCell ref="A1:G1"/);
 assert.match(sheet, /<c r="A4"[^>]*>.*?<t[^>]*>일<\/t>/);
 assert.match(sheet, /책 &amp; 글쓰기/);
 assert.match(sheet, /담당: \*길\*/);
+assert.match(sheet, /시간: 10:00–11:30/);
+assert.match(sheet, /대상: 초등 \/ 1~2학년/);
+assert.match(sheet, /장소: 문화교실/);
+assert.match(sheet, /상태: 접수마감/);
 assert.match(sheet, /강좌 2개 · 수업 3회/);
 assert.doesNotMatch(sheet, /다른 달 강좌/);
 assert.match(sheet, /<c r="B\d+" s="6"><v>46293<\/v><\/c>/);
@@ -111,10 +115,30 @@ assert.match(files.get('xl/worksheets/_rels/sheet1.xml.rels'), /lectureDetail\.d
 assert.match(files.get('xl/workbook.xml'), /2026-09/);
 assert.match(sheet, /<c r="B14" t="inlineStr" s="14">/);
 assert.match(sheet, /<c r="B15" t="inlineStr" s="18">/);
+for (const column of ['A', 'C', 'D', 'E', 'F', 'G']) {
+    const outsideMonth = ['E', 'F', 'G'].includes(column);
+    const firstStyle = outsideMonth ? 23 : column === 'C' ? 14 : 24;
+    const secondStyle = outsideMonth ? 25 : 26;
+    assert.match(sheet, new RegExp(`<c r="${column}14" t="inlineStr" s="${firstStyle}">`));
+    assert.match(sheet, new RegExp(`<c r="${column}15" t="inlineStr" s="${secondStyle}">`));
+}
 const styles = files.get('xl/styles.xml');
 assert.match(styles, /<borders count="5">/);
 assert.match(styles, /<bottom style="dotted">/);
 assert.match(styles, /<top style="dotted">/);
+assert.match(styles, /<left style="medium">/);
+assert.match(styles, /<name val="Apple SD Gothic Neo"\/>/);
+assert.match(styles, /<cellXfs count="29">/);
+const threeEventsSheet = zipContents(createLectureWorkbook('봉담도서관', today, [
+    { lectureKey: '1', date: '2026-09-28', name: '첫 수업', status: '접수마감' },
+    { lectureKey: '2', date: '2026-09-28', name: '둘째 수업', status: '접수마감' },
+    { lectureKey: '3', date: '2026-09-28', name: '셋째 수업', status: '접수마감' },
+])).get('xl/worksheets/sheet1.xml');
+for (const column of ['A', 'C', 'D', 'E', 'F', 'G']) {
+    const middleStyle = ['E', 'F', 'G'].includes(column) ? 27 : 28;
+    assert.match(threeEventsSheet, new RegExp(`<c r="${column}15" t="inlineStr" s="${middleStyle}">`));
+}
+assert.match(threeEventsSheet, /<c r="B15" t="inlineStr" s="20">/);
 const emptyCalendar = zipContents(createLectureWorkbook('봉담도서관', new Date(Date.UTC(2026, 1, 1)), []));
 assert.match(emptyCalendar.get('xl/worksheets/sheet1.xml'), /강좌 0개 · 수업 0회/);
 assert.match(emptyCalendar.get('xl/worksheets/sheet1.xml'), /<dimension ref="A1:G\d+"/);
