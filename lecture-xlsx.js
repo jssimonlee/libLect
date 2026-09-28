@@ -121,8 +121,6 @@ function createLectureWorkbook(libraryName, month, rows) {
             lectureTextCell(`${String.fromCharCode(65 + index)}4`, day, index === 0 ? '4' : index === 6 ? '5' : '3')
         ).join('')}</row>`,
     ];
-    const hyperlinks = [];
-    const relationships = [];
     let rowNumber = 5;
     for (let week = 0; week < weeks; week++) {
         const dates = Array.from({ length: 7 }, (_, weekday) => {
@@ -152,11 +150,6 @@ function createLectureWorkbook(libraryName, month, rows) {
                 const summary = [`시간: ${time}`, event.name || '이름 없는 강좌', `대상: ${event.target || '미정'}`,
                     `장소: ${event.place || '미정'}`, `상태: ${status}`].join('\n');
                 rowHeight = Math.max(rowHeight, lectureEventRowHeight(summary));
-                if (event.url) {
-                    const id = `rId${relationships.length + 1}`;
-                    hyperlinks.push(`<hyperlink ref="${address}" r:id="${id}"/>`);
-                    relationships.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${lectureXml(event.url)}" TargetMode="External"/>`);
-                }
                 const baseStyle = event.status === '접수중' ? 10 : event.status === '접수예정' ? 11 : 9;
                 return lectureTextCell(address, summary, baseStyle + eventStyleOffset);
             });
@@ -166,12 +159,11 @@ function createLectureWorkbook(libraryName, month, rows) {
     }
     const lastRow = rowNumber - 1;
     const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:G${lastRow}"/>
 <sheetViews><sheetView showGridLines="0" workbookViewId="0"><pane ySplit="4" topLeftCell="A5" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
 <sheetFormatPr defaultRowHeight="20"/><cols><col min="1" max="7" width="34" customWidth="1"/></cols>
 <sheetData>${sheetRows.join('')}</sheetData><mergeCells count="2"><mergeCell ref="A1:G1"/><mergeCell ref="A2:G2"/></mergeCells>
-${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
 <printOptions horizontalCentered="1"/><pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/>
 <pageSetup paperSize="8" orientation="landscape" fitToWidth="1" fitToHeight="0"/>
 </worksheet>`;
@@ -225,7 +217,6 @@ ${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
         ['xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
         ['xl/styles.xml', styles],
         ['xl/worksheets/sheet1.xml', sheet],
-        ['xl/worksheets/_rels/sheet1.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relationships.join('')}</Relationships>`],
     ];
     return lectureZip(entries);
 }
