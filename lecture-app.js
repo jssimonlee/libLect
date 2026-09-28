@@ -46,16 +46,6 @@ let dataLoadDone = false;     // 최근 도서관 데이터셋을 만들었는�
 let isLoading = false;
 let isBackgroundSyncing = false; // 2단계 백그라운드 전체 동기화 실행 여부
 
-let myLibraryFavorite = [];
-try {
-    const savedFav = localStorage.getItem('myLibraryFavorite');
-    if (savedFav) {
-        myLibraryFavorite = JSON.parse(savedFav);
-    }
-} catch (e) {
-    console.error('Failed to load myLibraryFavorite:', e);
-}
-
 // ── 담당자 등록 기능 ──────────────────────────────────
 let isIncognito = false;
 let assigneeData = {}; // { lectureKey: { name: '홍길동', masked: '*길*' } }
@@ -1467,7 +1457,7 @@ async function doSearch(trackSearch = true) {
     }
 
     if (allData.length === 0) {
-        if (institutionSelect.value && institutionSelect.value !== 'favorite') {
+        if (institutionSelect.value) {
             renderResults();
             return;
         }
@@ -1604,7 +1594,7 @@ function renderResults() {
                 <span id="calendarEntryNotice" class="calendar-entry-notice" role="status">${institutionSelect.value && institutionSelect.value.endsWith('도서관') ? '' : '⚠️ 도서관 한 곳을 선택하면 달력을 볼 수 있습니다.'}</span>
                 <button type="button" class="calendar-entry-button" onclick="openLectureCalendar()">
                     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg>
-                    <span>${institutionSelect.value && institutionSelect.value !== 'favorite' ? escapeHtml(institutionSelect.value) + ' 강좌 달력' : '도서관 강좌 달력'}</span>
+                    <span>${institutionSelect.value ? escapeHtml(institutionSelect.value) + ' 강좌 달력' : '도서관 강좌 달력'}</span>
                 </button>
             </div>
         </div>
@@ -1776,15 +1766,6 @@ function populateInstitutionSelect() {
 
     const options = ['<option value="">전체 도서관</option>'];
 
-    // 즐겨찾기 탭 추가
-    if (myLibraryFavorite && myLibraryFavorite.length > 0) {
-        const shortNames = myLibraryFavorite.map(name => name.replace('도서관', ''));
-        const favText = `즐겨찾기 (${shortNames.join(' · ')})`;
-        const favTitle = `즐겨찾기 (${shortNames.join(' · ')})`;
-        options.push(`<option value="favorite" title="${escapeHtml(favTitle)}">⭐ ${escapeHtml(favText)}</option>`);
-        options.push('<option disabled>────────────────────</option>');
-    }
-
     selectableNames.forEach(name => {
         options.push(`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`);
     });
@@ -1802,10 +1783,6 @@ function populateInstitutionSelect() {
     if (hasLibraryTeam) {
         allSelectable.push('화성시문화관광재단 도서관사업팀');
     }
-    if (myLibraryFavorite && myLibraryFavorite.length > 0) {
-        allSelectable.push('favorite');
-    }
-
     if (allSelectable.includes(selected)) {
         institutionSelect.value = selected;
     }
@@ -1821,16 +1798,10 @@ function getSearchBaseData() {
     const selectedInstitution = institutionSelect.value;
     const keyword = currentKeyword.toLowerCase();
 
-    const isFavorite = selectedInstitution === 'favorite';
-
     return libraryData.filter(d => {
-        if (isFavorite) {
-            if (!myLibraryFavorite.includes(d.institution)) return false;
-        } else {
-            // 전체도서관 검색일 때는 "화성시문화관광재단 도서관사업팀" 강좌 제외
-            if (!selectedInstitution && d.institution === '화성시문화관광재단 도서관사업팀') return false;
-            if (selectedInstitution && d.institution !== selectedInstitution) return false;
-        }
+        // 전체도서관 검색일 때는 "화성시문화관광재단 도서관사업팀" 강좌 제외
+        if (!selectedInstitution && d.institution === '화성시문화관광재단 도서관사업팀') return false;
+        if (selectedInstitution && d.institution !== selectedInstitution) return false;
 
         // 전질 대출 / 전질대출 2차 방어
         if (isWholeSetLoan(d)) return false;
@@ -1938,22 +1909,11 @@ async function initializeApp() {
     try {
         // API 데이터가 완전히 채워지기 전, 저장된 도서관명이 있다면 Select 박스에 선 반영하여 로딩 UX 향상
         const savedInst = localStorage.getItem('selectedInstitution');
-        if (savedInst) {
-            let displayName = savedInst;
-            let displayTitle = '';
-            if (savedInst === 'favorite') {
-                if (myLibraryFavorite && myLibraryFavorite.length > 0) {
-                    const shortNames = myLibraryFavorite.map(name => name.replace('도서관', ''));
-                    displayName = `⭐ 즐겨찾기 (${shortNames.join(' · ')})`;
-                    displayTitle = `즐겨찾기 (${shortNames.join(' · ')})`;
-                } else {
-                    displayName = '⭐ 즐겨찾기';
-                    displayTitle = '즐겨찾기';
-                }
-            }
+        if (savedInst === 'favorite') localStorage.removeItem('selectedInstitution');
+        if (savedInst && savedInst !== 'favorite') {
             institutionSelect.innerHTML = `
                 <option value="">전체 도서관</option>
-                <option value="${escapeHtml(savedInst)}" title="${escapeHtml(displayTitle)}" selected>${escapeHtml(displayName)}</option>
+                <option value="${escapeHtml(savedInst)}" selected>${escapeHtml(savedInst)}</option>
             `;
         }
 
@@ -2042,136 +2002,3 @@ function getSafeLectureDetailUrl(value) {
 }
 
 initializeApp();
-
-// ── 도서관 즐겨찾기 설정 모달 이벤트 핸들러 ──
-function openFavoriteModal() {
-    const modal = document.getElementById('groupModal');
-    if (modal) {
-        renderModalCheckboxGrid();
-        modal.style.display = 'flex';
-    }
-}
-
-function closeFavoriteModal() {
-    const modal = document.getElementById('groupModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// 도서관 즐겨찾기 개수 표시 배지 갱신
-function updateFavoriteCountBadge() {
-    const badge = document.getElementById('favoriteCountBadge');
-    if (!badge) return;
-
-    const count = document.querySelectorAll('.favorite-library-check:checked').length;
-    if (count < 2) {
-        badge.style.background = 'rgba(239, 68, 68, 0.12)';
-        badge.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-        badge.style.color = '#f87171';
-        badge.innerHTML = `⚠️ 현재 ${count}개 선택됨 (최소 2개 선택 필요)`;
-    } else {
-        badge.style.background = 'rgba(16, 185, 129, 0.12)';
-        badge.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-        badge.style.color = '#34d399';
-        badge.innerHTML = `✅ 현재 ${count}개 선택됨 (저장 가능)`;
-    }
-}
-
-// 도서관 체크박스 리스트 생성 (현재 즐겨찾기 포함 여부에 따라 자동 체크)
-function renderModalCheckboxGrid() {
-    const grid = document.getElementById('modalLibraryCheckboxGrid');
-    if (!grid) return;
-
-    // selectableNames 추출
-    const selectableNames = [...institutionNames]
-        .filter(name => name.includes('도서관') && name !== '화성시문화관광재단 도서관사업팀')
-        .sort((a, b) => a.localeCompare(b, 'ko'));
-
-    grid.innerHTML = selectableNames.map(name => {
-        const isChecked = myLibraryFavorite.includes(name) ? 'checked' : '';
-        return `
-            <label class="modal-checkbox-item">
-                <input type="checkbox" value="${escapeHtml(name)}" class="favorite-library-check" ${isChecked} onchange="updateFavoriteCountBadge()">
-                <span>${escapeHtml(name.replace('도서관', ''))}</span>
-            </label>
-        `;
-    }).join('');
-
-    // 초기 카운트 배지 상태 반영
-    updateFavoriteCountBadge();
-}
-
-// 즐겨찾기 저장 및 반영
-function saveFavoriteLibraries() {
-    const checkedBoxes = document.querySelectorAll('.favorite-library-check:checked');
-    if (checkedBoxes.length < 2) {
-        alert('자주 이용하는 도서관을 2개 이상 선택해 주세요. (현재 ' + checkedBoxes.length + '개 선택됨)');
-        return;
-    }
-
-    const selectedLibs = Array.from(checkedBoxes).map(cb => cb.value);
-
-    myLibraryFavorite = selectedLibs;
-    localStorage.setItem('myLibraryFavorite', JSON.stringify(myLibraryFavorite));
-
-    // Select 박스 갱신
-    populateInstitutionSelect();
-
-    // 저장과 동시에 즐겨찾기 조회 탭으로 바로 이동하여 즉각 피드백 제공
-    institutionSelect.value = 'favorite';
-    localStorage.setItem('selectedInstitution', 'favorite');
-    doSearch(false);
-
-    closeFavoriteModal();
-    alert('도서관 즐겨찾기가 정상적으로 저장되었습니다!');
-}
-
-// 즐겨찾기 전체 해제 및 데이터 삭제
-function clearFavoriteLibraries() {
-    if (!myLibraryFavorite || myLibraryFavorite.length === 0) {
-        alert('등록된 즐겨찾기 도서관이 없습니다.');
-        return;
-    }
-
-    if (!confirm('등록된 즐겨찾기 도서관을 모두 해제(삭제)하시겠습니까?')) {
-        return;
-    }
-
-    // 모든 체크박스 해제 비주얼 반영
-    const checkBoxes = document.querySelectorAll('.favorite-library-check');
-    checkBoxes.forEach(cb => cb.checked = false);
-
-    // 카운트 배지 비주얼 즉시 갱신
-    updateFavoriteCountBadge();
-
-    myLibraryFavorite = [];
-    localStorage.removeItem('myLibraryFavorite');
-
-    // 셀렉트 박스 갱신 (즐겨찾기 탭 자동 제거됨)
-    populateInstitutionSelect();
-
-    // 만약 현재 즐겨찾기 탭을 조회 중이었다면 '전체 도서관'으로 이동
-    if (institutionSelect.value === 'favorite') {
-        institutionSelect.value = '';
-        localStorage.setItem('selectedInstitution', '');
-        doSearch(false);
-    }
-
-    closeFavoriteModal();
-    alert('즐겨찾기가 완전히 삭제되었습니다.');
-}
-
-// DOM 로드 완료 후 버튼에 이벤트 리스너 바인딩 (버그 원천 차단)
-document.addEventListener('DOMContentLoaded', () => {
-    const favoriteConfigBtn = document.getElementById('favoriteConfigBtn');
-    if (favoriteConfigBtn) {
-        favoriteConfigBtn.addEventListener('click', openFavoriteModal);
-    }
-});
-
-// 즉시 바인딩도 병행 수행
-const favoriteConfigBtn = document.getElementById('favoriteConfigBtn');
-if (favoriteConfigBtn) {
-    favoriteConfigBtn.addEventListener('click', openFavoriteModal);
-}
