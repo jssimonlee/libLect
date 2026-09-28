@@ -127,7 +127,12 @@ assert.match(styles, /<borders count="5">/);
 assert.match(styles, /<bottom style="dotted">/);
 assert.match(styles, /<top style="dotted">/);
 assert.match(styles, /<left style="medium">/);
-assert.match(styles, /<name val="Apple SD Gothic Neo"\/>/);
+assert.match(styles, /<fonts count="9">/);
+assert.match(styles, /<name val="Malgun Gothic"\/>/);
+assert.doesNotMatch(styles, /Apple SD Gothic Neo/);
+assert.match(styles, /<xf numFmtId="164" fontId="6"[^>]*><alignment horizontal="center" vertical="center"\/><\/xf>/);
+assert.match(sheet, /<row r="4" ht="32" customHeight="1">/);
+assert.match(sheet, /<row r="13" ht="32" customHeight="1">/);
 assert.match(styles, /<cellXfs count="29">/);
 const threeEventsSheet = zipContents(createLectureWorkbook('봉담도서관', today, [
     { lectureKey: '1', date: '2026-09-28', name: '첫 수업', status: '접수마감' },

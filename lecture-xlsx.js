@@ -117,7 +117,7 @@ function createLectureWorkbook(libraryName, month, rows) {
         `<row r="1" ht="36" customHeight="1">${lectureTextCell('A1', `${libraryName} 강좌 달력`, '1')}</row>`,
         `<row r="2" ht="26" customHeight="1">${lectureTextCell('A2', `${year}년 ${monthNumber}월 · 강좌 ${courseCount}개 · 수업 ${monthRows.length}회`, '2')}</row>`,
         '<row r="3" ht="9" customHeight="1"/>',
-        `<row r="4" ht="27" customHeight="1">${['일', '월', '화', '수', '목', '금', '토'].map((day, index) =>
+        `<row r="4" ht="32" customHeight="1">${['일', '월', '화', '수', '목', '금', '토'].map((day, index) =>
             lectureTextCell(`${String.fromCharCode(65 + index)}4`, day, index === 0 ? '4' : index === 6 ? '5' : '3')
         ).join('')}</row>`,
     ];
@@ -131,7 +131,7 @@ function createLectureWorkbook(libraryName, month, rows) {
             const date = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             return { date, events: byDate.get(date) || [] };
         });
-        sheetRows.push(`<row r="${rowNumber}" ht="24" customHeight="1">${dates.map((day, weekday) => {
+        sheetRows.push(`<row r="${rowNumber}" ht="32" customHeight="1">${dates.map((day, weekday) => {
             const address = `${String.fromCharCode(65 + weekday)}${rowNumber}`;
             if (!day) return lectureTextCell(address, '', '12');
             return lectureNumberCell(address, lectureExcelDate(day.date), weekday === 0 ? 7 : weekday === 6 ? 8 : 6);
@@ -178,7 +178,7 @@ ${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
     const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <numFmts count="1"><numFmt numFmtId="164" formatCode="d"/></numFmts>
-<fonts count="6"><font><sz val="10"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="18"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FF5C4033"/><sz val="12"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FF5C4033"/><sz val="10"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FFB42332"/><sz val="10"/><name val="Apple SD Gothic Neo"/></font><font><b/><color rgb="FF2563A6"/><sz val="10"/><name val="Apple SD Gothic Neo"/></font></fonts>
+<fonts count="9"><font><sz val="10"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="18"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FF5C4033"/><sz val="12"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FF5C4033"/><sz val="12"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FFB42332"/><sz val="12"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FF2563A6"/><sz val="12"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FF5C4033"/><sz val="14"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FFB42332"/><sz val="14"/><name val="Malgun Gothic"/></font><font><b/><color rgb="FF2563A6"/><sz val="14"/><name val="Malgun Gothic"/></font></fonts>
 <fills count="12"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5C4033"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF6EFE7"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2ECE5"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE9EB"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF2FC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFAF7F3"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF5F5F4"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF9F1"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF5FF"/></patternFill></fill></fills>
 <borders count="5"><border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="medium"><color rgb="FFC5B7AA"/></left><right style="medium"><color rgb="FFC5B7AA"/></right><top style="medium"><color rgb="FFC5B7AA"/></top><bottom style="medium"><color rgb="FFC5B7AA"/></bottom><diagonal/></border>
@@ -192,9 +192,9 @@ ${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
 <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="164" fontId="3" fillId="7" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
-<xf numFmtId="164" fontId="4" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
-<xf numFmtId="164" fontId="5" fillId="6" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="6" fillId="7" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyFont="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="7" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyFont="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="8" fillId="6" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyFont="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="10" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="11" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
