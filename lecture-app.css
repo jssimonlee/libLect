@@ -406,6 +406,37 @@ header p.header-desc strong {
     flex-wrap: wrap;
 }
 
+.calendar-entry {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.calendar-entry-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 46px;
+    padding: 0.7rem 1.1rem;
+    border: 1px solid #694833;
+    border-radius: 12px;
+    background: #5c4033;
+    color: #fffaf4;
+    box-shadow: 0 5px 14px rgba(92, 64, 51, 0.18);
+    font-family: inherit;
+    font-size: 0.94rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.calendar-entry-button:hover { background: #704b38; transform: translateY(-1px); }
+.calendar-entry-button:focus-visible { outline: 3px solid #d5a75e; outline-offset: 2px; }
+.calendar-entry-button svg { width: 23px; height: 23px; flex: none; }
+.calendar-entry-notice { color: #9a3412; font-size: 0.83rem; font-weight: 650; }
+
 @media (max-width: 768px) {
     .status-bar {
         justify-content: center;
@@ -419,12 +450,12 @@ header p.header-desc strong {
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    padding: 0.45rem 1.2rem;
+    padding: 0.68rem 1.1rem;
     background: linear-gradient(135deg, #f7fafc, #edf2f7);
     border: 1px solid #e2e8f0;
     border-radius: 999px;
     box-shadow: 0 4px 12px rgba(148, 163, 184, 0.05);
-    font-size: 0.76rem;
+    font-size: 0.92rem;
     font-weight: 600;
     color: #4a5568;
     transition: all 0.2s ease-in-out;
@@ -448,7 +479,7 @@ header p.header-desc strong {
 .count-segment strong {
     color: #3182ce;
     font-weight: 800;
-    font-size: 0.82rem;
+    font-size: 1.08rem;
     margin-left: 0.15rem;
     margin-right: 0.15rem;
 }

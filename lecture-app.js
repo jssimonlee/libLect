@@ -690,7 +690,7 @@ function updateLectureState(d) {
 
     const today = getKoreaTodayDateOnly();
     const end = parseDateOnly(d.endDate);
-    if (end && today > end) {
+    if (end && today > end && !isCanceledLecture(d)) {
         d.status = '강좌종료';
     }
 }
@@ -1464,6 +1464,10 @@ async function doSearch(trackSearch = true) {
     }
 
     if (allData.length === 0) {
+        if (institutionSelect.value && institutionSelect.value !== 'favorite') {
+            renderResults();
+            return;
+        }
         const contentEl = document.getElementById('content');
         if (isBackgroundSyncing) {
             // 백그라운드 전체 동기화가 진행 중일 때는 검색 결과 없음 대신 멋진 스피너와 로딩 상태 표시
@@ -1588,14 +1592,17 @@ function renderResults() {
                     <span class="count-divider"></span>
                     <span class="count-segment filter">"${getFilterLabel(currentFilter)}" <strong>${totalFiltered}</strong>건</span>
                 ` : ''}
-                ${institutionSelect.value ? `
-                    <span class="count-divider"></span>
-                    <span class="count-segment inst">🏛️ ${escapeHtml(institutionSelect.value)}</span>
-                ` : ''}
                 ${currentKeyword ? `
                     <span class="count-divider"></span>
                     <span class="count-segment keyword">🔍 "${escapeHtml(currentKeyword)}"</span>
                 ` : ''}
+            </div>
+            <div class="calendar-entry">
+                <button type="button" class="calendar-entry-button" onclick="openLectureCalendar()">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg>
+                    <span>${institutionSelect.value && institutionSelect.value !== 'favorite' ? escapeHtml(institutionSelect.value) + ' 강좌 달력' : '도서관 강좌 달력'}</span>
+                </button>
+                <span id="calendarEntryNotice" class="calendar-entry-notice" role="alert"></span>
             </div>
         </div>
         <div class="card-grid">`;
