@@ -8,9 +8,16 @@ global.parseDateOnly = value => {
 };
 global.parseDayCodes = value => value ? String(value).split(',').map(day => day.trim()) : [];
 global.getApiDayCode = date => date.getUTCDay() === 0 ? '7' : String(date.getUTCDay());
+global.getLectureKey = lecture => lecture.lectureIdx;
+global.isCanceledLecture = lecture => lecture.status === '폐강';
+global.getSafeLectureDetailUrl = url => url;
+global.escapeHtml = value => String(value).replace(/&/g, '&amp;');
+global.escapeAttr = value => String(value);
+global.assigneeData = { 1: { masked: '*길*' } };
 
 const {
     calendarDateKey, calendarOccursOn, calendarBounds, calendarOccurrencesInMonth,
+    calendarEventMarkup, calendarExportRows,
 } = require('../lecture-calendar.js');
 const { createLectureWorkbook } = require('../lecture-xlsx.js');
 
@@ -63,22 +70,43 @@ function zipContents(bytes) {
     return output;
 }
 
-const workbook = createLectureWorkbook('샘내작은도서관', [
+const exportRows = calendarExportRows([
+    { ...oneDayClass, lectureIdx: '1', status: '접수마감', targetNm: '초등', targetDetail: '1~2학년',
+      place: '문화교실', detailUrl: 'https://example.com/1' },
+    { ...oneDayClass, lectureIdx: '2', name: '두 번째 강좌', status: '접수중', detailUrl: 'https://example.com/2' },
+    { ...futureClass, lectureIdx: '3', status: '접수예정' },
+], today, { 1: { masked: '*길*' } });
+assert.equal(exportRows.length, 2);
+assert.equal(exportRows.find(row => row.url.endsWith('/1')).assignee, '*길*');
+assert.equal(exportRows.find(row => row.url.endsWith('/2')).assignee, '');
+assert.match(calendarEventMarkup({ lectureIdx: '1', name: '책 수업', status: '접수마감', detailUrl: 'https://example.com/1' }), /접수마감 · 담당: \*길\*/);
+assert.doesNotMatch(calendarEventMarkup({ lectureIdx: '2', name: '책 수업', status: '접수마감', detailUrl: 'https://example.com/2' }), /담당:/);
+
+const workbook = createLectureWorkbook('샘내작은도서관', today, [
     {
         date: '2026-09-28', beginTime: '10:00', endTime: '11:30',
         name: '책 & 글쓰기', target: '초등 / 1~2학년', place: '문화교실',
-        status: '접수중', url: 'https://yeyak.hscity.go.kr/lectureDetail.do?lectureIdx=1',
+        status: '접수마감', assignee: '*길*', url: 'https://yeyak.hscity.go.kr/lectureDetail.do?lectureIdx=1',
     },
+    { date: '2026-09-28', beginTime: '13:00', name: '두 번째 강좌', status: '접수중', url: '' },
+    { date: '2026-10-01', name: '다른 달 강좌', status: '접수예정', url: '' },
 ]);
 const files = zipContents(workbook);
 assert.ok(files.has('[Content_Types].xml'));
 assert.ok(files.has('xl/workbook.xml'));
 assert.ok(files.has('xl/worksheets/sheet1.xml'));
 const sheet = files.get('xl/worksheets/sheet1.xml');
-assert.match(sheet, /<dimension ref="A1:H2"/);
+assert.match(sheet, /<dimension ref="A1:G\d+"/);
+assert.match(sheet, /<mergeCell ref="A1:G1"/);
+assert.match(sheet, /<c r="A4"[^>]*>.*?<t[^>]*>일<\/t>/);
 assert.match(sheet, /책 &amp; 글쓰기/);
-assert.match(sheet, /<c r="A2" s="2"><v>46293<\/v><\/c>/);
-assert.match(sheet, /<c r="B2" s="3"><v>0\.4166666666666667<\/v><\/c>/);
-assert.match(sheet, /<hyperlink ref="H2" r:id="rId1"/);
+assert.match(sheet, /담당: \*길\*/);
+assert.doesNotMatch(sheet, /다른 달 강좌/);
+assert.match(sheet, /<c r="B\d+" s="6"><v>46293<\/v><\/c>/);
+assert.match(sheet, /<hyperlink ref="B\d+" r:id="rId1"/);
 assert.match(files.get('xl/worksheets/_rels/sheet1.xml.rels'), /lectureDetail\.do\?lectureIdx=1/);
+assert.match(files.get('xl/workbook.xml'), /2026-09/);
+const emptyCalendar = zipContents(createLectureWorkbook('봉담도서관', new Date(Date.UTC(2026, 1, 1)), []));
+assert.match(emptyCalendar.get('xl/worksheets/sheet1.xml'), /수업 일정 0건/);
+assert.match(emptyCalendar.get('xl/worksheets/sheet1.xml'), /<dimension ref="A1:G\d+"/);
 console.log('PASS lecture calendar and Excel export');

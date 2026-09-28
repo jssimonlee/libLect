@@ -560,6 +560,9 @@ detectIncognito().then(result => {
 });
 loadAssigneeData().then(() => {
     if (dataLoadDone) renderResults();
+    if (document.getElementById('lectureCalendarDialog')?.open && typeof renderLectureCalendar === 'function') {
+        renderLectureCalendar();
+    }
 });
 // ────────────────────────────────────────────────────────
 

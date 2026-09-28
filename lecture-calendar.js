@@ -132,16 +132,18 @@ function calendarEventMarkup(lecture) {
     const target = [lecture.targetNm, lecture.targetDetail].filter(Boolean).join(' / ') || '대상 미정';
     const place = lecture.place || '장소 미정';
     const status = isCanceledLecture(lecture) ? '폐강' : (lecture.status || '상태 미정');
+    const assignee = assigneeData[getLectureKey(lecture)]?.masked;
+    const statusLabel = assignee ? `${status} · 담당: ${assignee}` : status;
     const content = `
         <span class="calendar-event-time">${escapeHtml(time)}</span>
         <strong class="calendar-event-title">${title}</strong>
         <span class="calendar-event-meta">대상 ${escapeHtml(target)}</span>
         <span class="calendar-event-meta">장소 ${escapeHtml(place)}</span>
-        <span class="calendar-event-status">${escapeHtml(status)}</span>`;
+        <span class="calendar-event-status">${escapeHtml(statusLabel)}</span>`;
     const link = getSafeLectureDetailUrl(lecture.detailUrl);
     const className = `calendar-event ${calendarStatusClass(lecture)}`;
     return link
-        ? `<a class="${className}" href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(`${lecture.name}, ${time}, ${target}, ${place}, ${status}, 상세 페이지 열기`)}">${content}</a>`
+        ? `<a class="${className}" href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(`${lecture.name}, ${time}, ${target}, ${place}, ${statusLabel}, 상세 페이지 열기`)}">${content}</a>`
         : `<div class="${className}" title="상세 페이지 링크 없음">${content}</div>`;
 }
 
@@ -202,24 +204,22 @@ function moveLectureCalendar(offset) {
     renderLectureCalendar();
 }
 
-function calendarExportRows() {
-    if (!activeCalendar) return [];
+function calendarExportRows(lectures, month, assignees) {
     const rows = [];
-    for (let month = new Date(activeCalendar.bounds.first); month <= activeCalendar.bounds.last; month = calendarMonthStart(month, 1)) {
-        const occurrences = calendarOccurrencesInMonth(activeCalendar.lectures, month);
-        for (const [date, lectures] of occurrences) {
-            for (const lecture of lectures) {
-                rows.push({
-                    date,
-                    beginTime: lecture.beginTime || '',
-                    endTime: lecture.endTime || '',
-                    name: lecture.name || '',
-                    target: [lecture.targetNm, lecture.targetDetail].filter(Boolean).join(' / '),
-                    place: lecture.place || '',
-                    status: isCanceledLecture(lecture) ? '폐강' : (lecture.status || ''),
-                    url: getSafeLectureDetailUrl(lecture.detailUrl),
-                });
-            }
+    const occurrences = calendarOccurrencesInMonth(lectures, month);
+    for (const [date, dailyLectures] of occurrences) {
+        for (const lecture of dailyLectures) {
+            rows.push({
+                date,
+                beginTime: lecture.beginTime || '',
+                endTime: lecture.endTime || '',
+                name: lecture.name || '',
+                target: [lecture.targetNm, lecture.targetDetail].filter(Boolean).join(' / '),
+                place: lecture.place || '',
+                status: isCanceledLecture(lecture) ? '폐강' : (lecture.status || ''),
+                assignee: assignees[getLectureKey(lecture)]?.masked || '',
+                url: getSafeLectureDetailUrl(lecture.detailUrl),
+            });
         }
     }
     return rows;
@@ -227,21 +227,19 @@ function calendarExportRows() {
 
 function downloadLectureCalendar() {
     if (!activeCalendar) return;
-    const rows = calendarExportRows();
-    if (!rows.length) {
-        calendarModalNotice('내려받을 강좌 일정이 없습니다.');
-        return;
-    }
-    const bytes = createLectureWorkbook(activeCalendar.name, rows);
+    const rows = calendarExportRows(activeCalendar.lectures, activeCalendar.month, assigneeData);
+    const month = activeCalendar.month;
+    const bytes = createLectureWorkbook(activeCalendar.name, month, rows);
     const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${activeCalendar.name.replace(/[\\/:*?"<>|]/g, '_')}_강좌_달력.xlsx`;
+    const monthLabel = `${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}`;
+    link.download = `${activeCalendar.name.replace(/[\\/:*?"<>|]/g, '_')}_강좌_달력_${monthLabel}.xlsx`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    calendarModalNotice(`강좌 일정 ${rows.length}건을 엑셀로 저장했습니다.`);
+    calendarModalNotice(`${month.getUTCFullYear()}년 ${month.getUTCMonth() + 1}월 강좌 일정 ${rows.length}건을 엑셀로 저장했습니다.`);
 }
 
 if (typeof document !== 'undefined') {
@@ -264,6 +262,6 @@ if (typeof document !== 'undefined') {
 if (typeof module !== 'undefined') {
     module.exports = {
         calendarMonthStart, calendarDateKey, calendarOccursOn, calendarLastOccurrence,
-        calendarBounds, calendarOccurrencesInMonth,
+        calendarBounds, calendarOccurrencesInMonth, calendarEventMarkup, calendarExportRows,
     };
 }

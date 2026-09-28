@@ -11,20 +11,20 @@ function lectureExcelDate(value) {
     return (Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) - Date.UTC(1899, 11, 30)) / 86400000;
 }
 
-function lectureExcelTime(value) {
-    const match = /^(\d{1,2}):(\d{2})/.exec(value || '');
-    if (!match) return null;
-    const hours = Number(match[1]);
-    const minutes = Number(match[2]);
-    return hours < 24 && minutes < 60 ? (hours * 60 + minutes) / 1440 : null;
-}
-
 function lectureTextCell(address, value, style = '') {
     return `<c r="${address}" t="inlineStr"${style ? ` s="${style}"` : ''}><is><t xml:space="preserve">${lectureXml(value)}</t></is></c>`;
 }
 
 function lectureNumberCell(address, value, style) {
     return `<c r="${address}" s="${style}"><v>${value}</v></c>`;
+}
+
+function lectureEventRowHeight(summary) {
+    const lines = summary.split('\n').reduce((total, line) => {
+        const width = Array.from(line).reduce((sum, char) => sum + (char.charCodeAt(0) > 255 ? 2 : 1), 0);
+        return total + Math.max(1, Math.ceil(width / 31));
+    }, 0);
+    return Math.min(360, Math.max(90, lines * 14 + 16));
 }
 
 function lectureCrc32(bytes) {
@@ -99,53 +99,103 @@ function lectureZip(entries) {
     return output;
 }
 
-function createLectureWorkbook(libraryName, rows) {
-    const headers = ['수업 날짜', '시작', '종료', '강좌명', '대상', '장소', '접수 상태', '상세 링크'];
-    const sheetRows = [`<row r="1" ht="28" customHeight="1">${headers.map((header, index) =>
-        lectureTextCell(`${String.fromCharCode(65 + index)}1`, header, '1')
-    ).join('')}</row>`];
+function createLectureWorkbook(libraryName, month, rows) {
+    const year = month.getUTCFullYear();
+    const monthNumber = month.getUTCMonth() + 1;
+    const monthLabel = `${year}-${String(monthNumber).padStart(2, '0')}`;
+    const monthRows = rows.filter(row => row.date.startsWith(`${monthLabel}-`));
+    const days = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const leading = new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay();
+    const weeks = Math.ceil((leading + days) / 7);
+    const byDate = new Map();
+    for (const row of monthRows) {
+        if (!byDate.has(row.date)) byDate.set(row.date, []);
+        byDate.get(row.date).push(row);
+    }
+    const sheetRows = [
+        `<row r="1" ht="36" customHeight="1">${lectureTextCell('A1', `${libraryName} 강좌 달력`, '1')}</row>`,
+        `<row r="2" ht="26" customHeight="1">${lectureTextCell('A2', `${year}년 ${monthNumber}월 · 수업 일정 ${monthRows.length}건`, '2')}</row>`,
+        '<row r="3" ht="9" customHeight="1"/>',
+        `<row r="4" ht="27" customHeight="1">${['일', '월', '화', '수', '목', '금', '토'].map((day, index) =>
+            lectureTextCell(`${String.fromCharCode(65 + index)}4`, day, index === 0 ? '4' : index === 6 ? '5' : '3')
+        ).join('')}</row>`,
+    ];
     const hyperlinks = [];
     const relationships = [];
-    rows.forEach((row, index) => {
-        const rowNumber = index + 2;
-        const date = lectureExcelDate(row.date);
-        const begin = lectureExcelTime(row.beginTime);
-        const end = lectureExcelTime(row.endTime);
-        const cells = [
-            date === null ? lectureTextCell(`A${rowNumber}`, row.date) : lectureNumberCell(`A${rowNumber}`, date, 2),
-            begin === null ? lectureTextCell(`B${rowNumber}`, row.beginTime) : lectureNumberCell(`B${rowNumber}`, begin, 3),
-            end === null ? lectureTextCell(`C${rowNumber}`, row.endTime) : lectureNumberCell(`C${rowNumber}`, end, 3),
-            lectureTextCell(`D${rowNumber}`, row.name),
-            lectureTextCell(`E${rowNumber}`, row.target),
-            lectureTextCell(`F${rowNumber}`, row.place),
-            lectureTextCell(`G${rowNumber}`, row.status),
-            lectureTextCell(`H${rowNumber}`, row.url),
-        ];
-        sheetRows.push(`<row r="${rowNumber}">${cells.join('')}</row>`);
-        if (row.url) {
-            const id = `rId${relationships.length + 1}`;
-            hyperlinks.push(`<hyperlink ref="H${rowNumber}" r:id="${id}"/>`);
-            relationships.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${lectureXml(row.url)}" TargetMode="External"/>`);
+    let rowNumber = 5;
+    for (let week = 0; week < weeks; week++) {
+        const dates = Array.from({ length: 7 }, (_, weekday) => {
+            const day = week * 7 + weekday - leading + 1;
+            if (day < 1 || day > days) return null;
+            const date = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            return { date, events: byDate.get(date) || [] };
+        });
+        sheetRows.push(`<row r="${rowNumber}" ht="24" customHeight="1">${dates.map((day, weekday) => {
+            const address = `${String.fromCharCode(65 + weekday)}${rowNumber}`;
+            if (!day) return lectureTextCell(address, '', '12');
+            return lectureNumberCell(address, lectureExcelDate(day.date), weekday === 0 ? 7 : weekday === 6 ? 8 : 6);
+        }).join('')}</row>`);
+        rowNumber++;
+        const eventRows = Math.max(1, ...dates.map(day => day?.events.length || 0));
+        for (let slot = 0; slot < eventRows; slot++) {
+            let rowHeight = 90;
+            const cells = dates.map((day, weekday) => {
+                const address = `${String.fromCharCode(65 + weekday)}${rowNumber}`;
+                if (!day) return lectureTextCell(address, '', '12');
+                const event = day.events[slot];
+                if (!event) return lectureTextCell(address, '', '13');
+                const time = [event.beginTime, event.endTime].filter(Boolean).join('–') || '시간 미정';
+                const status = event.assignee ? `${event.status} · 담당: ${event.assignee}` : event.status;
+                const summary = [time, event.name || '이름 없는 강좌', `대상 ${event.target || '미정'}`,
+                    `장소 ${event.place || '미정'}`, status || '상태 미정'].join('\n');
+                rowHeight = Math.max(rowHeight, lectureEventRowHeight(summary));
+                if (event.url) {
+                    const id = `rId${relationships.length + 1}`;
+                    hyperlinks.push(`<hyperlink ref="${address}" r:id="${id}"/>`);
+                    relationships.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${lectureXml(event.url)}" TargetMode="External"/>`);
+                }
+                const style = event.status === '접수중' ? 10 : event.status === '접수예정' ? 11 : 9;
+                return lectureTextCell(address, summary, style);
+            });
+            sheetRows.push(`<row r="${rowNumber}" ht="${rowHeight}" customHeight="1">${cells.join('')}</row>`);
+            rowNumber++;
         }
-    });
-    const lastRow = rows.length + 1;
+    }
+    const lastRow = rowNumber - 1;
     const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<dimension ref="A1:H${lastRow}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
-<sheetFormatPr defaultRowHeight="18"/><cols><col min="1" max="1" width="15" customWidth="1"/><col min="2" max="3" width="10" customWidth="1"/><col min="4" max="4" width="48" customWidth="1"/><col min="5" max="5" width="30" customWidth="1"/><col min="6" max="6" width="34" customWidth="1"/><col min="7" max="7" width="14" customWidth="1"/><col min="8" max="8" width="55" customWidth="1"/></cols>
-<sheetData>${sheetRows.join('')}</sheetData><autoFilter ref="A1:H${lastRow}"/>${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:G${lastRow}"/>
+<sheetViews><sheetView showGridLines="0" workbookViewId="0"><pane ySplit="4" topLeftCell="A5" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="20"/><cols><col min="1" max="7" width="34" customWidth="1"/></cols>
+<sheetData>${sheetRows.join('')}</sheetData><mergeCells count="2"><mergeCell ref="A1:G1"/><mergeCell ref="A2:G2"/></mergeCells>
+${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
+<printOptions horizontalCentered="1"/><pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/>
+<pageSetup paperSize="8" orientation="landscape" fitToWidth="1" fitToHeight="0"/>
 </worksheet>`;
     const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="hh:mm"/></numFmts>
-<fonts count="2"><font><sz val="11"/><name val="Aptos"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Aptos"/></font></fonts>
-<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5C4033"/><bgColor indexed="64"/></patternFill></fill></fills>
-<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<numFmts count="1"><numFmt numFmtId="164" formatCode="d"/></numFmts>
+<fonts count="6"><font><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="18"/><name val="Aptos"/></font><font><b/><color rgb="FF5C4033"/><sz val="12"/><name val="Aptos"/></font><font><b/><color rgb="FF5C4033"/><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FFB42332"/><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FF2563A6"/><sz val="10"/><name val="Aptos"/></font></fonts>
+<fills count="12"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5C4033"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF6EFE7"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2ECE5"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE9EB"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF2FC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFAF7F3"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF5F5F4"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF9F1"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF5FF"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="thin"><color rgb="FFDED6CD"/></top><bottom style="thin"><color rgb="FFDED6CD"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>
+<cellXfs count="14"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="3" fillId="7" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="4" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="5" fillId="6" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="10" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="11" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="9" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1"/></cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
-    const safeSheetTitle = libraryName.replace(/[\[\]:*?/\\]/g, '').slice(0, 24) || '도서관';
+    const safeSheetTitle = `${libraryName.replace(/[\[\]:*?/\\]/g, '').slice(0, 20) || '도서관'} ${monthLabel}`;
     const entries = [
         ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
         ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
