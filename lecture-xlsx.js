@@ -104,6 +104,7 @@ function createLectureWorkbook(libraryName, month, rows) {
     const monthNumber = month.getUTCMonth() + 1;
     const monthLabel = `${year}-${String(monthNumber).padStart(2, '0')}`;
     const monthRows = rows.filter(row => row.date.startsWith(`${monthLabel}-`));
+    const courseCount = new Set(monthRows.map(row => row.lectureKey || row.url || `${row.name}:${row.beginTime}`)).size;
     const days = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
     const leading = new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay();
     const weeks = Math.ceil((leading + days) / 7);
@@ -114,7 +115,7 @@ function createLectureWorkbook(libraryName, month, rows) {
     }
     const sheetRows = [
         `<row r="1" ht="36" customHeight="1">${lectureTextCell('A1', `${libraryName} 강좌 달력`, '1')}</row>`,
-        `<row r="2" ht="26" customHeight="1">${lectureTextCell('A2', `${year}년 ${monthNumber}월 · 수업 일정 ${monthRows.length}건`, '2')}</row>`,
+        `<row r="2" ht="26" customHeight="1">${lectureTextCell('A2', `${year}년 ${monthNumber}월 · 강좌 ${courseCount}개 · 수업 ${monthRows.length}회`, '2')}</row>`,
         '<row r="3" ht="9" customHeight="1"/>',
         `<row r="4" ht="27" customHeight="1">${['일', '월', '화', '수', '목', '금', '토'].map((day, index) =>
             lectureTextCell(`${String.fromCharCode(65 + index)}4`, day, index === 0 ? '4' : index === 6 ? '5' : '3')
@@ -154,7 +155,10 @@ function createLectureWorkbook(libraryName, month, rows) {
                     hyperlinks.push(`<hyperlink ref="${address}" r:id="${id}"/>`);
                     relationships.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${lectureXml(event.url)}" TargetMode="External"/>`);
                 }
-                const style = event.status === '접수중' ? 10 : event.status === '접수예정' ? 11 : 9;
+                const baseStyle = event.status === '접수중' ? 10 : event.status === '접수예정' ? 11 : 9;
+                const hasPrevious = slot > 0;
+                const hasNext = slot < day.events.length - 1;
+                const style = baseStyle + (hasPrevious && hasNext ? 11 : hasPrevious ? 8 : hasNext ? 5 : 0);
                 return lectureTextCell(address, summary, style);
             });
             sheetRows.push(`<row r="${rowNumber}" ht="${rowHeight}" customHeight="1">${cells.join('')}</row>`);
@@ -177,9 +181,13 @@ ${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
 <numFmts count="1"><numFmt numFmtId="164" formatCode="d"/></numFmts>
 <fonts count="6"><font><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="18"/><name val="Aptos"/></font><font><b/><color rgb="FF5C4033"/><sz val="12"/><name val="Aptos"/></font><font><b/><color rgb="FF5C4033"/><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FFB42332"/><sz val="10"/><name val="Aptos"/></font><font><b/><color rgb="FF2563A6"/><sz val="10"/><name val="Aptos"/></font></fonts>
 <fills count="12"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5C4033"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF6EFE7"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2ECE5"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE9EB"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF2FC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFAF7F3"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF5F5F4"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF9F1"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF5FF"/></patternFill></fill></fills>
-<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="thin"><color rgb="FFDED6CD"/></top><bottom style="thin"><color rgb="FFDED6CD"/></bottom><diagonal/></border></borders>
+<borders count="5"><border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="thin"><color rgb="FFDED6CD"/></top><bottom style="thin"><color rgb="FFDED6CD"/></bottom><diagonal/></border>
+<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="thin"><color rgb="FFDED6CD"/></top><bottom style="dotted"><color rgb="FFB8A89A"/></bottom><diagonal/></border>
+<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="dotted"><color rgb="FFB8A89A"/></top><bottom style="thin"><color rgb="FFDED6CD"/></bottom><diagonal/></border>
+<border><left style="thin"><color rgb="FFDED6CD"/></left><right style="thin"><color rgb="FFDED6CD"/></right><top style="dotted"><color rgb="FFB8A89A"/></top><bottom style="dotted"><color rgb="FFB8A89A"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="14"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<cellXfs count="23"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
@@ -192,7 +200,16 @@ ${hyperlinks.length ? `<hyperlinks>${hyperlinks.join('')}</hyperlinks>` : ''}
 <xf numFmtId="0" fontId="0" fillId="10" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="11" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="9" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
-<xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1"/></cellXfs>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="2" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="10" borderId="2" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="11" borderId="2" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="3" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="10" borderId="3" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="11" borderId="3" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="8" borderId="4" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="10" borderId="4" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="11" borderId="4" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
     const safeSheetTitle = `${libraryName.replace(/[\[\]:*?/\\]/g, '').slice(0, 20) || '도서관'} ${monthLabel}`;

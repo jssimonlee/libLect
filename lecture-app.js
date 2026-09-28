@@ -1601,11 +1601,11 @@ function renderResults() {
                 ` : ''}
             </div>
             <div class="calendar-entry">
+                <span id="calendarEntryNotice" class="calendar-entry-notice" role="status">${institutionSelect.value && institutionSelect.value.endsWith('도서관') ? '' : '⚠️ 도서관 한 곳을 선택하면 달력을 볼 수 있습니다.'}</span>
                 <button type="button" class="calendar-entry-button" onclick="openLectureCalendar()">
                     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg>
                     <span>${institutionSelect.value && institutionSelect.value !== 'favorite' ? escapeHtml(institutionSelect.value) + ' 강좌 달력' : '도서관 강좌 달력'}</span>
                 </button>
-                <span id="calendarEntryNotice" class="calendar-entry-notice" role="alert"></span>
             </div>
         </div>
         <div class="card-grid">`;

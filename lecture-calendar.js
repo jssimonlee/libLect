@@ -69,7 +69,7 @@ function calendarSelectedLibrary() {
 
 function calendarEntryNotice(message) {
     const notice = document.getElementById('calendarEntryNotice');
-    if (notice) notice.textContent = message;
+    if (notice) notice.textContent = message || (calendarSelectedLibrary() ? '' : '⚠️ 도서관 한 곳을 선택하면 달력을 볼 수 있습니다.');
 }
 
 async function calendarEnsureCompleteData() {
@@ -155,6 +155,7 @@ function renderLectureCalendar() {
     const occurrences = calendarOccurrencesInMonth(lectures, month);
     document.getElementById('lectureCalendarTitle').textContent = `${name} 강좌 달력`;
     document.getElementById('lectureCalendarMonth').textContent = `${month.getUTCFullYear()}년 ${month.getUTCMonth() + 1}월`;
+    document.getElementById('lectureCalendarExport').textContent = `${month.getUTCMonth() + 1}월 엑셀 다운로드`;
     document.getElementById('lectureCalendarDescription').textContent =
         '수업 날짜를 기준으로 표시합니다. 강좌를 누르면 상세 페이지가 열립니다.';
     const weekdayNames = ['일', '월', '화', '수', '목', '금', '토'];
@@ -181,8 +182,9 @@ function renderLectureCalendar() {
         for (let i = remainder; i < 7; i++) html += '<div class="lecture-calendar-day outside" aria-hidden="true"></div>';
     }
     document.getElementById('lectureCalendarGrid').innerHTML = html;
-    const count = [...occurrences.values()].reduce((sum, entries) => sum + entries.length, 0);
-    calendarModalNotice(count ? `이 달 수업 일정 ${count}건` : '이 달에 확인된 강좌가 없습니다.');
+    const entries = [...occurrences.values()].flat();
+    const courseCount = new Set(entries.map(getLectureKey)).size;
+    calendarModalNotice(entries.length ? `이 달 강좌 ${courseCount}개 · 수업 ${entries.length}회` : '이 달에 확인된 강좌가 없습니다.');
 }
 
 function calendarModalNotice(message) {
@@ -211,6 +213,7 @@ function calendarExportRows(lectures, month, assignees) {
         for (const lecture of dailyLectures) {
             rows.push({
                 date,
+                lectureKey: getLectureKey(lecture),
                 beginTime: lecture.beginTime || '',
                 endTime: lecture.endTime || '',
                 name: lecture.name || '',
@@ -239,7 +242,7 @@ function downloadLectureCalendar() {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    calendarModalNotice(`${month.getUTCFullYear()}년 ${month.getUTCMonth() + 1}월 강좌 일정 ${rows.length}건을 엑셀로 저장했습니다.`);
+    calendarModalNotice(`${month.getUTCFullYear()}년 ${month.getUTCMonth() + 1}월 달력을 엑셀로 저장했습니다.`);
 }
 
 if (typeof document !== 'undefined') {

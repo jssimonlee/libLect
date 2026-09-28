@@ -84,11 +84,13 @@ assert.doesNotMatch(calendarEventMarkup({ lectureIdx: '2', name: '책 수업', s
 
 const workbook = createLectureWorkbook('샘내작은도서관', today, [
     {
+        lectureKey: 'lecture-1',
         date: '2026-09-28', beginTime: '10:00', endTime: '11:30',
         name: '책 & 글쓰기', target: '초등 / 1~2학년', place: '문화교실',
         status: '접수마감', assignee: '*길*', url: 'https://yeyak.hscity.go.kr/lectureDetail.do?lectureIdx=1',
     },
-    { date: '2026-09-28', beginTime: '13:00', name: '두 번째 강좌', status: '접수중', url: '' },
+    { lectureKey: 'lecture-2', date: '2026-09-28', beginTime: '13:00', name: '두 번째 강좌', status: '접수중', url: '' },
+    { lectureKey: 'lecture-1', date: '2026-09-29', beginTime: '10:00', name: '책 & 글쓰기', status: '접수마감', url: '' },
     { date: '2026-10-01', name: '다른 달 강좌', status: '접수예정', url: '' },
 ]);
 const files = zipContents(workbook);
@@ -101,12 +103,19 @@ assert.match(sheet, /<mergeCell ref="A1:G1"/);
 assert.match(sheet, /<c r="A4"[^>]*>.*?<t[^>]*>일<\/t>/);
 assert.match(sheet, /책 &amp; 글쓰기/);
 assert.match(sheet, /담당: \*길\*/);
+assert.match(sheet, /강좌 2개 · 수업 3회/);
 assert.doesNotMatch(sheet, /다른 달 강좌/);
 assert.match(sheet, /<c r="B\d+" s="6"><v>46293<\/v><\/c>/);
 assert.match(sheet, /<hyperlink ref="B\d+" r:id="rId1"/);
 assert.match(files.get('xl/worksheets/_rels/sheet1.xml.rels'), /lectureDetail\.do\?lectureIdx=1/);
 assert.match(files.get('xl/workbook.xml'), /2026-09/);
+assert.match(sheet, /<c r="B14" t="inlineStr" s="14">/);
+assert.match(sheet, /<c r="B15" t="inlineStr" s="18">/);
+const styles = files.get('xl/styles.xml');
+assert.match(styles, /<borders count="5">/);
+assert.match(styles, /<bottom style="dotted">/);
+assert.match(styles, /<top style="dotted">/);
 const emptyCalendar = zipContents(createLectureWorkbook('봉담도서관', new Date(Date.UTC(2026, 1, 1)), []));
-assert.match(emptyCalendar.get('xl/worksheets/sheet1.xml'), /수업 일정 0건/);
+assert.match(emptyCalendar.get('xl/worksheets/sheet1.xml'), /강좌 0개 · 수업 0회/);
 assert.match(emptyCalendar.get('xl/worksheets/sheet1.xml'), /<dimension ref="A1:G\d+"/);
 console.log('PASS lecture calendar and Excel export');
