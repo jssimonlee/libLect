@@ -6,8 +6,8 @@
     <title>화성시 도서관 강좌 검색</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="rules-search.css?v=6">
-    <link rel="stylesheet" href="lecture-app.css?v=5">
-    <link rel="stylesheet" href="lecture-calendar.css?v=2">
+    <link rel="stylesheet" href="lecture-app.css?v=6">
+    <link rel="stylesheet" href="lecture-calendar.css?v=3">
 </head>
 <body>
     <div id="syncBadge" class="sync-badge">
@@ -113,8 +113,12 @@
                     <strong id="lectureCalendarMonth"></strong>
                     <button id="lectureCalendarNext" type="button" aria-label="다음 달">›</button>
                 </div>
-                <button id="lectureCalendarExport" class="lecture-calendar-export" type="button">엑셀 다운로드</button>
+                <div class="lecture-calendar-actions">
+                    <button id="lectureCalendarAdd" class="lecture-calendar-add" type="button">＋ 강좌·행사 직접 추가</button>
+                    <button id="lectureCalendarExport" class="lecture-calendar-export" type="button">엑셀 다운로드</button>
+                </div>
             </div>
+            <p class="calendar-local-hint">직접 입력 일정은 이 브라우저에만 저장되며 다른 컴퓨터·사용자와 공유되지 않습니다.</p>
             <p id="lectureCalendarNotice" class="lecture-calendar-notice" role="status" aria-live="polite"></p>
             <div class="lecture-calendar-scroll">
                 <div id="lectureCalendarGrid" class="lecture-calendar-grid" aria-label="월간 강좌 달력"></div>
@@ -163,9 +167,10 @@
         </div>
     </section>
 
-    <script src="lecture-app.js?v=7"></script>
-    <script src="lecture-xlsx.js?v=6"></script>
-    <script src="lecture-calendar.js?v=4"></script>
+    <script src="lecture-local.js?v=1"></script>
+    <script src="lecture-app.js?v=8"></script>
+    <script src="lecture-xlsx.js?v=7"></script>
+    <script src="lecture-calendar.js?v=5"></script>
 
 
     <script src="rules-data.js"></script>

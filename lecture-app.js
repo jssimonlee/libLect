@@ -224,17 +224,17 @@ function showColorChoiceDialog(oldColor, newColor, onChoice) {
 // 담당자 버튼 HTML 렌더링
 function renderAssigneeButton(d) {
     const key = getLectureKey(d);
-    const info = assigneeData[key];
+    const info = getLectureAssignee(key);
     const safeKey = escapeAttr(key);
     if (info && info.masked) {
         const color = SAFE_ASSIGNEE_COLORS.has(info.color) ? info.color : '#ef4444';
-        return `<button class="assignee-btn set" data-lecture-key="${safeKey}" data-edit="1" title="담당자 수정" style="--assignee-color: ${color};">
+        return `<button type="button" class="assignee-btn set" data-lecture-key="${safeKey}" data-edit="1" title="담당자 수정" style="--assignee-color: ${color};">
             <span class="assignee-left-bar"></span>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="assignee-svg-icon"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" /></svg>
             담당: ${escapeHtml(info.masked)}
         </button>`;
     }
-    return `<button class="assignee-btn unset" data-lecture-key="${safeKey}" data-edit="0" title="담당자 등록"><span class="assignee-icon">✏️</span>담당자등록</button>`;
+    return `<button type="button" class="assignee-btn unset" data-lecture-key="${safeKey}" data-edit="0" title="담당자 등록"><span class="assignee-icon">✏️</span>담당자등록</button>`;
 }
 
 // 이벤트 위임: 카드 영역의 담당자 버튼 클릭 처리
@@ -252,7 +252,7 @@ function openAssigneePopover(lectureKey, isEdit) {
     // 기존 팝오버 제거
     closeAssigneePopover();
 
-    const existing = assigneeData[lectureKey];
+    const existing = getLectureAssignee(lectureKey);
     const existingName = existing ? existing.name : '';
     const existingMasked = existing ? existing.masked : '';
     const existingColor = existing ? existing.color : '#ef4444';
@@ -286,7 +286,8 @@ function openAssigneePopover(lectureKey, isEdit) {
 
     pop.innerHTML = html;
     overlay.appendChild(pop);
-    document.body.appendChild(overlay);
+    if (String(lectureKey).startsWith('local:')) mountLocalAssigneePopover(overlay);
+    else document.body.appendChild(overlay);
 
     // 현재 편집중인 키를 저장
     overlay.dataset.lectureKey = lectureKey;
@@ -295,6 +296,7 @@ function openAssigneePopover(lectureKey, isEdit) {
     nameInput.addEventListener('input', async () => {
         const val = nameInput.value.trim();
         updateMaskOptions(nameInput.value);
+        if (String(lectureKey).startsWith('local:')) return;
 
         // 동일 도서관 내의 동일 이름이 등록된 적이 있는지 자동 추적하여 추천 선택
         const d = libraryData.find(item => String(item.lectureIdx) === String(lectureKey) || `${item.institution}::${item.name}` === String(lectureKey));
@@ -357,6 +359,17 @@ async function saveAssignee() {
     if (!fullName || !selectedMask) return;
 
     const saveBtn = document.getElementById('assigneeSaveBtn');
+    if (String(lectureKey).startsWith('local:')) {
+        saveBtn.disabled = true;
+        try {
+            await saveLocalLectureAssignee(lectureKey, fullName, selectedMask, selectedColor);
+            closeAssigneePopover();
+        } catch (error) {
+            alert(error.message);
+            saveBtn.disabled = false;
+        }
+        return;
+    }
 
     // 기존 동일 도서관에 동일 이름으로 등록된 적이 있던 색상 추적 검증
     const d = libraryData.find(item => String(item.lectureIdx) === String(lectureKey) || `${item.institution}::${item.name}` === String(lectureKey));
@@ -506,6 +519,13 @@ async function deleteAssignee() {
     const lectureKey = overlay.dataset.lectureKey;
 
     const deleteBtn = document.querySelector('.pop-delete');
+    if (String(lectureKey).startsWith('local:')) {
+        try {
+            deleteLocalLectureAssignee(lectureKey);
+            closeAssigneePopover();
+        } catch (error) { alert(error.message); }
+        return;
+    }
     if (deleteBtn) {
         deleteBtn.disabled = true;
         deleteBtn.textContent = '삭제 중...';
@@ -541,6 +561,8 @@ async function deleteAssignee() {
 function closeAssigneePopover() {
     const overlay = document.getElementById('assigneePopoverOverlay');
     if (overlay) overlay.remove();
+    const localDialog = document.getElementById('localAssigneeDialog');
+    if (localDialog) { localDialog.close(); localDialog.remove(); }
     selectedMask = '';
 }
 
@@ -726,6 +748,7 @@ function isTodayLecture(d) {
 // 오늘 수업의 시간대별 상태(진행중, 예정, 종료) 판정
 function getTodayLectureTimeStatus(d) {
     if (!d.isToday) return null;
+    if (isLocalLecture(d) && d.allDay) return 'ongoing';
 
     const now = new Date();
     const currentHour = now.getHours();
@@ -856,6 +879,16 @@ const SYNC_TIER_2_MS = 7 * 24 * 60 * 60 * 1000; // 7일 이내: 최신 500개 �
 
 function getLectureKey(d) {
     return d.lectureIdx || `${d.institution}_${d.name}_${d.beginDate}`;
+}
+
+function getLectureAssignee(key) {
+    return String(key).startsWith('local:') ? getLocalLecture(key)?.assignee : assigneeData[key];
+}
+
+function getAllLectures() {
+    const local = getLocalLectures();
+    local.forEach(updateLectureState);
+    return [...libraryData, ...local];
 }
 
 function mergeLectures(existing, newItems) {
@@ -992,6 +1025,7 @@ function updateTodayLectureBadges() {
     };
 
     badges.forEach(badge => {
+        if (badge.dataset.allDay === 'true') return;
         const beginSecs = parseTimeToSeconds(badge.dataset.beginTime);
         const endSecs = parseTimeToSeconds(badge.dataset.endTime);
 
@@ -1003,7 +1037,7 @@ function updateTodayLectureBadges() {
         } else if (currentTimeInSeconds >= beginSecs && currentTimeInSeconds <= endSecs) {
             newStatus = 'ongoing';
             newClass = 'today-sub-badge ongoing';
-            newLabel = '⚡ 수업중';
+            newLabel = `⚡ ${badge.dataset.activity || '수업'}중`;
         } else {
             newStatus = 'completed';
             newClass = 'today-sub-badge completed';
@@ -1443,6 +1477,14 @@ async function doSearch(trackSearch = true) {
         await ensureLibraryDataLoaded();
         allData = getSearchBaseData();
     } catch (e) {
+        if (getLocalLectures().length || institutionSelect.value.endsWith('도서관')) {
+            allData = getSearchBaseData();
+            updateFilterButtons(getFilterCounts(allData));
+            renderResults();
+            if (typeof calendarEntryNotice === 'function') calendarEntryNotice('공식 강좌를 불러오지 못했습니다. 달력에서 자체 일정을 추가하거나 확인할 수 있습니다.');
+            document.getElementById('searchBtn').disabled = false;
+            return;
+        }
         const contentEl = document.getElementById('content');
         contentEl.innerHTML = `<div class="error-msg"><h3>데이터를 불러오지 못했습니다</h3><p>${escapeHtml(e.message)}</p></div>`;
         document.getElementById('searchBtn').disabled = false;
@@ -1452,7 +1494,8 @@ async function doSearch(trackSearch = true) {
     document.getElementById('searchBtn').disabled = false;
 
     updateFilterButtons(getFilterCounts(allData));
-    if (trackSearch && keyword) {
+    // Keep searches of local schedules private, including partial/no-result queries.
+    if (trackSearch && keyword && !getLocalLectures().length) {
         recordAnonymousSearch('lecture', keyword, allData.length);
     }
 
@@ -1642,6 +1685,8 @@ function renderResults() {
 }
 
 function renderCard(d) {
+    const local = isLocalLecture(d);
+    const activity = local && d.eventType === '행사' ? '행사' : '수업';
     const isCanceled = isCanceledLecture(d);
     const isToday = d.isToday && !isCanceled;
     const isTomorrow = d.isTomorrow && !isCanceled;
@@ -1667,9 +1712,9 @@ function renderCard(d) {
     if (isToday) {
         const timeStatus = getTodayLectureTimeStatus(d);
         let subBadgeHtml = '';
-        const badgeAttrs = `data-begin-time="${escapeAttr(d.beginTime || '')}" data-end-time="${escapeAttr(d.endTime || '')}"`;
+        const badgeAttrs = `data-begin-time="${escapeAttr(d.beginTime || '')}" data-end-time="${escapeAttr(d.endTime || '')}" data-all-day="${local && d.allDay ? 'true' : 'false'}" data-activity="${activity}"`;
         if (timeStatus === 'ongoing') {
-            subBadgeHtml = `<span class="today-sub-badge ongoing" ${badgeAttrs}>⚡ 수업중</span>`;
+            subBadgeHtml = `<span class="today-sub-badge ongoing" ${badgeAttrs}>⚡ ${activity}중</span>`;
         } else if (timeStatus === 'upcoming') {
             subBadgeHtml = `<span class="today-sub-badge upcoming" ${badgeAttrs}>⏰ 예정</span>`;
         } else if (timeStatus === 'completed') {
@@ -1677,7 +1722,7 @@ function renderCard(d) {
         }
         todayBadgeHtml = `
             <div class="today-badge-group">
-                <span class="today-badge">오늘수업</span>
+                <span class="today-badge">오늘${activity}</span>
                 ${subBadgeHtml}
             </div>
         `;
@@ -1686,7 +1731,7 @@ function renderCard(d) {
     return `
         <div class="${cardClasses.join(' ')}">
             ${todayBadgeHtml}
-            ${isTomorrow ? '<div class="tomorrow-badge">내일수업</div>' : ''}
+            ${isTomorrow ? `<div class="tomorrow-badge">내일${activity}</div>` : ''}
             <div class="card-status ${isCanceled ? 'canceled' : getStatusClass(d.status)}">${isCanceled ? '폐강' : escapeHtml(d.status)}</div>
             <div class="card-institution-row">
                 <a href="${escapeAttr(getInstitutionUrl(d.institution))}" target="_blank" rel="noopener noreferrer" class="card-institution" title="${escapeAttr(d.institution)} 홈페이지로 이동">
@@ -1696,6 +1741,7 @@ function renderCard(d) {
                 ${renderAssigneeButton(d)}
             </div>
             <div class="card-title">${escapeHtml(d.name)}</div>
+            ${local ? '<span class="local-source-badge">직접 입력 · 로컬</span>' : ''}
             <div class="card-info">
                 <div class="card-info-item">
                     <span class="label">기간</span>
@@ -1703,7 +1749,7 @@ function renderCard(d) {
                 </div>
                 <div class="card-info-item">
                     <span class="label">시간</span>
-                    <span class="info-time">${escapeHtml(d.beginTime)} ~ ${escapeHtml(d.endTime)} (${escapeHtml(getDayNames(d.dayOfWeek))})</span>
+                    <span class="info-time">${local && d.allDay ? '종일' : `${escapeHtml(d.beginTime)} ~ ${escapeHtml(d.endTime)}`} ${d.dayOfWeek ? `(${escapeHtml(getDayNames(d.dayOfWeek))})` : ''}</span>
                 </div>
                 <div class="card-info-item">
                     <span class="label">장소</span>
@@ -1713,6 +1759,7 @@ function renderCard(d) {
                     <span class="label">접수</span>
                     <span class="info-apply">${escapeHtml(formatApplyDateTime(d.applyBegin))} ~ ${escapeHtml(formatApplyDateTime(d.applyEnd))}</span>
                 </div>` : ''}
+                ${local && d.note ? `<div class="card-info-item"><span class="label">메모</span><span>${escapeHtml(d.note)}</span></div>` : ''}
             </div>
             <div class="card-tags">
                 ${d.targetNm ? `<span class="tag tag-target">${escapeHtml(d.targetNm)}${d.targetDetail ? ' / ' + escapeHtml(d.targetDetail) : ''}</span>` : ''}
@@ -1721,10 +1768,11 @@ function renderCard(d) {
             </div>
             <div class="card-footer">
                 <div class="card-apply">
-                    신청 <strong class="apply-count">${escapeHtml(d.applyUserNum)}</strong>/${escapeHtml(d.applyLimitNum)}명
+                    ${local ? (d.applyLimitNum === null ? '정원 미정' : `정원 ${d.applyLimitNum}명`) : `신청 <strong class="apply-count">${escapeHtml(d.applyUserNum)}</strong>/${escapeHtml(d.applyLimitNum)}명`}
                     ${parseInt(d.waitLimitNum) > 0 ? ` &middot; 대기 <strong class="wait-count">${escapeHtml(d.waitUserNum)}</strong>/${escapeHtml(d.waitLimitNum)}명` : ''}
                 </div>
                 ${detailUrl ? `<a class="card-link" href="${escapeAttr(detailUrl)}" target="_blank" rel="noopener noreferrer">상세보기</a>` : ''}
+                ${local ? `<button type="button" class="local-card-edit" data-local-edit="${escapeAttr(getLectureKey(d))}">일정 수정</button>` : ''}
             </div>
         </div>`;
 }
@@ -1760,7 +1808,7 @@ function populateInstitutionSelect() {
     const selected = institutionSelect.value || saved;
 
     // "화성시문화관광재단 도서관사업팀"을 제외한 일반 도서관 목록 (가나다 순 정렬)
-    const selectableNames = [...institutionNames]
+    const selectableNames = [...new Set([...BASELINE_INSTITUTIONS, ...institutionNames, ...getLocalLectures().map(item => item.institution)])]
         .filter(name => name.includes('도서관') && name !== '화성시문화관광재단 도서관사업팀')
         .sort((a, b) => a.localeCompare(b, 'ko'));
 
@@ -1798,7 +1846,7 @@ function getSearchBaseData() {
     const selectedInstitution = institutionSelect.value;
     const keyword = currentKeyword.toLowerCase();
 
-    return libraryData.filter(d => {
+    return getAllLectures().filter(d => {
         // 전체도서관 검색일 때는 "화성시문화관광재단 도서관사업팀" 강좌 제외
         if (!selectedInstitution && d.institution === '화성시문화관광재단 도서관사업팀') return false;
         if (selectedInstitution && d.institution !== selectedInstitution) return false;
@@ -1836,7 +1884,7 @@ function getSearchBlob(d) {
 
 function isCanceledLecture(d) {
     if (!d) return false;
-    return getSearchBlob(d).includes('폐강');
+    return d.status === '폐강' || getSearchBlob(d).includes('폐강');
 }
 
 function getFilterCounts(data) {
@@ -1932,6 +1980,7 @@ async function initializeApp() {
         }
     } catch (e) {
         // ensureLibraryDataLoaded에서 오류 화면을 표시합니다.
+        if (getLocalLectures().length || institutionSelect.value.endsWith('도서관')) refreshLocalLectureViews();
     }
     document.getElementById('searchBtn').disabled = false;
 }

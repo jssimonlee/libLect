@@ -100,14 +100,19 @@ async function openLectureCalendar() {
     calendarEntryNotice('강좌 달력을 준비하는 중입니다…');
     const opener = document.activeElement;
     try {
-        await calendarEnsureCompleteData();
+        let dataWarning = '';
+        try { await calendarEnsureCompleteData(); }
+        catch (error) {
+            console.error('공식 강좌 데이터 확인 실패:', error);
+            dataWarning = '공식 강좌를 새로 불러오지 못해 현재 저장된 일정으로 표시합니다.';
+        }
         if (calendarSelectedLibrary() !== name) {
             calendarEntryNotice('선택한 도서관이 바뀌었습니다. 다시 열어 주세요.');
             return;
         }
-        const lectures = libraryData.filter(lecture => lecture.institution === name);
+        const lectures = getAllLectures().filter(lecture => lecture.institution === name);
         const today = getKoreaTodayDateOnly();
-        activeCalendar = { name, lectures, today, month: calendarMonthStart(today), bounds: calendarBounds(today, lectures) };
+        activeCalendar = { name, lectures, today, month: calendarMonthStart(today), bounds: calendarBounds(today, lectures), dataWarning };
         calendarEntryNotice('');
         calendarReturnFocus = opener.isConnected ? opener : document.querySelector('.calendar-entry-button');
         renderLectureCalendar();
@@ -128,20 +133,23 @@ function calendarStatusClass(lecture) {
 
 function calendarEventMarkup(lecture) {
     const title = escapeHtml(lecture.name || '이름 없는 강좌');
-    const time = [lecture.beginTime, lecture.endTime].filter(Boolean).join('–') || '시간 미정';
+    const time = lecture.allDay ? '종일' : [lecture.beginTime, lecture.endTime].filter(Boolean).join('–') || '시간 미정';
     const target = [lecture.targetNm, lecture.targetDetail].filter(Boolean).join(' / ') || '대상 미정';
     const place = lecture.place || '장소 미정';
     const status = isCanceledLecture(lecture) ? '폐강' : (lecture.status || '상태 미정');
-    const assignee = assigneeData[getLectureKey(lecture)]?.masked;
+    const local = lecture.source === 'local';
+    const assignee = (local ? lecture.assignee : assigneeData[getLectureKey(lecture)])?.masked;
     const statusLabel = assignee ? `${status} · 담당: ${assignee}` : status;
     const content = `
         <span class="calendar-event-time">${escapeHtml(time)}</span>
         <strong class="calendar-event-title">${title}</strong>
+        ${local ? '<span class="local-source-badge">직접 입력 · 로컬</span>' : ''}
         <span class="calendar-event-meta">대상: ${escapeHtml(target)}</span>
         <span class="calendar-event-meta">장소: ${escapeHtml(place)}</span>
         <span class="calendar-event-status">${escapeHtml(statusLabel)}</span>`;
     const link = getSafeLectureDetailUrl(lecture.detailUrl);
     const className = `calendar-event ${calendarStatusClass(lecture)}`;
+    if (local) return `<button type="button" class="${className} calendar-local-event" data-local-edit="${escapeAttr(getLectureKey(lecture))}" aria-label="${escapeAttr(`${lecture.name}, 직접 입력 일정 수정`)}">${content}</button>`;
     return link
         ? `<a class="${className}" href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(`${lecture.name}, ${time}, ${target}, ${place}, ${statusLabel}, 상세 페이지 열기`)}">${content}</a>`
         : `<div class="${className}" title="상세 페이지 링크 없음">${content}</div>`;
@@ -153,11 +161,12 @@ function renderLectureCalendar() {
     const days = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0)).getUTCDate();
     const leading = month.getUTCDay(); // Sunday is column 1.
     const occurrences = calendarOccurrencesInMonth(lectures, month);
-    document.getElementById('lectureCalendarTitle').textContent = `${name} 강좌 달력`;
+    const hasEvents = lectures.some(lecture => lecture.eventType === '행사');
+    document.getElementById('lectureCalendarTitle').textContent = `${name} ${hasEvents ? '강좌·행사' : '강좌'} 달력`;
     document.getElementById('lectureCalendarMonth').textContent = `${month.getUTCFullYear()}년 ${month.getUTCMonth() + 1}월`;
     document.getElementById('lectureCalendarExport').textContent = `${month.getUTCMonth() + 1}월 엑셀 다운로드`;
     document.getElementById('lectureCalendarDescription').textContent =
-        '수업 날짜를 기준으로 표시합니다. 강좌를 누르면 상세 페이지가 열립니다.';
+        '공식 강좌는 상세 페이지로 이동하고, 직접 입력 일정은 눌러서 수정할 수 있습니다.';
     const weekdayNames = ['일', '월', '화', '수', '목', '금', '토'];
     let html = weekdayNames.map((day, index) =>
         `<div class="lecture-calendar-weekday ${index === 0 ? 'sunday' : index === 6 ? 'saturday' : ''}">${day}</div>`
@@ -184,7 +193,8 @@ function renderLectureCalendar() {
     document.getElementById('lectureCalendarGrid').innerHTML = html;
     const entries = [...occurrences.values()].flat();
     const courseCount = new Set(entries.map(getLectureKey)).size;
-    calendarModalNotice(entries.length ? `이 달 강좌 ${courseCount}개 · 수업 ${entries.length}회` : '이 달에 확인된 강좌가 없습니다.');
+    const summary = entries.length ? `이 달 ${hasEvents ? '강좌·행사' : '강좌'} ${courseCount}개 · ${hasEvents ? '일정' : '수업'} ${entries.length}회` : '이 달에 확인된 일정이 없습니다.';
+    calendarModalNotice([activeCalendar.dataWarning, summary].filter(Boolean).join(' '));
 }
 
 function calendarModalNotice(message) {
@@ -220,7 +230,11 @@ function calendarExportRows(lectures, month, assignees) {
                 target: [lecture.targetNm, lecture.targetDetail].filter(Boolean).join(' / '),
                 place: lecture.place || '',
                 status: isCanceledLecture(lecture) ? '폐강' : (lecture.status || ''),
-                assignee: assignees[getLectureKey(lecture)]?.masked || '',
+                assignee: (lecture.source === 'local' ? lecture.assignee : assignees[getLectureKey(lecture)])?.masked || '',
+                source: lecture.source || 'api',
+                eventType: lecture.eventType || '강좌',
+                allDay: lecture.allDay === true,
+                note: lecture.source === 'local' ? lecture.note || '' : '',
                 url: getSafeLectureDetailUrl(lecture.detailUrl),
             });
         }
@@ -251,6 +265,7 @@ if (typeof document !== 'undefined') {
     document.getElementById('lectureCalendarPrev').addEventListener('click', () => moveLectureCalendar(-1));
     document.getElementById('lectureCalendarNext').addEventListener('click', () => moveLectureCalendar(1));
     document.getElementById('lectureCalendarExport').addEventListener('click', downloadLectureCalendar);
+    document.getElementById('lectureCalendarAdd').addEventListener('click', () => openLocalLectureEditor());
     dialog.addEventListener('click', event => {
         if (event.target === dialog) dialog.close();
     });

@@ -104,6 +104,8 @@ function createLectureWorkbook(libraryName, month, rows) {
     const monthNumber = month.getUTCMonth() + 1;
     const monthLabel = `${year}-${String(monthNumber).padStart(2, '0')}`;
     const monthRows = rows.filter(row => row.date.startsWith(`${monthLabel}-`));
+    const hasEvents = monthRows.some(row => row.eventType === '행사');
+    const calendarLabel = hasEvents ? '강좌·행사' : '강좌';
     const courseCount = new Set(monthRows.map(row => row.lectureKey || row.url || `${row.name}:${row.beginTime}`)).size;
     const days = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
     const leading = new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay();
@@ -114,8 +116,8 @@ function createLectureWorkbook(libraryName, month, rows) {
         byDate.get(row.date).push(row);
     }
     const sheetRows = [
-        `<row r="1" ht="36" customHeight="1">${lectureTextCell('A1', `${libraryName} 강좌 달력`, '1')}</row>`,
-        `<row r="2" ht="26" customHeight="1">${lectureTextCell('A2', `${year}년 ${monthNumber}월 · 강좌 ${courseCount}개 · 수업 ${monthRows.length}회`, '2')}</row>`,
+        `<row r="1" ht="36" customHeight="1">${lectureTextCell('A1', `${libraryName} ${calendarLabel} 달력`, '1')}</row>`,
+        `<row r="2" ht="26" customHeight="1">${lectureTextCell('A2', `${year}년 ${monthNumber}월 · ${calendarLabel} ${courseCount}개 · ${hasEvents ? '일정' : '수업'} ${monthRows.length}회`, '2')}</row>`,
         '<row r="3" ht="9" customHeight="1"/>',
         `<row r="4" ht="32" customHeight="1">${['일', '월', '화', '수', '목', '금', '토'].map((day, index) =>
             lectureTextCell(`${String.fromCharCode(65 + index)}4`, day, index === 0 ? '4' : index === 6 ? '5' : '3')
@@ -145,10 +147,11 @@ function createLectureWorkbook(libraryName, month, rows) {
                 if (!day) return lectureTextCell(address, '', 12 + emptyStyleOffset);
                 const event = day.events[slot];
                 if (!event) return lectureTextCell(address, '', 13 + emptyStyleOffset);
-                const time = [event.beginTime, event.endTime].filter(Boolean).join('–') || '시간 미정';
+                const time = event.allDay ? '종일' : [event.beginTime, event.endTime].filter(Boolean).join('–') || '시간 미정';
                 const status = event.assignee ? `${event.status || '미정'} · 담당: ${event.assignee}` : (event.status || '미정');
                 const summary = [`시간: ${time}`, event.name || '이름 없는 강좌', `대상: ${event.target || '미정'}`,
-                    `장소: ${event.place || '미정'}`, `상태: ${status}`].join('\n');
+                    `장소: ${event.place || '미정'}`, `상태: ${status}`,
+                    ...(event.source === 'local' ? ['직접 입력 · 로컬', ...(event.note ? [`메모: ${event.note}`] : [])] : [])].join('\n');
                 rowHeight = Math.max(rowHeight, lectureEventRowHeight(summary));
                 const baseStyle = event.status === '접수중' ? 10 : event.status === '접수예정' ? 11 : 9;
                 return lectureTextCell(address, summary, baseStyle + eventStyleOffset);

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --check lecture-app.js && node --check lecture-calendar.js && node --check lecture-xlsx.js && node --check server.js && node tests/lecture-calendar.test.js && node tests/verify-rules-search.js"
+    "test": "node --check lecture-app.js && node --check lecture-calendar.js && node --check lecture-local.js && node --check lecture-xlsx.js && node --check server.js && node tests/lecture-calendar.test.js && node tests/lecture-local.test.js && node tests/verify-rules-search.js"
   },
   "keywords": [],
   "author": "",

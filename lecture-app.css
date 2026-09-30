@@ -1219,6 +1219,8 @@ header p.header-desc strong {
     justify-content: center;
     animation: fadeInModal 0.2s forwards ease-out;
 }
+@keyframes fadeInModal { to { opacity: 1; } }
+@keyframes zoomInModal { to { transform: scale(1); } }
 .assignee-popover {
     background: #fff;
     border-radius: 16px;
