@@ -137,8 +137,8 @@ function calendarEventMarkup(lecture) {
     const content = `
         <span class="calendar-event-time">${escapeHtml(time)}</span>
         <strong class="calendar-event-title">${title}</strong>
-        <span class="calendar-event-meta">대상 ${escapeHtml(target)}</span>
-        <span class="calendar-event-meta">장소 ${escapeHtml(place)}</span>
+        <span class="calendar-event-meta">대상: ${escapeHtml(target)}</span>
+        <span class="calendar-event-meta">장소: ${escapeHtml(place)}</span>
         <span class="calendar-event-status">${escapeHtml(statusLabel)}</span>`;
     const link = getSafeLectureDetailUrl(lecture.detailUrl);
     const className = `calendar-event ${calendarStatusClass(lecture)}`;
