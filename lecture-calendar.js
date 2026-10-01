@@ -19,6 +19,26 @@ function calendarOccursOn(lecture, date) {
     return weekdays.includes(getApiDayCode(date));
 }
 
+// Count scheduled occurrences from the original start, never from the visible
+// month. The source does not include cancellations, holidays or makeup dates.
+function calendarSessionLabel(lecture, date) {
+    if (!Number.isFinite(date?.getTime?.()) || !calendarOccursOn(lecture, date)) return '';
+    const begin = parseDateOnly(lecture.beginDate);
+    const end = parseDateOnly(lecture.endDate);
+    const weekdays = new Set(parseDayCodes(lecture.dayOfWeek).filter(day => /^[1-7]$/.test(day)));
+    const countThrough = limit => {
+        if (!weekdays.size) return 1;
+        const days = Math.floor((limit.getTime() - begin.getTime()) / 86400000) + 1;
+        let count = Math.floor(days / 7) * weekdays.size;
+        for (let offset = 0; offset < days % 7; offset++) {
+            const candidate = new Date(begin.getTime() + offset * 86400000);
+            if (weekdays.has(getApiDayCode(candidate))) count++;
+        }
+        return count;
+    };
+    return countThrough(end) === 1 ? '일회성' : `${countThrough(date)}회차`;
+}
+
 function calendarLastOccurrence(lecture, latestAllowed) {
     const begin = parseDateOnly(lecture.beginDate);
     const end = parseDateOnly(lecture.endDate);
@@ -131,9 +151,11 @@ function calendarStatusClass(lecture) {
         lecture.status === '접수예정' ? 'upcoming' : 'inactive';
 }
 
-function calendarEventMarkup(lecture) {
+function calendarEventMarkup(lecture, date) {
     const title = escapeHtml(lecture.name || '이름 없는 강좌');
-    const time = lecture.allDay ? '종일' : [lecture.beginTime, lecture.endTime].filter(Boolean).join('–') || '시간 미정';
+    const baseTime = lecture.allDay ? '종일' : [lecture.beginTime, lecture.endTime].filter(Boolean).join('–') || '시간 미정';
+    const session = calendarSessionLabel(lecture, date);
+    const time = `${baseTime}${session ? ` (${session})` : ''}`;
     const target = [lecture.targetNm, lecture.targetDetail].filter(Boolean).join(' / ') || '대상 미정';
     const place = lecture.place || '장소 미정';
     const status = isCanceledLecture(lecture) ? '폐강' : (lecture.status || '상태 미정');
@@ -149,7 +171,7 @@ function calendarEventMarkup(lecture) {
         <span class="calendar-event-status">${escapeHtml(statusLabel)}</span>`;
     const link = getSafeLectureDetailUrl(lecture.detailUrl);
     const className = `calendar-event ${calendarStatusClass(lecture)}`;
-    if (local) return `<button type="button" class="${className} calendar-local-event" data-local-edit="${escapeAttr(getLectureKey(lecture))}" aria-label="${escapeAttr(`${lecture.name}, 직접 입력 일정 수정`)}">${content}</button>`;
+    if (local) return `<button type="button" class="${className} calendar-local-event" data-local-edit="${escapeAttr(getLectureKey(lecture))}" aria-label="${escapeAttr(`${lecture.name}, ${time}, 직접 입력 일정 수정`)}">${content}</button>`;
     return link
         ? `<a class="${className}" href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(`${lecture.name}, ${time}, ${target}, ${place}, ${statusLabel}, 상세 페이지 열기`)}">${content}</a>`
         : `<div class="${className}" title="상세 페이지 링크 없음">${content}</div>`;
@@ -166,7 +188,7 @@ function renderLectureCalendar() {
     document.getElementById('lectureCalendarMonth').textContent = `${month.getUTCFullYear()}년 ${month.getUTCMonth() + 1}월`;
     document.getElementById('lectureCalendarExport').textContent = `${month.getUTCMonth() + 1}월 엑셀 다운로드`;
     document.getElementById('lectureCalendarDescription').textContent =
-        '공식 강좌는 상세 페이지로 이동하고, 직접 입력 일정은 눌러서 수정할 수 있습니다.';
+        '공식 강좌는 상세 페이지로 이동하고, 직접 입력 일정은 눌러서 수정할 수 있습니다. 회차는 시작일·요일 기준이며 휴강·보강에 따라 실제와 다를 수 있습니다.';
     const weekdayNames = ['일', '월', '화', '수', '목', '금', '토'];
     let html = weekdayNames.map((day, index) =>
         `<div class="lecture-calendar-weekday ${index === 0 ? 'sunday' : index === 6 ? 'saturday' : ''}">${day}</div>`
@@ -183,7 +205,7 @@ function renderLectureCalendar() {
         if (key === calendarDateKey(today)) classes.push('today');
         html += `<div class="${classes.join(' ')}" aria-label="${key}, 강좌 ${events.length}건">
             <div class="lecture-calendar-day-head"><span class="lecture-calendar-day-number">${day}</span>${events.length ? `<span class="lecture-calendar-day-count">${events.length}건</span>` : ''}</div>
-            <div class="lecture-calendar-events">${events.map(calendarEventMarkup).join('')}</div>
+            <div class="lecture-calendar-events">${events.map(lecture => calendarEventMarkup(lecture, date)).join('')}</div>
         </div>`;
     }
     const remainder = (leading + days) % 7;
@@ -279,7 +301,7 @@ if (typeof document !== 'undefined') {
 
 if (typeof module !== 'undefined') {
     module.exports = {
-        calendarMonthStart, calendarDateKey, calendarOccursOn, calendarLastOccurrence,
+        calendarMonthStart, calendarDateKey, calendarOccursOn, calendarSessionLabel, calendarLastOccurrence,
         calendarBounds, calendarOccurrencesInMonth, calendarEventMarkup, calendarExportRows,
     };
 }

@@ -16,7 +16,7 @@ global.escapeAttr = value => String(value);
 global.assigneeData = { 1: { masked: '*길*' } };
 
 const {
-    calendarDateKey, calendarOccursOn, calendarBounds, calendarOccurrencesInMonth,
+    calendarDateKey, calendarOccursOn, calendarSessionLabel, calendarBounds, calendarOccurrencesInMonth,
     calendarEventMarkup, calendarExportRows,
 } = require('../lecture-calendar.js');
 const { createLectureWorkbook } = require('../lecture-xlsx.js');
@@ -38,6 +38,42 @@ const september = calendarOccurrencesInMonth([mondayClass, oneDayClass], today);
 assert.equal(september.get('2026-09-07').length, 1);
 assert.equal(september.get('2026-09-12').length, 1);
 assert.equal(september.has('2026-09-13'), false);
+
+assert.equal(calendarSessionLabel(mondayClass, new Date('2026-09-07T00:00:00Z')), '1회차');
+assert.equal(calendarSessionLabel(mondayClass, new Date('2026-09-21T00:00:00Z')), '3회차');
+assert.equal(calendarSessionLabel(mondayClass, new Date('2026-10-05T00:00:00Z')), '5회차');
+assert.equal(calendarSessionLabel(mondayClass, new Date('2026-09-08T00:00:00Z')), '');
+assert.equal(calendarSessionLabel(mondayClass, new Date('2026-12-07T00:00:00Z')), '');
+assert.equal(calendarSessionLabel(mondayClass, new Date('invalid')), '');
+assert.equal(calendarSessionLabel(mondayClass), '');
+assert.equal(calendarSessionLabel(oneDayClass, new Date('2026-09-12T00:00:00Z')), '일회성');
+const multipleDays = { ...mondayClass, beginDate: '2026-09-08', dayOfWeek: '1,3,3' };
+assert.equal(calendarSessionLabel(multipleDays, new Date('2026-09-09T00:00:00Z')), '1회차');
+assert.equal(calendarSessionLabel(multipleDays, new Date('2026-09-16T00:00:00Z')), '3회차');
+assert.equal(calendarSessionLabel({ ...mondayClass, beginDate: '2026-09-08', endDate: '2026-09-14' }, new Date('2026-09-14T00:00:00Z')), '일회성');
+const acrossYear = { ...mondayClass, beginDate: '2026-12-28', endDate: '2027-01-18' };
+assert.equal(calendarSessionLabel(acrossYear, new Date('2027-01-11T00:00:00Z')), '3회차');
+const leapYear = { ...mondayClass, beginDate: '2028-02-24', endDate: '2028-03-09', dayOfWeek: '4' };
+assert.equal(calendarSessionLabel(leapYear, new Date('2028-03-02T00:00:00Z')), '2회차');
+assert.match(calendarEventMarkup(mondayClass, new Date('2026-09-21T00:00:00Z')), /10:00–11:30 \(3회차\)/);
+assert.match(calendarEventMarkup({ ...oneDayClass, source: 'local', allDay: true }, new Date('2026-09-12T00:00:00Z')), /종일 \(일회성\)/);
+
+// Verify the rendered month's date is passed to each event, not Array.map's
+// item index. This also exercises a month following the original start month.
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync(require.resolve('../lecture-calendar.js'), 'utf8');
+const elements = new Map();
+const renderContext = vm.createContext({
+    activeCalendar: { name: '테스트도서관', month: new Date('2026-10-01T00:00:00Z'), lectures: [mondayClass], today },
+    calendarDateKey, calendarOccurrencesInMonth, calendarEventMarkup, getLectureKey: global.getLectureKey,
+    calendarModalNotice: () => {},
+    document: { getElementById: id => { if (!elements.has(id)) elements.set(id, {}); return elements.get(id); } },
+});
+vm.runInContext(source.slice(source.indexOf('function renderLectureCalendar()'), source.indexOf('function calendarModalNotice(')), renderContext);
+vm.runInContext('renderLectureCalendar()', renderContext);
+assert.match(elements.get('lectureCalendarGrid').innerHTML, /10:00–11:30 \(5회차\)/);
+assert.match(elements.get('lectureCalendarDescription').textContent, /휴강·보강/);
 
 const futureClass = {
     name: '내년 수업', beginDate: '2027-02-03', endDate: '2027-02-03',
